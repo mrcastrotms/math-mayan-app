@@ -41,10 +41,11 @@ export default function TeacherDashboard({
     if (!selectedSessionSection) return;
     const code = Math.random().toString(36).substring(2, 8).toUpperCase();
 
-    // Set duration based on activity type (10 mins for classwork test run, 40 mins for exams)
-    const durationSeconds = selectedActivityType.includes("10-Min")
-      ? 600
-      : 2400;
+    // 10 minutes (600s) for Classwork or Quiz, 40 minutes (2400s) for others
+    const durationSeconds =
+      selectedActivityType === "Classwork" || selectedActivityType === "Quiz"
+        ? 600
+        : 2400;
 
     setGeneratedCode(code);
     try {
