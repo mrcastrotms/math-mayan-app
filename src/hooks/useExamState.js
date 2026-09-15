@@ -39,29 +39,32 @@ export function useExamState() {
   const isDevMode = process.env.NODE_ENV === "development";
   const DEFAULT_DURATION = 2400;
   const [examDuration, setExamDuration] = useState(DEFAULT_DURATION);
+
+  // Finish Button appears after 25 minutes (1500 seconds). Change this if needed!
   const SHOW_END_BUTTON_AFTER = 1500;
 
   const isTeacher = student?.email === "cesar015.2016@gmail.com";
 
-  // --- GAMIFIED GRADING LOGIC (VOLUME BONUS) ---
-  const computeEnhancedScore = (answers, demerits, attempted) => {
-    if (!attempted || attempted === 0) return 0;
+  // --- BULLETPROOF GAMIFIED GRADING LOGIC ---
+  const computeEnhancedScore = (answers, demerits) => {
+    // 1. If they haven't generated any answers at all, score is 0
+    if (!answers || answers.length === 0) return 0;
 
-    // 1. Count correct answers
+    // 2. Count correct answers
     const correctCount = answers.filter((a) => a.isCorrect).length;
 
-    // 2. Base grade (standard percentage)
-    const baseScore = (correctCount / attempted) * 100;
+    // 3. Base grade based strictly on the exact number of answers logged
+    const baseScore = (correctCount / answers.length) * 100;
 
-    // 3. Volume Bonus (+2% for every 5 correct answers)
+    // 4. Volume Bonus (+2% for every 5 correct answers)
     const volumeBonus = Math.floor(correctCount / 5) * 2;
 
     let finalScore = baseScore + volumeBonus;
 
-    // 4. Subtract 5% per behavior demerit
+    // 5. Subtract 5% per behavior demerit
     finalScore -= (demerits || 0) * 5;
 
-    // 5. Round to nearest whole number, cap between 0 and 100
+    // 6. Round to nearest whole number, cap between 0 and 100
     return Math.max(0, Math.min(100, Math.round(finalScore)));
   };
 
@@ -87,11 +90,7 @@ export function useExamState() {
       sessionCodeInput,
       activeActivityType,
       isTestRun,
-      computeEnhancedScore(
-        navigation.studentAnswers,
-        navigation.demerits,
-        navigation.questionsAttempted,
-      ),
+      computeEnhancedScore(navigation.studentAnswers, navigation.demerits),
       navigation.demerits,
       navigation.questionsAttempted,
       navigation.studentAnswers,
@@ -196,7 +195,6 @@ export function useExamState() {
         score: computeEnhancedScore(
           navigation.studentAnswers,
           navigation.demerits,
-          navigation.questionsAttempted,
         ),
         demerits: navigation.demerits,
         answers: navigation.studentAnswers,
@@ -248,11 +246,7 @@ export function useExamState() {
     SHOW_END_BUTTON_AFTER,
     EXAM_DURATION: examDuration,
     calculateFinalScore: () =>
-      computeEnhancedScore(
-        navigation.studentAnswers,
-        navigation.demerits,
-        navigation.questionsAttempted,
-      ),
+      computeEnhancedScore(navigation.studentAnswers, navigation.demerits),
     ...navigation,
   };
 }
