@@ -1,18 +1,60 @@
 "use client";
 import { useEffect, useState } from "react";
-import ParentReportView from "../components/ParentReportView";
-
-// NOTE: Adjust these import paths if your folders are named differently!
+import dynamic from "next/dynamic"; // 1. IMPORT NEXT.JS DYNAMIC ROUTER
 import { useExamState } from "../hooks/useExamState";
-import DevAdminPanel from "../components/DevAdminPanel";
-import TeacherDashboard from "../components/TeacherDashboard";
-import LockedScreen from "../components/LockedScreen";
-import StartScreen from "../components/StartScreen";
-import FinishedScreen from "../components/FinishedScreen";
-import ActiveExamScreen from "../components/ActiveExamScreen";
+import StartScreen from "../components/StartScreen"; // Keep this normal, everyone needs it immediately
+
+// =====================================================================
+// 2. DYNAMIC IMPORTS (LAZY LOADING)
+// These components (and their heavy libraries) will NEVER be downloaded
+// to a student's tablet unless they actively trigger them.
+// =====================================================================
+const ParentReportView = dynamic(
+  () => import("../components/ParentReportView"),
+  {
+    loading: () => (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <p className="text-xl font-bold animate-pulse text-slate-400">
+          Loading Report...
+        </p>
+      </div>
+    ),
+  },
+);
+
+const TeacherDashboard = dynamic(
+  () => import("../components/TeacherDashboard"),
+  {
+    loading: () => (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <p className="text-xl font-bold animate-pulse text-blue-400">
+          Loading Teacher Tools...
+        </p>
+      </div>
+    ),
+  },
+);
+
+const ActiveExamScreen = dynamic(
+  () => import("../components/ActiveExamScreen"),
+  {
+    loading: () => (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <p className="text-xl font-bold animate-pulse text-blue-600">
+          Preparing Assessment...
+        </p>
+      </div>
+    ),
+  },
+);
+
+const FinishedScreen = dynamic(() => import("../components/FinishedScreen"));
+const LockedScreen = dynamic(() => import("../components/LockedScreen"));
+const DevAdminPanel = dynamic(() => import("../components/DevAdminPanel"));
+// =====================================================================
 
 export default function ExamApp() {
-  // 1. QR CODE SCANNER LOGIC (Must be inside the main component, above the state)
+  // QR CODE SCANNER LOGIC
   const [scannedReportId, setScannedReportId] = useState(null);
 
   useEffect(() => {
@@ -24,15 +66,15 @@ export default function ExamApp() {
     }
   }, []);
 
-  // 2. LOAD EXAM STATE
+  // LOAD EXAM STATE
   const state = useExamState();
 
-  // 3. IF SCANNED, ONLY SHOW THE PARENT VIEW (BYPASS LOGIN COMPLETELY)
+  // IF SCANNED, ONLY SHOW THE PARENT VIEW
   if (scannedReportId) {
     return <ParentReportView reportId={scannedReportId} />;
   }
 
-  // 4. NORMAL APP LOGIC REMAINS EXACTLY THE SAME BELOW
+  // DEV ADMIN PANEL (Lazy Loaded)
   const adminPanel = (
     <DevAdminPanel
       isDevMode={state.isDevMode}
@@ -52,6 +94,7 @@ export default function ExamApp() {
     />
   );
 
+  // TEACHER DASHBOARD (Lazy Loaded)
   if (state.isAdminMode) {
     return (
       <TeacherDashboard
@@ -64,6 +107,7 @@ export default function ExamApp() {
     );
   }
 
+  // LOCKED SCREEN (Lazy Loaded)
   if (state.isLocked) {
     return (
       <LockedScreen
@@ -76,6 +120,7 @@ export default function ExamApp() {
     );
   }
 
+  // START SCREEN (Loaded Instantly)
   if (!state.examStarted) {
     return (
       <StartScreen
@@ -98,6 +143,7 @@ export default function ExamApp() {
     );
   }
 
+  // FINISHED SCREEN (Lazy Loaded)
   if (state.examFinished) {
     return (
       <FinishedScreen
@@ -114,6 +160,7 @@ export default function ExamApp() {
     );
   }
 
+  // ACTIVE EXAM SCREEN (Lazy Loaded)
   return (
     <ActiveExamScreen
       currentQ={state.getCurrentQuestion()}
