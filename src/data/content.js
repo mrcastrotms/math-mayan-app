@@ -2,7 +2,7 @@ export const appText = {
   sections: ["4A", "4B", "5A", "5B"],
   global: {
     title: "Mathematics with Mr. Castro",
-    teacherPinPlaceholder: "Teacher Override PIN",
+    teacherPinPlaceholder: "PIN",
   },
   locked: {
     title: "Exam Locked",
@@ -18,15 +18,15 @@ export const appText = {
     enterCode: "Session Code",
     startBtn: "Start",
     verifyingBtn: "Verifying...",
-    loginPrompt: "Log in with your Google account",
+    loginPrompt: "Log in with your Google Account",
     googleBtn: "",
     backToAdmin: "<- Back to Teacher Dashboard",
     wrongSection:
       "SECURITY CHECK: This code is for a different class section. Please refresh and select the correct section, or raise your hand.",
   },
   active: {
-    passBtn: "Pass this question, try a different one",
-    harderBtn: "Excellent streak! Try something harder",
+    passBtn: "Raise your hand for help",
+    harderBtn: "Try something harder",
     simulateBtn: "[Admin: Simulate Correct]",
     loadingText: "Loading...",
   },
