@@ -13,6 +13,32 @@ export default function ParentReportView({ reportId }) {
     });
   }, [reportId]);
 
+  // Brings over your exact smart parser for the parents
+  const formatReadableAnswer = (ans) => {
+    if (!ans.studentInput || ans.studentInput === "Skipped") return "Skipped";
+
+    if (
+      ans.instruction &&
+      (ans.studentInput === "1" ||
+        ans.studentInput === "2" ||
+        ans.studentInput === "3" ||
+        ans.studentInput === "4")
+    ) {
+      const regex = new RegExp(
+        `${ans.studentInput}\\s*(?:for|\\)|\\-)\\s*([^\\.\\,\\;]+)`,
+        "i",
+      );
+      const match = ans.instruction.match(regex);
+      if (match && match[1]) {
+        return `${ans.studentInput} (${match[1].trim()})`;
+      }
+    }
+    if (ans.instruction && ans.instruction.includes("Yes")) {
+      return ans.studentInput === "1" ? "1 (Yes)" : "2 (No)";
+    }
+    return ans.studentInput;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -39,7 +65,7 @@ export default function ParentReportView({ reportId }) {
         {/* Official Header */}
         <div className="bg-slate-900 p-8 text-white text-center">
           <h1 className="text-3xl font-black mb-2 uppercase tracking-widest text-blue-400">
-            Official Score Report
+            The Mayan School
           </h1>
           <p className="text-slate-400 font-bold">
             Mathematics with Mr. Castro
@@ -53,7 +79,7 @@ export default function ParentReportView({ reportId }) {
           </h2>
           <div className="flex gap-3 flex-wrap justify-center mb-6">
             <span className="bg-blue-50 text-blue-700 px-4 py-2 rounded-xl font-bold border border-blue-200">
-              Section {report.section}
+              Grade: {report.section}
             </span>
             <span className="bg-purple-50 text-purple-700 px-4 py-2 rounded-xl font-bold border border-purple-200">
               {report.activityType}
@@ -77,7 +103,7 @@ export default function ParentReportView({ reportId }) {
         {/* Detailed Answers Breakdown */}
         <div className="p-4 md:p-8 bg-slate-50">
           <h3 className="text-2xl font-black text-slate-800 mb-6 text-center">
-            Question Breakdown
+            Questions
           </h3>
           <div className="flex flex-col gap-4">
             {report.answers?.map((ans, i) => (
@@ -87,8 +113,10 @@ export default function ParentReportView({ reportId }) {
               >
                 <div className="flex justify-between items-start mb-3">
                   <p className="font-bold text-lg text-slate-800 leading-tight">
-                    <span className="text-slate-400 mr-2">Q{i + 1}.</span>{" "}
-                    {ans.questionText}
+                    <span className="text-slate-400 mr-2">
+                      Q{ans.questionNumber || i + 1}.
+                    </span>{" "}
+                    {ans.question}
                   </p>
                   <span
                     className={`text-2xl font-black ${ans.isCorrect ? "text-green-500" : "text-red-500"}`}
@@ -106,7 +134,7 @@ export default function ParentReportView({ reportId }) {
                           : "text-red-600 text-base"
                       }
                     >
-                      {ans.selectedAnswer || "Skipped"}
+                      {formatReadableAnswer(ans)}
                     </span>
                   </p>
                   {!ans.isCorrect && (
@@ -115,6 +143,11 @@ export default function ParentReportView({ reportId }) {
                       <span className="text-slate-900 text-base">
                         {ans.correctAnswer}
                       </span>
+                    </p>
+                  )}
+                  {ans.observation && (
+                    <p className="text-slate-400 italic text-xs mt-1">
+                      Note: {ans.observation}
                     </p>
                   )}
                 </div>

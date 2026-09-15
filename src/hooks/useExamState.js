@@ -5,7 +5,6 @@ import { saveExamResult, verifySessionCode } from "../services/examService";
 import { useTimer } from "./useTimer";
 import { useExamNavigation } from "./useExamNavigation";
 import { useAppConfig } from "./useAppConfig";
-import { calculateFinalScore } from "../utils/scoreUtils";
 
 export function useExamState() {
   const [student, setStudent] = useState(null);
@@ -44,6 +43,28 @@ export function useExamState() {
 
   const isTeacher = student?.email === "cesar015.2016@gmail.com";
 
+  // --- GAMIFIED GRADING LOGIC (VOLUME BONUS) ---
+  const computeEnhancedScore = (answers, demerits, attempted) => {
+    if (!attempted || attempted === 0) return 0;
+
+    // 1. Count correct answers
+    const correctCount = answers.filter((a) => a.isCorrect).length;
+
+    // 2. Base grade (standard percentage)
+    const baseScore = (correctCount / attempted) * 100;
+
+    // 3. Volume Bonus (+2% for every 5 correct answers)
+    const volumeBonus = Math.floor(correctCount / 5) * 2;
+
+    let finalScore = baseScore + volumeBonus;
+
+    // 4. Subtract 5% per behavior demerit
+    finalScore -= (demerits || 0) * 5;
+
+    // 5. Round to nearest whole number, cap between 0 and 100
+    return Math.max(0, Math.min(100, Math.round(finalScore)));
+  };
+
   const handleFinishExam = async () => {
     setExamFinished(true);
     if (!isTeacher && document.exitFullscreen) {
@@ -58,6 +79,7 @@ export function useExamState() {
 
     setIsSaving(true);
     const isTestRun = isTeacher || activeActivityType.includes("10-Min");
+
     await saveExamResult(
       student,
       customStudentName,
@@ -65,7 +87,11 @@ export function useExamState() {
       sessionCodeInput,
       activeActivityType,
       isTestRun,
-      calculateFinalScore(navigation.studentAnswers, navigation.demerits),
+      computeEnhancedScore(
+        navigation.studentAnswers,
+        navigation.demerits,
+        navigation.questionsAttempted,
+      ),
       navigation.demerits,
       navigation.questionsAttempted,
       navigation.studentAnswers,
@@ -167,9 +193,10 @@ export function useExamState() {
       ...attemptHistory,
       {
         attemptNumber: attemptHistory.length + 1,
-        score: calculateFinalScore(
+        score: computeEnhancedScore(
           navigation.studentAnswers,
           navigation.demerits,
+          navigation.questionsAttempted,
         ),
         demerits: navigation.demerits,
         answers: navigation.studentAnswers,
@@ -221,7 +248,11 @@ export function useExamState() {
     SHOW_END_BUTTON_AFTER,
     EXAM_DURATION: examDuration,
     calculateFinalScore: () =>
-      calculateFinalScore(navigation.studentAnswers, navigation.demerits),
+      computeEnhancedScore(
+        navigation.studentAnswers,
+        navigation.demerits,
+        navigation.questionsAttempted,
+      ),
     ...navigation,
   };
 }

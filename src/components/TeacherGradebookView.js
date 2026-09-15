@@ -241,44 +241,81 @@ export default function TeacherGradebookView({
             {/* Complete Answers Breakdown */}
             <div className="grid grid-cols-1 gap-4">
               {report.answers &&
-                report.answers.map((ans, i) => (
-                  <div
-                    key={i}
-                    className={`p-4 rounded-xl border-2 ${ans.isCorrect ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}`}
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <p className="font-bold text-lg text-slate-800">
-                        <span className="text-slate-500 mr-2">Q{i + 1}:</span>{" "}
-                        {ans.questionText}
-                      </p>
-                      <span
-                        className={`text-2xl font-black ${ans.isCorrect ? "text-green-600" : "text-red-600"}`}
-                      >
-                        {ans.isCorrect ? "✓" : "✗"}
-                      </span>
-                    </div>
-                    <div className="flex gap-4 text-sm mt-2">
-                      <p className="font-bold text-slate-700">
-                        Student Answer:{" "}
+                report.answers.map((ans, i) => {
+                  // Formatting logic inline for print
+                  let formattedInput = ans.studentInput || "Skipped";
+                  if (
+                    ans.instruction &&
+                    (ans.studentInput === "1" ||
+                      ans.studentInput === "2" ||
+                      ans.studentInput === "3" ||
+                      ans.studentInput === "4")
+                  ) {
+                    const regex = new RegExp(
+                      `${ans.studentInput}\\s*(?:for|\\)|\\-)\\s*([^\\.\\,\\;]+)`,
+                      "i",
+                    );
+                    const match = ans.instruction.match(regex);
+                    if (match && match[1])
+                      formattedInput = `${ans.studentInput} (${match[1].trim()})`;
+                  } else if (
+                    ans.instruction &&
+                    ans.instruction.includes("Yes")
+                  ) {
+                    formattedInput =
+                      ans.studentInput === "1"
+                        ? "1 (Yes)"
+                        : ans.studentInput === "2"
+                          ? "2 (No)"
+                          : formattedInput;
+                  }
+
+                  return (
+                    <div
+                      key={i}
+                      className={`p-4 rounded-xl border-2 ${ans.isCorrect ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <p className="font-bold text-lg text-slate-800">
+                          <span className="text-slate-500 mr-2">
+                            Q{ans.questionNumber || i + 1}:
+                          </span>{" "}
+                          {ans.question}
+                        </p>
                         <span
-                          className={
-                            ans.isCorrect ? "text-green-700" : "text-red-700"
-                          }
+                          className={`text-2xl font-black ${ans.isCorrect ? "text-green-600" : "text-red-600"}`}
                         >
-                          {ans.selectedAnswer || "No Answer"}
+                          {ans.isCorrect ? "✓" : "✗"}
                         </span>
-                      </p>
-                      {!ans.isCorrect && (
-                        <p className="font-bold text-slate-500">
-                          Correct Answer:{" "}
-                          <span className="text-slate-800">
-                            {ans.correctAnswer}
+                      </div>
+                      <div className="flex gap-4 text-sm mt-2">
+                        <p className="font-bold text-slate-700">
+                          Student Answer:{" "}
+                          <span
+                            className={
+                              ans.isCorrect ? "text-green-700" : "text-red-700"
+                            }
+                          >
+                            {formattedInput}
                           </span>
                         </p>
-                      )}
+                        {!ans.isCorrect && (
+                          <p className="font-bold text-slate-500">
+                            Correct Answer:{" "}
+                            <span className="text-slate-800">
+                              {ans.correctAnswer}
+                            </span>
+                          </p>
+                        )}
+                        {ans.observation && (
+                          <p className="text-slate-400 italic">
+                            Note: {ans.observation}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
             </div>
 
             {/* Show Demerits if any were given */}
