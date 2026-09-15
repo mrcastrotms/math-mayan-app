@@ -7,6 +7,40 @@ import LockedScreen from "../components/LockedScreen";
 import StartScreen from "../components/StartScreen";
 import FinishedScreen from "../components/FinishedScreen";
 import ActiveExamScreen from "../components/ActiveExamScreen";
+import { useEffect, useState } from "react";
+import ParentReportView from "../components/ParentReportView"; // 1. Import the new view
+
+// ... all your other imports (useExamState, StartScreen, TeacherDashboard, etc)
+
+export default function Home() {
+  // ---------------------------------------------------------
+  // 2. ADD THIS BLOCK AT THE VERY TOP OF YOUR MAIN COMPONENT
+  // ---------------------------------------------------------
+  const [scannedReportId, setScannedReportId] = useState(null);
+
+  useEffect(() => {
+    // Only run this in the browser, check if URL has "?report=ID"
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("report")) {
+        setScannedReportId(urlParams.get("report"));
+      }
+    }
+  }, []);
+
+  // 3. IF SCANNED, ONLY SHOW THE PARENT VIEW (BYPASS LOGIN COMPLETELY)
+  if (scannedReportId) {
+    return <ParentReportView reportId={scannedReportId} />;
+  }
+  // ---------------------------------------------------------
+
+  
+  // ... THE REST OF YOUR EXISTING CODE REMAINS EXACTLY THE SAME BELOW ...
+  // const examState = useExamState();
+  // return (
+  //   ... your normal StartScreen / TeacherDashboard logic ...
+  // )
+}
 
 export default function ExamApp() {
   const state = useExamState();
