@@ -26,8 +26,11 @@ jobs:
       - name: Build Next.js App
         run: npm run build
 
-      - name: Run Playwright tests
-        run: npx playwright test
+      - name: Start Next.js Server & Run Tests
+        run: |
+          npm run start &
+          npx wait-on http://localhost:3000
+          npx playwright test
         env:
           PORT: 3000
 
