@@ -45,25 +45,27 @@ export function useExamState() {
   const isTeacher =
     isAdminMode || customStudentName.toLowerCase().includes("castro");
 
-  // --- GAMIFIED GRADING LOGIC (WITH BLANK TEST 50 PENALTY) ---
+  // --- REVISED GRADING SCALE (40-50-60-100) ---
   const computeEnhancedScore = (answers, demerits) => {
-    // 1. If they submitted a completely blank test, score is explicitly 50.
+    // 1. If they submitted a completely blank test, hard 40.
     if (!answers || answers.length === 0) {
-      return 50;
+      return 40;
     }
 
-    // 2. Otherwise, calculate their accuracy
+    // 2. Calculate their true accuracy (safely avoids NaN)
     const correctCount = answers.filter((a) => a.isCorrect).length;
     const accuracy = correctCount / answers.length;
 
-    // 3. Map 0% to 100% accuracy onto a 70 to 100 score scale
-    let finalScore = 70 + accuracy * 30;
+    // 3. Map 0% to 100% accuracy onto a 60 to 100 score scale
+    // (If they get 0 right, they get a 60. If they get 100% right, they get 100)
+    let finalScore = 60 + accuracy * 40;
 
     // 4. Subtract 5 points per behavior demerit
     finalScore -= (demerits || 0) * 5;
 
-    // 5. Cap the max score at 100, and create a hard floor at 60 for kids who actually tried
-    return Math.max(60, Math.min(100, Math.round(finalScore)));
+    // 5. Cap the max score at 100.
+    // The hard floor is now 50 (if a kid got a 60 but caught 2 demerits)
+    return Math.max(50, Math.min(100, Math.round(finalScore)));
   };
 
   const handleFinishExam = async () => {
