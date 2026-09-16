@@ -9,6 +9,7 @@ import {
   deleteDoc,
   doc,
   setDoc,
+  updateDoc, // NEW: Added to allow retroactive updating
 } from "firebase/firestore";
 import { db } from "../firebase";
 import StudentReportModal from "./StudentReportModal";
@@ -28,7 +29,7 @@ export default function TeacherDashboard({
   const [selectedSessionSection, setSelectedSessionSection] = useState("");
   const [selectedActivityType, setSelectedActivityType] =
     useState("Assessment / Exam");
-  const [isGenerating, setIsGenerating] = useState(false); // NEW: Loading state
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const [isViewingGradebook, setIsViewingGradebook] = useState(false);
   const [gradebookData, setGradebookData] = useState([]);
@@ -40,24 +41,20 @@ export default function TeacherDashboard({
 
   const handleGenerateCode = async () => {
     if (!selectedSessionSection) return;
-    setIsGenerating(true); // Turn on loading mode
+    setIsGenerating(true);
 
-    // KID-PROOF GENERATOR: Removes 0, O, 1, I, L to prevent reading mistakes
-    // Also shortened to 5 characters for easier copying from the board
     const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
     let code = "";
     for (let i = 0; i < 5; i++) {
       code += chars.charAt(Math.floor(Math.random() * chars.length));
     }
 
-    // 10 minutes (600s) for Classwork or Quiz, 40 minutes (2400s) for others
     const durationSeconds =
       selectedActivityType === "Classwork" || selectedActivityType === "Quiz"
         ? 600
         : 2400;
 
     try {
-      // WAIT for Firebase to confirm the write before updating the UI
       await addDoc(collection(db, "exam_sessions"), {
         code,
         section: selectedSessionSection,
@@ -67,13 +64,12 @@ export default function TeacherDashboard({
         active: true,
       });
 
-      // Now that it's in the cloud, show it to the teacher
       setGeneratedCode(code);
     } catch (e) {
       console.error("Failed to start session:", e);
       alert("Database error. Try generating again.");
     } finally {
-      setIsGenerating(false); // Turn off loading mode
+      setIsGenerating(false);
     }
   };
 
@@ -87,7 +83,10 @@ export default function TeacherDashboard({
         orderBy("timestamp", "desc"),
       );
       const snapshot = await getDocs(q);
-      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const data = snapshot.docs.map((docSnap) => ({
+        id: docSnap.id,
+        ...docSnap.data(),
+      }));
       data.sort((a, b) => a.studentName.localeCompare(b.studentName));
       setGradebookData(data);
     } catch (error) {
@@ -95,6 +94,85 @@ export default function TeacherDashboard({
     }
     setIsLoadingGradebook(false);
   };
+
+  // =========================================================================
+  // RETROACTIVE REGRADE SCRIPT
+  // Strips commas from old answers, regrades them, and recalculates the score
+  // =========================================================================
+  const handleRetroactiveRegrade = async () => {
+    if (
+      !window.confirm(
+        "This will scan ALL visible records, fix the missing comma bug, recalculate the scores, and update the database. Proceed?",
+      )
+    )
+      return;
+
+    setIsLoadingGradebook(true);
+    let updatedCount = 0;
+
+    try {
+      for (const record of gradebookData) {
+        let needsUpdate = false;
+        let newCorrectCount = 0;
+
+        // 1. Regrade each individual answer
+        const updatedAnswers = (record.answers || []).map((ans) => {
+          if (!ans.studentInput || !ans.correctAnswer) return ans;
+
+          // Strip commas and spaces from both the student input and the correct answer
+          const cleanInput = String(ans.studentInput).replace(/,/g, "").trim();
+          const cleanCorrect = String(ans.correctAnswer)
+            .replace(/,/g, "")
+            .trim();
+
+          const newIsCorrect = cleanInput === cleanCorrect;
+
+          if (newIsCorrect !== ans.isCorrect) {
+            needsUpdate = true; // We found a bugged comma answer!
+          }
+
+          if (newIsCorrect) newCorrectCount++;
+
+          return { ...ans, isCorrect: newIsCorrect };
+        });
+
+        // 2. Only recalculate and hit the database if we actually found a mistake
+        if (needsUpdate) {
+          // Re-apply your floor logic based on 10 min vs 40 min exams
+          const minRequired =
+            record.activityType === "Classwork" ||
+            record.activityType === "Quiz"
+              ? 8
+              : 20;
+          const gradedOutOf = Math.max(updatedAnswers.length, minRequired);
+          const accuracy = newCorrectCount / gradedOutOf;
+
+          // Re-apply the 40-50-60-100 mathematical scale
+          let newScore = 60 + accuracy * 40;
+          newScore -= (record.demerits || 0) * 5;
+          newScore = Math.max(50, Math.min(100, Math.round(newScore)));
+
+          if (updatedAnswers.length === 0) newScore = 40; // Blank test floor
+
+          // 3. Save the corrected score and answers permanently to Firebase
+          await updateDoc(doc(db, "exam_results", record.id), {
+            answers: updatedAnswers,
+            score: newScore,
+          });
+
+          updatedCount++;
+        }
+      }
+
+      alert(`Successfully regraded and fixed ${updatedCount} exams!`);
+      fetchGradebook(); // Refresh the Gradebook UI to show the new scores
+    } catch (error) {
+      console.error("Regrade error:", error);
+      alert("Failed to regrade exams. Check console.");
+    }
+    setIsLoadingGradebook(false);
+  };
+  // =========================================================================
 
   const handleDeleteRecord = async (id) => {
     if (!window.confirm("Delete this specific record?")) return;
@@ -168,17 +246,29 @@ export default function TeacherDashboard({
 
   if (isViewingGradebook) {
     return (
-      <TeacherGradebookView
-        gradebookData={gradebookData}
-        gradebookFilter={gradebookFilter}
-        setGradebookFilter={setGradebookFilter}
-        availableSections={availableSections}
-        isLoadingGradebook={isLoadingGradebook}
-        onBack={() => setIsViewingGradebook(false)}
-        onBulkDelete={handleBulkDelete}
-        onDeleteRecord={handleDeleteRecord}
-        onViewReport={(report) => setSelectedReport(report)}
-      />
+      <div className="relative w-full h-full">
+        {/* NEW: Injected the Regrade button directly above the Gradebook view */}
+        <div className="absolute top-8 left-1/2 transform -translate-x-1/2 z-[100] print:hidden">
+          <button
+            onClick={handleRetroactiveRegrade}
+            className="bg-yellow-400 text-yellow-900 font-bold px-6 py-2 rounded-full shadow-lg border border-yellow-500 hover:bg-yellow-500 transition active:scale-95"
+          >
+            Retroactive Regrade (Fix Commas)
+          </button>
+        </div>
+
+        <TeacherGradebookView
+          gradebookData={gradebookData}
+          gradebookFilter={gradebookFilter}
+          setGradebookFilter={setGradebookFilter}
+          availableSections={availableSections}
+          isLoadingGradebook={isLoadingGradebook}
+          onBack={() => setIsViewingGradebook(false)}
+          onBulkDelete={handleBulkDelete}
+          onDeleteRecord={handleDeleteRecord}
+          onViewReport={(report) => setSelectedReport(report)}
+        />
+      </div>
     );
   }
 
