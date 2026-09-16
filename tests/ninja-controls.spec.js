@@ -2,7 +2,6 @@ const { test, expect } = require("@playwright/test");
 
 test.describe("Teacher Ninja Controls & Demerits", () => {
   test.beforeEach(async ({ page }) => {
-    // Directly load the app with bypass enabled to skip login/Firestore overhead
     await page.goto("/?bypass=true", { waitUntil: "domcontentloaded" });
   });
 
