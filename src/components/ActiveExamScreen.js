@@ -1,160 +1,159 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 
 export default function ActiveExamScreen({
   question,
   questionIndex,
-  examTimeLeft = 300,
-  demerits = 0,
-  setDemerits,
-  showBehaviorMenu = false,
+  questionsAttempted,
+  formatTime,
+  timeLeft,
+  showBehaviorMenu,
   setShowBehaviorMenu,
-  onTimerOverride,
-  onDemeritChange,
+  setDemerits,
+  demerits,
+  currentInput,
+  handlePadClick,
+  handleBackspace,
+  handleClear,
+  showEndExamButton,
+  handleFinishExam,
+  handleSubmitQuestion,
+  handlePassQuestion,
+  handleTryHarder,
+  handleSimulateCorrect,
+  secondsOnCurrentQuestion,
+  canTriggerHarder,
+  isTeacherTesting,
+  isSaving,
+  handleNinjaDoubleTime,
+  handleNinjaOneMinute,
+  children,
 }) {
-  const [timeLeft, setTimeLeft] = useState(examTimeLeft);
-  const [timerOverridden, setTimerOverridden] = useState(false);
-  const lastBlurRef = useRef(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    const handleBlur = () => {
-      const now = Date.now();
-      if (now - lastBlurRef.current > 2000) {
-        lastBlurRef.current = now;
-        if (setDemerits) {
-          setDemerits((prev) => {
-            const updated =
-              typeof prev === "function" ? prev((p) => p + 1) : prev + 1;
-            if (onDemeritChange) onDemeritChange(updated);
-            return updated;
-          });
-        }
-      }
-    };
-
-    window.addEventListener("blur", handleBlur);
-    return () => window.removeEventListener("blur", handleBlur);
-  }, [setDemerits, onDemeritChange]);
+  const [overrideTimeLeft, setOverrideTimeLeft] = useState(null);
 
   const handleTimerDoubleClick = () => {
-    const pin = window.prompt("Enter Teacher PIN:");
-    if (pin === "2026" || pin === "00000") {
-      setTimeLeft(60);
-      setTimerOverridden(true);
-      if (onTimerOverride) onTimerOverride(60);
-    } else if (pin !== null) {
-      alert("Incorrect PIN!");
+    const pin = prompt("Enter Teacher PIN for Timer Override:");
+    if (pin === "2026") {
+      setOverrideTimeLeft(60); // Set to 60 seconds (1:00)
+      if (handleNinjaOneMinute) handleNinjaOneMinute();
     }
   };
 
-  const handleQuestionDoubleClick = () => {
-    if (setShowBehaviorMenu) {
-      setShowBehaviorMenu((prev) => !prev);
-    }
-  };
-
-  const handleAddInfraction = () => {
-    if (setDemerits) {
-      setDemerits((prev) => {
-        const updated =
-          typeof prev === "function" ? prev((p) => p + 1) : prev + 1;
-        if (onDemeritChange) onDemeritChange(updated);
-        return updated;
-      });
-    }
-    if (setShowBehaviorMenu) {
-      setShowBehaviorMenu(false);
-    }
-  };
-
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
-  };
+  const effectiveTimeLeft =
+    overrideTimeLeft !== null ? overrideTimeLeft : timeLeft || 2400;
 
   return (
-    <div className="flex flex-col h-full w-full p-6 bg-slate-900 text-white select-none relative">
-      <div className="flex justify-between items-center mb-6">
-        <div className="text-sm font-semibold text-slate-400">
-          Demerits:{" "}
-          <span
-            className="demerits-count text-red-400 font-bold"
-            data-testid="demerits"
-          >
-            {demerits}
+    <div className="min-h-screen bg-slate-100 flex flex-col justify-between p-6 select-none relative">
+      {/* Top Bar with Timer */}
+      <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+        <div className="flex items-center gap-4">
+          <span className="text-sm font-bold text-slate-500">
+            Question {questionIndex + 1}
           </span>
-          {timerOverridden && (
-            <span
-              className="ml-2 text-xs text-yellow-400 timer-override-active"
-              data-testid="timer-override"
-            >
-              (60s Override Active)
+          <span className="text-sm font-bold text-red-500 bg-red-50 px-3 py-1 rounded-full border border-red-100">
+            Demerits:{" "}
+            <span data-testid="demerits" className="demerits-count">
+              {demerits}
             </span>
-          )}
+          </span>
         </div>
 
         <div
-          className="timer cursor-pointer px-4 py-2 bg-slate-800 rounded border border-slate-700 hover:border-slate-500 font-mono text-lg transition-colors"
-          onDoubleClick={handleTimerDoubleClick}
-          title="Double-click to override timer with PIN"
+          className="timer text-xl font-black font-mono text-slate-700 cursor-pointer px-4 py-2 bg-slate-50 rounded-lg border border-slate-200 hover:bg-slate-100 transition"
           data-testid="exam-timer"
+          onDoubleClick={handleTimerDoubleClick}
+          title="Double-click with PIN for timer options"
         >
-          Time: {formatTime(timeLeft)}
+          {formatTime
+            ? formatTime(effectiveTimeLeft)
+            : `${Math.floor(effectiveTimeLeft / 60)}:${effectiveTimeLeft % 60 < 10 ? "0" : ""}${effectiveTimeLeft % 60}`}
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col justify-center items-center">
-        <div
-          className="question-text max-w-2xl w-full p-8 bg-slate-800 rounded-lg shadow-lg border border-slate-700 cursor-pointer hover:border-slate-600 transition-colors"
-          onDoubleClick={handleQuestionDoubleClick}
+      {/* Question Box */}
+      <div className="my-auto max-w-2xl mx-auto w-full bg-white p-8 rounded-2xl shadow-xl border border-slate-200 text-center">
+        <h2
+          className="question-text text-3xl font-black text-slate-800 mb-6 cursor-pointer hover:text-blue-600 transition"
           data-testid="question-text"
+          onDoubleClick={() => setShowBehaviorMenu(true)}
+          title="Double-click to open Teacher Behavior Menu"
         >
-          <h2 className="text-xl font-bold mb-4 text-cyan-400">
-            Question {(questionIndex ?? 0) + 1}
-          </h2>
-          <p className="text-lg text-slate-200">
-            {question?.question ||
-              question?.questionText ||
-              question?.prompt ||
-              "Loading question content..."}
-          </p>
+          {typeof question === "string"
+            ? question
+            : question?.question || "Sample Question"}
+        </h2>
+
+        {/* Answer Input Display */}
+        <div className="text-4xl font-mono font-bold text-blue-600 bg-blue-50 py-4 rounded-xl border border-blue-100 mb-6">
+          {currentInput || "0"}
+        </div>
+
+        {/* Keypad */}
+        <div className="grid grid-cols-3 gap-3 max-w-xs mx-auto mb-6">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((num) => (
+            <button
+              key={num}
+              onClick={() => handlePadClick(num.toString())}
+              className="bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xl py-3 rounded-xl hover:bg-slate-100 transition active:scale-95"
+            >
+              {num}
+            </button>
+          ))}
+          <button
+            onClick={handleBackspace}
+            className="bg-amber-50 border border-amber-200 text-amber-700 font-bold text-lg py-3 rounded-xl hover:bg-amber-100 transition"
+          >
+            ⌫
+          </button>
+          <button
+            onClick={handleClear}
+            className="bg-rose-50 border border-rose-200 text-rose-700 font-bold text-lg py-3 rounded-xl hover:bg-rose-100 transition"
+          >
+            C
+          </button>
+        </div>
+
+        {/* Submit / Pass buttons */}
+        <div className="flex gap-3 justify-center">
+          <button
+            onClick={handlePassQuestion}
+            className="px-6 py-3 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition"
+          >
+            Pass
+          </button>
+          <button
+            onClick={handleSubmitQuestion}
+            className="px-8 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition"
+          >
+            Submit Answer
+          </button>
         </div>
       </div>
 
+      {/* Behavior Menu Modal */}
       {showBehaviorMenu && (
-        <div className="absolute inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-800 border border-slate-700 p-6 rounded-xl max-w-sm w-full space-y-4 shadow-2xl">
-            <h3 className="text-lg font-bold text-red-400">
-              Log Behavior Infraction
+        <div
+          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 behavior-modal"
+          role="dialog"
+        >
+          <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full border border-slate-100">
+            <h3 className="text-xl font-black text-slate-800 mb-4 text-center">
+              Teacher Behavior / Demerit Menu
             </h3>
-            <p className="text-xs text-slate-400">Select reason for demerit:</p>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <button
-                type="button"
-                onClick={handleAddInfraction}
-                className="w-full text-left p-3 bg-slate-700 hover:bg-slate-600 rounded text-sm transition"
+                data-testid="infraction-btn"
+                onClick={() => {
+                  setDemerits((prev) => (prev || 0) + 1);
+                  setShowBehaviorMenu(false);
+                }}
+                className="w-full bg-red-50 text-red-700 border border-red-200 font-bold py-3 rounded-xl hover:bg-red-100 transition text-left px-4"
               >
-                Talking whilst exam
+                ⚠️ Talking / Off-Task (+1 Demerit)
               </button>
               <button
-                type="button"
-                onClick={handleAddInfraction}
-                className="w-full text-left p-3 bg-slate-700 hover:bg-slate-600 rounded text-sm transition"
-              >
-                Off-task / Looking around
-              </button>
-              <button
-                type="button"
                 onClick={() => setShowBehaviorMenu(false)}
-                className="w-full mt-2 p-2 bg-slate-900 hover:bg-slate-950 text-slate-400 rounded text-center text-xs"
+                className="w-full bg-slate-100 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-200 transition"
               >
                 Cancel
               </button>
@@ -162,6 +161,8 @@ export default function ActiveExamScreen({
           </div>
         </div>
       )}
+
+      {children}
     </div>
   );
 }
