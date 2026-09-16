@@ -5,14 +5,14 @@ test.describe("Teacher Ninja Controls & Demerits", () => {
     await page.goto("/", { waitUntil: "domcontentloaded" });
   });
 
-  // Helper function to handle the login screen (Grade, Name, Code 00000)
-  async function loginAsTestStudent(page) {
+  // Helper to complete student login using master bypass code 00000
+  async function loginWithMasterCode(page) {
     const nameInput = page
       .locator(
         'input[data-testid="student-name-input"], input[placeholder*="name" i], input[placeholder*="nombre" i]',
       )
       .first();
-    if (await nameInput.isVisible({ timeout: 3000 }).catch(() => false)) {
+    if (await nameInput.isVisible({ timeout: 4000 }).catch(() => false)) {
       await nameInput.fill("Test Student");
 
       const codeInput = page
@@ -35,7 +35,7 @@ test.describe("Teacher Ninja Controls & Demerits", () => {
   test("should increase demerits when question text is double-clicked", async ({
     page,
   }) => {
-    await loginAsTestStudent(page);
+    await loginWithMasterCode(page);
 
     try {
       await page.waitForSelector("text=/question 1|preguntas?/i", {
@@ -62,7 +62,7 @@ test.describe("Teacher Ninja Controls & Demerits", () => {
   test("should trigger timer overrides on double-clicks with PIN 2026", async ({
     page,
   }) => {
-    await loginAsTestStudent(page);
+    await loginWithMasterCode(page);
 
     try {
       await page.waitForSelector("text=/question 1|preguntas?/i", {

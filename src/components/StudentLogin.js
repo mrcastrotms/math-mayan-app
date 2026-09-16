@@ -1,11 +1,15 @@
 "use client";
 import React, { useState } from "react";
+// Import your Firebase/Firestore service if needed, e.g.:
+// import { db } from "../firebase";
+// import { collection, addDoc } from "firebase/firestore";
 
 export default function StudentLogin({ onLoginSuccess }) {
   const [grade, setGrade] = useState("4th");
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -14,28 +18,40 @@ export default function StudentLogin({ onLoginSuccess }) {
       return;
     }
 
-    // Master bypass code: "00000" always works and skips Firebase/Firestore writes
+    setLoading(true);
+    setError("");
+
+    // Master bypass code: "00000" logs in instantly and explicitly skips Firebase/Firestore writes
     if (code === "00000") {
+      setLoading(false);
       onLoginSuccess({
         grade,
         name: name.trim(),
         code: "00000",
-        bypassedFirebase: true, // flag to prevent Firestore/Firebase database writes
+        bypassedFirebase: true,
       });
       return;
     }
 
-    // Normal production code validation & Firestore write logic
     try {
-      // Your existing Firebase/Firestore verification logic here...
-      onLoginSuccess({ grade, name: name.trim(), code });
+      // Normal production authentication / Firestore write logic here
+      // await addDoc(collection(db, "exam_sessions"), { grade, name: name.trim(), code, timestamp: new Date() });
+
+      setLoading(false);
+      onLoginSuccess({
+        grade,
+        name: name.trim(),
+        code,
+        bypassedFirebase: false,
+      });
     } catch (err) {
+      setLoading(false);
       setError("Invalid code or connection error.");
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-950 text-white p-6">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-950 text-white p-6 select-none">
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-md bg-slate-900 p-8 rounded-xl border border-slate-800 shadow-xl space-y-6"
@@ -44,7 +60,11 @@ export default function StudentLogin({ onLoginSuccess }) {
           Student Assessment Login
         </h2>
 
-        {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+        {error && (
+          <p className="text-red-400 text-sm text-center bg-red-950/50 p-2 rounded border border-red-800">
+            {error}
+          </p>
+        )}
 
         {/* Grade Selection */}
         <div>
@@ -64,7 +84,7 @@ export default function StudentLogin({ onLoginSuccess }) {
           </select>
         </div>
 
-        {/* Student Name */}
+        {/* Student Name Input */}
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-2">
             Student Name
@@ -79,10 +99,10 @@ export default function StudentLogin({ onLoginSuccess }) {
           />
         </div>
 
-        {/* Access Code */}
+        {/* Access Code Input */}
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-2">
-            Access Code (Try 00000)
+            Access Code (Use 00000 for test bypass)
           </label>
           <input
             type="text"
@@ -96,10 +116,11 @@ export default function StudentLogin({ onLoginSuccess }) {
 
         <button
           type="submit"
-          className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 rounded-lg transition-colors"
+          disabled={loading}
+          className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 rounded-lg transition-colors disabled:opacity-50"
           data-testid="start-exam-btn"
         >
-          Start Assessment
+          {loading ? "Loading..." : "Start Assessment"}
         </button>
       </form>
     </div>
