@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { auth, db } from "../firebase";
 import {
   signInAnonymously,
@@ -21,11 +21,20 @@ export default function StartScreen({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Auto-bypass for Playwright tests when ?bypass=true is present in the URL
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("bypass") === "true") {
+        onJoinSuccess("Test Student", "00000", "test-uid-00000", "4A");
+      }
+    }
+  }, [onJoinSuccess]);
+
   const handleStart = async (e) => {
     e.preventDefault();
     const cleanCode = examCode.trim().toUpperCase().replace(/\s+/g, "");
 
-    // MASTER BYPASS: Code "00000" skips Firebase anonymous auth & Firestore write completely
     if (cleanCode === "00000") {
       if (!name.trim()) {
         setError("Please type your name.");

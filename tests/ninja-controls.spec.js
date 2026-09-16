@@ -12,7 +12,13 @@ test.describe("Teacher Ninja Controls & Demerits", () => {
       .locator('.question-text, [data-testid="question-text"]')
       .first();
     await expect(questionText).toBeVisible({ timeout: 15000 });
-    await questionText.dblclick();
+
+    // Use clickCount: 2 for robust headless CI double-click simulation
+    await questionText.click({ clickCount: 2 });
+
+    const infractionBtn = page.getByRole("button", { name: /Talking/i });
+    await expect(infractionBtn).toBeVisible({ timeout: 5000 });
+    await infractionBtn.click();
 
     const demeritCounter = page
       .locator('.demerits-count, [data-testid="demerits"]')
@@ -31,7 +37,9 @@ test.describe("Teacher Ninja Controls & Demerits", () => {
       .locator('.timer, [data-testid="exam-timer"]')
       .first();
     await expect(timerElement).toBeVisible({ timeout: 15000 });
-    await timerElement.dblclick();
+
+    // Use clickCount: 2 for robust headless CI double-click simulation
+    await timerElement.click({ clickCount: 2 });
 
     await expect(timerElement).toContainText(/0?1:00|60s|60/i, {
       timeout: 5000,
