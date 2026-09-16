@@ -69,12 +69,27 @@ export default function ExamApp() {
     return <ParentReportView reportId={scannedReportId} />;
   }
 
-  // Cleaned up dev panel mapping
+  // RESTORED: All your original DevAdminPanel props with safety fallbacks
   const adminPanel = (
     <DevAdminPanel
       isDevMode={state.isDevMode}
       setIsLocked={state.setIsLocked}
       handleFinishExam={state.handleFinishExam}
+      handleSimulateCorrect={() => {
+        if (state.handleSimulateCorrect) {
+          state.handleSimulateCorrect(() =>
+            state.resetQuestionTimer ? state.resetQuestionTimer() : null,
+          );
+        }
+      }}
+      handleTryHarder={() => {
+        if (state.handleTryHarder) {
+          state.handleTryHarder(() =>
+            state.resetQuestionTimer ? state.resetQuestionTimer() : null,
+          );
+        }
+      }}
+      canTriggerHarder={state.canTriggerHarder || false}
     />
   );
 
@@ -142,12 +157,12 @@ export default function ExamApp() {
 
   // ==========================================================
   // THE FATAL CRASH FIX
-  // Everything below maps perfectly to the updated hooks now.
+  // All 20+ original props are back and safely mapped.
   // ==========================================================
   return (
     <ActiveExamScreen
-      currentQ={state.currentQ}
-      questionsAttempted={state.questionsAttempted}
+      currentQ={state.currentQ || state.getCurrentQuestion?.() || null}
+      questionsAttempted={state.questionsAttempted || 0}
       formatTime={state.formatTime}
       timeLeft={state.timeLeft}
       showBehaviorMenu={state.showBehaviorMenu}
@@ -158,10 +173,28 @@ export default function ExamApp() {
       handlePadClick={state.handlePadClick}
       handleBackspace={state.handleBackspace}
       handleClear={state.handleClear}
-      showEndExamButton={state.showEndExamButton}
+      // RESTORED: Your original timer-based calculation for the end button
+      showEndExamButton={
+        state.EXAM_DURATION - state.timeLeft >= state.SHOW_END_BUTTON_AFTER
+      }
       handleFinishExam={state.handleFinishExam}
-      handleSubmitQuestion={state.handleSubmitQuestion}
-      handlePassQuestion={state.handlePassQuestion}
+      handleSubmitQuestion={() => {
+        state.handleSubmitQuestion();
+        if (state.resetQuestionTimer) state.resetQuestionTimer();
+      }}
+      handlePassQuestion={() => {
+        state.handlePassQuestion();
+        if (state.resetQuestionTimer) state.resetQuestionTimer();
+      }}
+      // RESTORED: Missing dev/teacher props that caused the crash
+      handleTryHarder={() => {
+        if (state.handleTryHarder) state.handleTryHarder();
+      }}
+      handleSimulateCorrect={() => {
+        if (state.handleSimulateCorrect) state.handleSimulateCorrect();
+      }}
+      secondsOnCurrentQuestion={state.secondsOnCurrentQuestion || 0}
+      canTriggerHarder={state.canTriggerHarder || false}
       isTeacherTesting={state.isTeacher}
       isSaving={state.isSaving}
       handleNinjaDoubleTime={state.handleNinjaDoubleTime}
