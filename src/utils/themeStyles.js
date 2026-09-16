@@ -24,6 +24,8 @@ export const THEME_CONFIG = {
     labelDefault: "block text-sm font-bold mb-2",
     title: "text-3xl font-black text-center mb-2",
     subtitle: "text-center opacity-75 mb-8 font-medium",
+    skeletonBtn:
+      "w-14 h-14 rounded-xl animate-pulse bg-slate-200 dark:bg-zinc-800",
   },
   variants: {
     default: {

@@ -18,6 +18,7 @@ export default function StartScreen({
   setIsAdminMode,
   onJoinSuccess,
   availableSections = ["4A", "4B", "4C", "4D", "4E", "5B"],
+  isLoading = false,
   children,
 }) {
   const [name, setName] = useState("");
@@ -121,20 +122,24 @@ export default function StartScreen({
               {START_SCREEN_COPY.sectionLabel}
             </label>
             <div className="flex flex-wrap justify-center gap-3">
-              {availableSections.map((sec) => (
-                <button
-                  key={sec}
-                  type="button"
-                  onClick={() => setSelectedSection(sec)}
-                  className={
-                    selectedSection === sec
-                      ? styles.activeSectionBtn
-                      : styles.sectionBtn
-                  }
-                >
-                  {sec}
-                </button>
-              ))}
+              {isLoading
+                ? [1, 2, 3, 4, 5].map((n) => (
+                    <div key={n} className={styles.skeletonBtn} />
+                  ))
+                : availableSections.map((sec) => (
+                    <button
+                      key={sec}
+                      type="button"
+                      onClick={() => setSelectedSection(sec)}
+                      className={
+                        selectedSection === sec
+                          ? styles.activeSectionBtn
+                          : styles.sectionBtn
+                      }
+                    >
+                      {sec}
+                    </button>
+                  ))}
             </div>
           </div>
 

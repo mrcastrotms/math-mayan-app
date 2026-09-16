@@ -141,6 +141,8 @@ export default function ExamApp() {
       availableSections={
         state?.availableSections || ["4A", "4B", "4C", "4D", "4E", "5B"]
       }
+      // Pass loading flag from your state hook (defaults to false if hook doesn't track it yet)
+      isLoading={state?.isSectionsLoading || false}
       onJoinSuccess={(name, code, uid, section) => {
         state?.setCustomStudentName?.(name);
         state?.setSessionCodeInput?.(code);
