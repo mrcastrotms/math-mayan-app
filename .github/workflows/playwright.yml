@@ -26,13 +26,32 @@ jobs:
       - name: Build Next.js App
         run: npm run build
 
-      - name: Start Next.js Server & Run Tests
-        run: |
-          npm run start &
-          npx wait-on http://localhost:3000
-          npx playwright test
+      - name: Start Next.js Server in Background
+        run: npm run start &
         env:
           PORT: 3000
+
+      - name: Wait for Server to be Ready
+        run: |
+          node -e '
+          const http = require("http");
+          const checkServer = () => {
+            http.get("http://localhost:3000", (res) => {
+              if (res.statusCode === 200) {
+                console.log("Server is ready!");
+                process.exit(0);
+              } else {
+                setTimeout(checkServer, 1000);
+              }
+            }).on("error", () => {
+              setTimeout(checkServer, 1000);
+            });
+          };
+          checkServer();
+          '
+
+      - name: Run Playwright tests
+        run: npx playwright test
 
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
