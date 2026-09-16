@@ -39,8 +39,9 @@ export function useExamState() {
   const DEFAULT_DURATION = 2400;
   const [examDuration, setExamDuration] = useState(DEFAULT_DURATION);
 
+  // SAFE FALLBACK: Prevents crash if customStudentName is ever undefined
   const isTeacher =
-    isAdminMode || customStudentName.toLowerCase().includes("castro");
+    isAdminMode || (customStudentName || "").toLowerCase().includes("castro");
 
   const SHOW_END_BUTTON_AFTER = examDuration > 600 ? 1500 : 300;
 
@@ -111,6 +112,17 @@ export function useExamState() {
     handleFinishExam,
   );
 
+  const handleNinjaDoubleTime = () => {
+    setTimeLeft((prev) => prev * 2);
+  };
+
+  const handleNinjaOneMinute = () => {
+    const pin = window.prompt("Teacher Override PIN:");
+    if (pin === CORRECT_PIN) {
+      setTimeLeft(60);
+    }
+  };
+
   const filteredQuestions = examQuestions.filter((q) => {
     if (
       activeActivityType.includes("Classwork") ||
@@ -121,7 +133,6 @@ export function useExamState() {
     return true;
   });
 
-  // FIXED: Passed student into the navigation hook to secure the backups
   const navigation = useExamNavigation(
     filteredQuestions.length > 0 ? filteredQuestions : examQuestions,
     appText,
@@ -138,7 +149,7 @@ export function useExamState() {
       const result = await verifySessionCode(codeToTest, sectionToTest);
 
       if (result.error === "wrong_section") {
-        alert(appText.start.wrongSection);
+        alert("Wrong class section selected. Please check the board.");
       } else if (result.error === "invalid_code") {
         alert("Invalid or expired Session Code.");
       } else if (result) {
@@ -258,6 +269,8 @@ export function useExamState() {
     handleTryAgain,
     handleFinishExam,
     formatTime,
+    handleNinjaDoubleTime,
+    handleNinjaOneMinute,
     isDevMode,
     SHOW_END_BUTTON_AFTER,
     EXAM_DURATION: examDuration,

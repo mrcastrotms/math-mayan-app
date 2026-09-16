@@ -1,45 +1,38 @@
 import { useState, useEffect, useCallback } from "react";
 
 export function useExamNavigation(questions, appText, student) {
-  // Added student here
-
-  // 1. SECURE BACKUP: Locked to the specific student's UID
   const getStorageKey = (keyName) =>
     `exam_${keyName}_${student?.uid || "anon"}`;
 
-  const [studentAnswers, setStudentAnswers] = useState(() => {
-    if (typeof window !== "undefined" && student?.uid) {
-      const saved = window.localStorage.getItem(getStorageKey("answers"));
-      if (saved) return JSON.parse(saved);
-    }
-    return [];
-  });
-
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(() => {
-    if (typeof window !== "undefined" && student?.uid) {
-      const saved = window.localStorage.getItem(getStorageKey("index"));
-      if (saved) return parseInt(saved, 10);
-    }
-    return 0;
-  });
-
-  const [skipsUsed, setSkipsUsed] = useState(() => {
-    if (typeof window !== "undefined" && student?.uid) {
-      const saved = window.localStorage.getItem(getStorageKey("skips"));
-      if (saved) return parseInt(saved, 10);
-    }
-    return 0;
-  });
-
+  const [studentAnswers, setStudentAnswers] = useState([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [skipsUsed, setSkipsUsed] = useState(0);
   const [currentInput, setCurrentInput] = useState("");
   const [demerits, setDemerits] = useState(0);
-
-  // Anti-Spam state for the Enter key
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [hasLoadedBackup, setHasLoadedBackup] = useState(false);
 
-  // Continuously save progress, locked to their unique ID
+  // 1. LOAD BACKUP: Only triggers after student logs in
   useEffect(() => {
-    if (typeof window !== "undefined" && student?.uid) {
+    if (typeof window !== "undefined" && student?.uid && !hasLoadedBackup) {
+      const savedAnswers = window.localStorage.getItem(
+        getStorageKey("answers"),
+      );
+      if (savedAnswers) setStudentAnswers(JSON.parse(savedAnswers));
+
+      const savedIndex = window.localStorage.getItem(getStorageKey("index"));
+      if (savedIndex) setCurrentQuestionIndex(parseInt(savedIndex, 10));
+
+      const savedSkips = window.localStorage.getItem(getStorageKey("skips"));
+      if (savedSkips) setSkipsUsed(parseInt(savedSkips, 10));
+
+      setHasLoadedBackup(true);
+    }
+  }, [student?.uid, hasLoadedBackup]);
+
+  // 2. SAVE BACKUP: Constantly backs up their progress
+  useEffect(() => {
+    if (typeof window !== "undefined" && student?.uid && hasLoadedBackup) {
       window.localStorage.setItem(
         getStorageKey("answers"),
         JSON.stringify(studentAnswers),
@@ -50,14 +43,19 @@ export function useExamNavigation(questions, appText, student) {
       );
       window.localStorage.setItem(getStorageKey("skips"), skipsUsed.toString());
     }
-  }, [studentAnswers, currentQuestionIndex, skipsUsed, student]);
+  }, [
+    studentAnswers,
+    currentQuestionIndex,
+    skipsUsed,
+    student?.uid,
+    hasLoadedBackup,
+  ]);
 
   const currentQ = questions[currentQuestionIndex] || null;
   const questionsAttempted = currentQuestionIndex;
   const showEndExamButton = currentQuestionIndex >= questions.length;
 
   const handlePadClick = (val) => {
-    // THE CRASH FIX: Hard cap at 15 characters
     setCurrentInput((prev) => {
       if (prev.length >= 15) return prev;
       return prev + val;
@@ -75,13 +73,12 @@ export function useExamNavigation(questions, appText, student) {
   const moveToNextQuestion = () => {
     setCurrentInput("");
     setCurrentQuestionIndex((prev) => prev + 1);
-    // Lift the anti-spam lock after the next question renders
     setTimeout(() => setIsTransitioning(false), 100);
   };
 
   const handleSubmitQuestion = useCallback(() => {
     if (!currentInput.trim() || isTransitioning) return;
-    setIsTransitioning(true); // Lock it to prevent double-mashing
+    setIsTransitioning(true);
 
     const cleanInput = currentInput.replace(/,/g, "").trim();
     const cleanCorrect = String(currentQ?.correctAnswer || "")
@@ -124,7 +121,6 @@ export function useExamNavigation(questions, appText, student) {
     moveToNextQuestion();
   }, [skipsUsed, currentQ, isTransitioning]);
 
-  // CHROMEBOOK PHYSICAL KEYBOARD SUPPORT
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")
@@ -154,8 +150,8 @@ export function useExamNavigation(questions, appText, student) {
     setCurrentInput("");
     setDemerits(0);
     setSkipsUsed(0);
+    setHasLoadedBackup(false);
 
-    // Clean up their specific backup memory
     if (typeof window !== "undefined" && student?.uid) {
       window.localStorage.removeItem(getStorageKey("answers"));
       window.localStorage.removeItem(getStorageKey("index"));

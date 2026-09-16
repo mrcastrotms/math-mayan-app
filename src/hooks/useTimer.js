@@ -10,8 +10,6 @@ export function useTimer(
   const [timeLeft, setTimeLeft] = useState(examDuration);
   const [secondsOnCurrentQuestion, setSecondsOnCurrentQuestion] = useState(0);
 
-  // We use a ref so the interval always has the latest submit function
-  // without triggering infinite re-renders.
   const submitExamRef = useRef(handleFinishExam);
   useEffect(() => {
     submitExamRef.current = handleFinishExam;
@@ -23,7 +21,6 @@ export function useTimer(
     if (examStarted && !examFinished && !isLocked) {
       interval = setInterval(() => {
         setTimeLeft((prev) => {
-          // THE FIX: If the timer hits zero, stop the clock and FORCE SUBMIT!
           if (prev <= 1) {
             clearInterval(interval);
             submitExamRef.current();

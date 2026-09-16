@@ -1,6 +1,4 @@
 import { useState } from "react";
-// Make sure you have your QR code library imported if you use it for the print view!
-// import { QRCodeSVG } from "qrcode.react";
 
 export default function TeacherGradebookView({
   gradebookData,
@@ -30,21 +28,21 @@ export default function TeacherGradebookView({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8 w-full absolute top-0 left-0 z-50 overflow-y-auto">
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8 w-full absolute top-0 left-0 z-50 overflow-y-auto">
       <div className="max-w-7xl mx-auto">
         {/* Header Controls */}
-        <div className="flex justify-between items-center mb-8 print:hidden">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-8 print:hidden gap-4">
           <h1 className="text-4xl font-black text-slate-800">Gradebook</h1>
-          <div className="flex gap-4">
+          <div className="flex gap-4 w-full md:w-auto">
             <button
               onClick={handlePrintAll}
-              className="bg-blue-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95"
+              className="flex-1 md:flex-none bg-blue-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95"
             >
               Print All to PDF ({filteredData.length})
             </button>
             <button
               onClick={onBack}
-              className="bg-slate-800 text-white font-bold py-3 px-6 rounded-xl hover:bg-slate-700 shadow-lg transition-all active:scale-95"
+              className="flex-1 md:flex-none bg-slate-800 text-white font-bold py-3 px-6 rounded-xl hover:bg-slate-700 shadow-lg transition-all active:scale-95"
             >
               Back to Dashboard
             </button>
@@ -84,7 +82,7 @@ export default function TeacherGradebookView({
 
           <button
             onClick={() => onBulkDelete(filteredData)}
-            className="bg-red-50 text-red-600 border border-red-100 font-bold py-2 px-6 rounded-lg hover:bg-red-100 transition-all active:scale-95"
+            className="bg-red-50 text-red-600 border border-red-100 font-bold py-2 px-6 rounded-lg hover:bg-red-100 transition-all active:scale-95 whitespace-nowrap"
           >
             Clear Visible Records
           </button>
@@ -96,8 +94,8 @@ export default function TeacherGradebookView({
             Loading Gradebook...
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print:shadow-none print:border-none">
-            <table className="w-full text-left border-collapse">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto print:shadow-none print:border-none">
+            <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
                 <tr className="bg-slate-100 border-b border-slate-200 text-slate-600 print:bg-transparent">
                   <th className="p-5 font-bold uppercase tracking-wider text-sm">
@@ -131,82 +129,86 @@ export default function TeacherGradebookView({
                     </td>
                   </tr>
                 ) : (
-                  filteredData.map((record, index) => (
-                    <tr
-                      key={record.id}
-                      className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
-                    >
-                      <td className="p-5 font-bold text-slate-800 text-lg">
-                        {/* THIS IS THE FIX: Automatically numbers them based on their sorted array position */}
-                        <span className="text-slate-400 font-medium mr-2">
-                          {index + 1}.
-                        </span>
-                        {record.studentName}
-                      </td>
-                      <td className="p-5 text-slate-600 font-bold">
-                        {record.section}
-                      </td>
-                      <td className="p-5 text-slate-600">
-                        {record.activityType}
-                      </td>
-                      <td className="p-5">
-                        <span
-                          className={`font-black text-xl px-3 py-1 rounded-lg ${
-                            record.score >= 80
-                              ? "bg-green-100 text-green-700"
-                              : record.score >= 70
-                                ? "bg-yellow-100 text-yellow-700"
-                                : "bg-red-100 text-red-700"
-                          }`}
-                        >
-                          {record.score}%
-                        </span>
-                      </td>
-                      <td className="p-5 text-slate-500 font-medium">
-                        {/* Handles Firebase Timestamp objects safely */}
-                        {record.timestamp?.toDate
-                          ? record.timestamp.toDate().toLocaleDateString()
-                          : new Date(record.timestamp).toLocaleDateString()}
-                      </td>
-                      <td className="p-5 print:hidden flex gap-2">
-                        <button
-                          onClick={() => onViewReport(record)}
-                          className="bg-blue-50 text-blue-600 px-4 py-2 rounded-lg font-bold hover:bg-blue-100 transition active:scale-95 text-sm border border-blue-100"
-                        >
-                          Report
-                        </button>
-                        <button
-                          onClick={() => onDeleteRecord(record.id)}
-                          className="bg-slate-50 text-red-500 px-4 py-2 rounded-lg font-bold hover:bg-red-50 transition active:scale-95 text-sm border border-slate-100"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                  filteredData.map((record, index) => {
+                    // THE FIX: Intercept bad Firebase data. If score is NaN, null, or missing, force it to 0.
+                    let safeScore = 0;
+                    if (
+                      typeof record.score === "number" &&
+                      !isNaN(record.score)
+                    ) {
+                      safeScore = record.score;
+                    } else if (
+                      typeof record.score === "string" &&
+                      !isNaN(parseFloat(record.score))
+                    ) {
+                      safeScore = parseFloat(record.score);
+                    }
+
+                    // Fail-safe for missing timestamps
+                    const displayDate = record.timestamp?.toDate
+                      ? record.timestamp.toDate().toLocaleDateString()
+                      : record.timestamp
+                        ? new Date(record.timestamp).toLocaleDateString()
+                        : "Unknown Date";
+
+                    return (
+                      <tr
+                        key={record.id}
+                        className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                      >
+                        <td className="p-5 font-bold text-slate-800 text-lg">
+                          <span className="text-slate-400 font-medium mr-2">
+                            {index + 1}.
+                          </span>
+                          {record.studentName}
+                        </td>
+                        <td className="p-5 text-slate-600 font-bold">
+                          {record.section}
+                        </td>
+                        <td className="p-5 text-slate-600">
+                          {record.activityType}
+                        </td>
+                        <td className="p-5">
+                          <span
+                            className={`font-black text-xl px-3 py-1 rounded-lg ${
+                              safeScore >= 80
+                                ? "bg-green-100 text-green-700 print:bg-transparent print:text-black"
+                                : safeScore >= 70
+                                  ? "bg-yellow-100 text-yellow-700 print:bg-transparent print:text-black"
+                                  : "bg-red-100 text-red-700 print:bg-transparent print:text-black"
+                            }`}
+                          >
+                            {safeScore}%
+                          </span>
+                        </td>
+                        <td className="p-5 text-slate-500 font-medium">
+                          {displayDate}
+                        </td>
+                        <td className="p-5 print:hidden flex gap-2">
+                          <button
+                            onClick={() => onViewReport(record)}
+                            className="bg-blue-50 text-blue-600 px-4 py-2 rounded-lg font-bold hover:bg-blue-100 transition active:scale-95 text-sm border border-blue-100"
+                          >
+                            Report
+                          </button>
+                          <button
+                            onClick={() => onDeleteRecord(record.id)}
+                            className="bg-slate-50 text-red-500 px-4 py-2 rounded-lg font-bold hover:bg-red-50 transition active:scale-95 text-sm border border-slate-100"
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
           </div>
         )}
 
-        {/* ==============================================================================
-            JIT (Just-In-Time) PRINT VIEW 
-            This only mounts when you hit "Print All to PDF". It drops the 400MB RAM leak
-            because it doesn't render 100 QR codes until the exact second you need them.
-            ============================================================================== */}
-        {isPreparingPrint && (
-          <div className="hidden print:block w-full">
-            {/* If you have a specific PrintReport component for each student, map it here! */}
-            {/* Example: 
-                filteredData.map(record => (
-                  <div key={record.id} className="break-after-page">
-                     <PrintableStudentReport data={record} />
-                  </div>
-                ))
-             */}
-          </div>
-        )}
+        {/* JIT Print Rendering Container */}
+        {isPreparingPrint && <div className="hidden print:block w-full"></div>}
       </div>
     </div>
   );
