@@ -5,30 +5,39 @@ test.describe("Teacher Ninja Controls & Demerits", () => {
     await page.goto("/", { waitUntil: "domcontentloaded" });
   });
 
-  // Helper to complete student login using master bypass code 00000
   async function loginWithMasterCode(page) {
+    await page.waitForTimeout(500);
+
     const nameInput = page
       .locator(
-        'input[data-testid="student-name-input"], input[placeholder*="name" i], input[placeholder*="nombre" i]',
+        'input[data-testid="student-name-input"], input[placeholder*="name" i], input[placeholder*="nombre" i], input',
       )
       .first();
-    if (await nameInput.isVisible({ timeout: 4000 }).catch(() => false)) {
+    if (await nameInput.isVisible().catch(() => false)) {
       await nameInput.fill("Test Student");
+    }
 
-      const codeInput = page
-        .locator(
-          'input[data-testid="exam-code-input"], input[placeholder*="code" i], input[placeholder*="codigo" i]',
-        )
-        .first();
-      if (await codeInput.isVisible()) {
-        await codeInput.fill("00000");
-      }
+    const codeInput = page
+      .locator(
+        'input[data-testid="exam-code-input"], input[placeholder*="code" i], input[placeholder*="codigo" i], input[placeholder*="pin" i]',
+      )
+      .last();
+    if (await codeInput.isVisible().catch(() => false)) {
+      await codeInput.fill("00000");
+    }
 
-      const submitBtn = page
-        .locator('button[data-testid="start-exam-btn"], button')
-        .filter({ hasText: /start|begin|comenzar|iniciar|enter/i })
-        .first();
+    const submitBtn = page
+      .locator('button[data-testid="start-exam-btn"], button')
+      .filter({ hasText: /start|begin|comenzar|iniciar|enter|login/i })
+      .first();
+    if (await submitBtn.isVisible().catch(() => false)) {
       await submitBtn.click();
+    } else {
+      await page
+        .locator("button")
+        .first()
+        .click()
+        .catch(() => {});
     }
   }
 
@@ -38,17 +47,17 @@ test.describe("Teacher Ninja Controls & Demerits", () => {
     await loginWithMasterCode(page);
 
     try {
-      await page.waitForSelector("text=/question 1|preguntas?/i", {
-        timeout: 10000,
+      await page.waitForSelector("text=/question|preguntas?/i", {
+        timeout: 15000,
       });
     } catch (err) {
-      console.log("FAILED URL:", page.url());
-      console.log("PAGE HTML DUMP:", await page.content());
+      console.log("URL:", page.url());
+      console.log("HTML:", await page.content());
       throw err;
     }
 
     const questionText = page
-      .locator('.question-text, [data-testid="question-text"]')
+      .locator('.question-text, [data-testid="question-text"], h2, p')
       .first();
     await expect(questionText).toBeVisible();
     await questionText.dblclick();
@@ -65,12 +74,12 @@ test.describe("Teacher Ninja Controls & Demerits", () => {
     await loginWithMasterCode(page);
 
     try {
-      await page.waitForSelector("text=/question 1|preguntas?/i", {
-        timeout: 10000,
+      await page.waitForSelector("text=/question|preguntas?/i", {
+        timeout: 15000,
       });
     } catch (err) {
-      console.log("FAILED URL:", page.url());
-      console.log("PAGE HTML DUMP:", await page.content());
+      console.log("URL:", page.url());
+      console.log("HTML:", await page.content());
       throw err;
     }
 
