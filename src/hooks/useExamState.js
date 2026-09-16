@@ -23,7 +23,6 @@ export function useExamState() {
   const [activeActivityType, setActiveActivityType] =
     useState("Assessment / Exam");
 
-  // LIFECYCLE TIMESTAMPS
   const [loginTime, setLoginTime] = useState(null);
   const [startTime, setStartTime] = useState(null);
 
@@ -40,35 +39,22 @@ export function useExamState() {
   const DEFAULT_DURATION = 2400;
   const [examDuration, setExamDuration] = useState(DEFAULT_DURATION);
 
-  const SHOW_END_BUTTON_AFTER = 1500;
-
   const isTeacher =
     isAdminMode || customStudentName.toLowerCase().includes("castro");
 
-  // --- LOOPHOLE-FREE GRADING SCALE (40-50-60-100) ---
+  const SHOW_END_BUTTON_AFTER = examDuration > 600 ? 1500 : 300;
+
   const computeEnhancedScore = (answers, demerits) => {
-    // 1. THE 40 FLOOR: If they submitted a completely blank test, hard 40.
     if (!answers || answers.length === 0) {
       return 40;
     }
-
-    // 2. Determine the Minimum Required Questions based on exam duration
-    // 10 mins (600s) = 8 questions. 40 mins (2400s) = 20 questions.
     const minRequired = examDuration <= 600 ? 8 : 20;
-
-    // 3. Calculate true accuracy by grading out of the MINIMUM REQUIRED
-    // If they only did 3 questions but needed 8, they are graded out of 8.
     const correctCount = answers.filter((a) => a.isCorrect).length;
     const gradedOutOf = Math.max(answers.length, minRequired);
     const accuracy = correctCount / gradedOutOf;
 
-    // 4. THE 60 FLOOR: Map 0% to 100% accuracy onto a 60 to 100 score scale
     let finalScore = 60 + accuracy * 40;
-
-    // 5. Subtract 5 points per behavior demerit
     finalScore -= (demerits || 0) * 5;
-
-    // 6. THE 50 FLOOR: Cap the max score at 100, hard floor at 50 for demerits
     return Math.max(50, Math.min(100, Math.round(finalScore)));
   };
 
@@ -173,14 +159,38 @@ export function useExamState() {
     setIsValidatingCode(false);
   };
 
+  // HYPER-SENSITIVE ANTI-CHEAT FOR CHROMEBOOKS
   useEffect(() => {
-    const handleVis = () => {
-      if (document.hidden && examStarted && !examFinished && !isTeacher) {
+    const triggerLock = () => {
+      if (examStarted && !examFinished && !isTeacher) {
         setIsLocked(true);
       }
     };
+
+    // 1. Catches switching tabs
+    const handleVis = () => {
+      if (document.hidden) triggerLock();
+    };
+
+    // 2. Catches clicking on floating apps (like the calculator) or the taskbar
+    const handleBlur = () => {
+      triggerLock();
+    };
+
+    // 3. Catches pressing the ESC key to leave fullscreen
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) triggerLock();
+    };
+
     document.addEventListener("visibilitychange", handleVis);
-    return () => document.removeEventListener("visibilitychange", handleVis);
+    window.addEventListener("blur", handleBlur);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVis);
+      window.removeEventListener("blur", handleBlur);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
   }, [examStarted, examFinished, isTeacher]);
 
   const handleUnlock = () => {

@@ -1,142 +1,176 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 
-export function useExamNavigation(examQuestions = [], appText = {}) {
-  const [questionsAttempted, setQuestionsAttempted] = useState(0);
+export function useExamNavigation(questions, appText) {
+  // 1. CRASH BACKUP: Load answers from browser memory if they closed the tab
+  const [studentAnswers, setStudentAnswers] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = window.localStorage.getItem("exam_backup_answers");
+      if (saved) return JSON.parse(saved);
+    }
+    return [];
+  });
+
+  // Load their exact question number from browser memory
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = window.localStorage.getItem("exam_backup_index");
+      if (saved) return parseInt(saved, 10);
+    }
+    return 0;
+  });
+
+  // Load their skip count from browser memory
+  const [skipsUsed, setSkipsUsed] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = window.localStorage.getItem("exam_backup_skips");
+      if (saved) return parseInt(saved, 10);
+    }
+    return 0;
+  });
+
   const [currentInput, setCurrentInput] = useState("");
-  const [studentAnswers, setStudentAnswers] = useState([]);
-  const [demerits, setDemerits] = useState([]);
-  const [lastHarderTriggerIndex, setLastHarderTriggerIndex] = useState(-99);
-  const [overrideQuestion, setOverrideQuestion] = useState(null);
+  const [demerits, setDemerits] = useState(0);
 
-  const auditCopy = appText.audit || {
-    mastered: "Mastered",
-    skipped: "Skipped",
-  };
-  const activeCopy = appText.active || { loadingText: "Loading..." };
-
-  const getConsecutiveCorrect = () => {
-    let count = 0;
-    for (let i = studentAnswers.length - 1; i >= 0; i--) {
-      if (studentAnswers[i].isCorrect) count++;
-      else break;
+  // Continuously save their progress secretly in the background
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(
+        "exam_backup_answers",
+        JSON.stringify(studentAnswers),
+      );
+      window.localStorage.setItem(
+        "exam_backup_index",
+        currentQuestionIndex.toString(),
+      );
+      window.localStorage.setItem("exam_backup_skips", skipsUsed.toString());
     }
-    return count;
+  }, [studentAnswers, currentQuestionIndex, skipsUsed]);
+
+  const currentQ = questions[currentQuestionIndex] || null;
+  const questionsAttempted = currentQuestionIndex;
+
+  // Only show the Finish button if they have answered every single question
+  const showEndExamButton = currentQuestionIndex >= questions.length;
+
+  const handlePadClick = (val) => {
+    setCurrentInput((prev) => prev + val);
   };
 
-  const consecutiveCorrect = getConsecutiveCorrect();
-  const canTriggerHarder =
-    consecutiveCorrect >= 5 &&
-    questionsAttempted - lastHarderTriggerIndex >= 5 &&
-    !overrideQuestion;
+  const handleBackspace = () => {
+    setCurrentInput((prev) => prev.slice(0, -1));
+  };
 
-  const getCurrentQuestion = () => {
-    if (overrideQuestion) return overrideQuestion;
-    if (!examQuestions || examQuestions.length === 0) {
-      return {
-        question: activeCopy.loadingText,
-        instruction: "",
-        correctAnswer: "",
-      };
+  const handleClear = () => {
+    setCurrentInput("");
+  };
+
+  const moveToNextQuestion = () => {
+    setCurrentInput("");
+    setCurrentQuestionIndex((prev) => prev + 1);
+  };
+
+  // 2. COMMA FORGIVENESS & SUBMIT
+  const handleSubmitQuestion = useCallback(() => {
+    if (!currentInput.trim()) return;
+
+    // Strip commas from both the student's input and the database answer before comparing
+    const cleanInput = currentInput.replace(/,/g, "").trim();
+    const cleanCorrect = String(currentQ?.correctAnswer || "")
+      .replace(/,/g, "")
+      .trim();
+
+    const isCorrect = cleanInput === cleanCorrect;
+
+    const answerRecord = {
+      question: currentQ,
+      studentInput: currentInput,
+      correctAnswer: currentQ?.correctAnswer,
+      isCorrect,
+    };
+
+    setStudentAnswers((prev) => [...prev, answerRecord]);
+    moveToNextQuestion();
+  }, [currentInput, currentQ]);
+
+  // 3. THE 2-SKIP LIMIT
+  const handlePassQuestion = useCallback(() => {
+    if (skipsUsed >= 2) {
+      alert(
+        "Out of Skips! You have already skipped 2 questions. You must attempt this one.",
+      );
+      return;
     }
-    return examQuestions[questionsAttempted % examQuestions.length];
-  };
 
-  const handleSubmitQuestion = (resetTimerCallback) => {
-    const currentQ = getCurrentQuestion();
-    const isCorrect = currentInput === currentQ.correctAnswer;
+    setSkipsUsed((prev) => prev + 1);
 
-    setStudentAnswers([
-      ...studentAnswers,
-      {
-        questionNumber: questionsAttempted + 1,
-        question: currentQ.question,
-        instruction: currentQ.instruction || "",
-        studentInput: currentInput,
-        correctAnswer: currentQ.correctAnswer,
-        isCorrect,
-        observation: isCorrect ? auditCopy.mastered : currentQ.observation,
-      },
-    ]);
-    setCurrentInput("");
-    setOverrideQuestion(null);
-    setQuestionsAttempted((p) => p + 1);
-    resetTimerCallback();
-  };
+    const answerRecord = {
+      question: currentQ,
+      studentInput: "Skipped",
+      correctAnswer: currentQ?.correctAnswer,
+      isCorrect: false,
+    };
 
-  const handlePassQuestion = (resetTimerCallback) => {
-    const currentQ = getCurrentQuestion();
-    setStudentAnswers([
-      ...studentAnswers,
-      {
-        questionNumber: questionsAttempted + 1,
-        question: currentQ.question,
-        instruction: currentQ.instruction || "",
-        studentInput: "Skipped",
-        correctAnswer: currentQ.correctAnswer,
-        isCorrect: false,
-        observation: auditCopy.skipped,
-      },
-    ]);
-    setCurrentInput("");
-    setOverrideQuestion(null);
-    setQuestionsAttempted((p) => p + 1);
-    resetTimerCallback();
-  };
+    setStudentAnswers((prev) => [...prev, answerRecord]);
+    moveToNextQuestion();
+  }, [skipsUsed, currentQ]);
 
-  const handleTryHarder = (resetTimerCallback) => {
-    if (!examQuestions || examQuestions.length === 0) return;
-    const hardQuestions = examQuestions.filter((q) => q.difficulty === "hard");
-    if (hardQuestions.length === 0) return;
-    const randomHard =
-      hardQuestions[Math.floor(Math.random() * hardQuestions.length)];
+  // 4. CHROMEBOOK PHYSICAL KEYBOARD SUPPORT
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Do not interfere if they are typing in a real text box (like the teacher PIN override)
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")
+        return;
 
-    setOverrideQuestion(randomHard);
-    setLastHarderTriggerIndex(questionsAttempted);
-    resetTimerCallback();
-  };
+      const key = e.key;
 
-  const handleSimulateCorrect = (resetTimerCallback) => {
-    const currentQ = getCurrentQuestion();
-    setStudentAnswers([
-      ...studentAnswers,
-      {
-        questionNumber: questionsAttempted + 1,
-        question: currentQ.question,
-        instruction: currentQ.instruction || "",
-        studentInput: currentQ.correctAnswer,
-        correctAnswer: currentQ.correctAnswer,
-        isCorrect: true,
-        observation: auditCopy.mastered,
-      },
-    ]);
-    setCurrentInput("");
-    setOverrideQuestion(null);
-    setQuestionsAttempted((p) => p + 1);
-    resetTimerCallback();
-  };
+      // Only allow numbers, commas, and decimals. Blocks letters entirely.
+      if (/^[0-9,.]$/.test(key)) {
+        e.preventDefault();
+        handlePadClick(key);
+      }
+      // Bind physical Backspace key
+      else if (key === "Backspace") {
+        e.preventDefault();
+        handleBackspace();
+      }
+      // Bind physical Enter key to submit the question instantly
+      else if (key === "Enter") {
+        e.preventDefault();
+        handleSubmitQuestion();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleSubmitQuestion]);
 
   const resetExamFlow = () => {
     setStudentAnswers([]);
-    setDemerits([]);
-    setQuestionsAttempted(0);
-    setLastHarderTriggerIndex(-99);
-    setOverrideQuestion(null);
+    setCurrentQuestionIndex(0);
     setCurrentInput("");
+    setDemerits(0);
+    setSkipsUsed(0);
+    // Wipe the backup memory so the next student starts fresh
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("exam_backup_answers");
+      window.localStorage.removeItem("exam_backup_index");
+      window.localStorage.removeItem("exam_backup_skips");
+    }
   };
 
   return {
+    currentQ,
     questionsAttempted,
     currentInput,
-    setCurrentInput,
+    handlePadClick,
+    handleBackspace,
+    handleClear,
+    handleSubmitQuestion,
+    handlePassQuestion,
     studentAnswers,
     demerits,
     setDemerits,
-    canTriggerHarder,
-    getCurrentQuestion,
-    handleSubmitQuestion,
-    handlePassQuestion,
-    handleTryHarder,
-    handleSimulateCorrect,
+    showEndExamButton,
     resetExamFlow,
   };
 }
