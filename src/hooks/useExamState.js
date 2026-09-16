@@ -121,9 +121,11 @@ export function useExamState() {
     return true;
   });
 
+  // FIXED: Passed student into the navigation hook to secure the backups
   const navigation = useExamNavigation(
     filteredQuestions.length > 0 ? filteredQuestions : examQuestions,
     appText,
+    student,
   );
 
   const handleVerifyAndStart = async (passedCode, passedSection) => {
@@ -159,7 +161,6 @@ export function useExamState() {
     setIsValidatingCode(false);
   };
 
-  // HYPER-SENSITIVE ANTI-CHEAT FOR CHROMEBOOKS
   useEffect(() => {
     const triggerLock = () => {
       if (examStarted && !examFinished && !isTeacher) {
@@ -167,17 +168,14 @@ export function useExamState() {
       }
     };
 
-    // 1. Catches switching tabs
     const handleVis = () => {
       if (document.hidden) triggerLock();
     };
 
-    // 2. Catches clicking on floating apps (like the calculator) or the taskbar
     const handleBlur = () => {
       triggerLock();
     };
 
-    // 3. Catches pressing the ESC key to leave fullscreen
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement) triggerLock();
     };

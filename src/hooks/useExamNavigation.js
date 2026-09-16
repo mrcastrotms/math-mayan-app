@@ -1,28 +1,31 @@
 import { useState, useEffect, useCallback } from "react";
 
-export function useExamNavigation(questions, appText) {
-  // 1. CRASH BACKUP: Load answers from browser memory if they closed the tab
+export function useExamNavigation(questions, appText, student) {
+  // Added student here
+
+  // 1. SECURE BACKUP: Locked to the specific student's UID
+  const getStorageKey = (keyName) =>
+    `exam_${keyName}_${student?.uid || "anon"}`;
+
   const [studentAnswers, setStudentAnswers] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = window.localStorage.getItem("exam_backup_answers");
+    if (typeof window !== "undefined" && student?.uid) {
+      const saved = window.localStorage.getItem(getStorageKey("answers"));
       if (saved) return JSON.parse(saved);
     }
     return [];
   });
 
-  // Load their exact question number from browser memory
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = window.localStorage.getItem("exam_backup_index");
+    if (typeof window !== "undefined" && student?.uid) {
+      const saved = window.localStorage.getItem(getStorageKey("index"));
       if (saved) return parseInt(saved, 10);
     }
     return 0;
   });
 
-  // Load their skip count from browser memory
   const [skipsUsed, setSkipsUsed] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = window.localStorage.getItem("exam_backup_skips");
+    if (typeof window !== "undefined" && student?.uid) {
+      const saved = window.localStorage.getItem(getStorageKey("skips"));
       if (saved) return parseInt(saved, 10);
     }
     return 0;
@@ -31,29 +34,34 @@ export function useExamNavigation(questions, appText) {
   const [currentInput, setCurrentInput] = useState("");
   const [demerits, setDemerits] = useState(0);
 
-  // Continuously save their progress secretly in the background
+  // Anti-Spam state for the Enter key
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // Continuously save progress, locked to their unique ID
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && student?.uid) {
       window.localStorage.setItem(
-        "exam_backup_answers",
+        getStorageKey("answers"),
         JSON.stringify(studentAnswers),
       );
       window.localStorage.setItem(
-        "exam_backup_index",
+        getStorageKey("index"),
         currentQuestionIndex.toString(),
       );
-      window.localStorage.setItem("exam_backup_skips", skipsUsed.toString());
+      window.localStorage.setItem(getStorageKey("skips"), skipsUsed.toString());
     }
-  }, [studentAnswers, currentQuestionIndex, skipsUsed]);
+  }, [studentAnswers, currentQuestionIndex, skipsUsed, student]);
 
   const currentQ = questions[currentQuestionIndex] || null;
   const questionsAttempted = currentQuestionIndex;
-
-  // Only show the Finish button if they have answered every single question
   const showEndExamButton = currentQuestionIndex >= questions.length;
 
   const handlePadClick = (val) => {
-    setCurrentInput((prev) => prev + val);
+    // THE CRASH FIX: Hard cap at 15 characters
+    setCurrentInput((prev) => {
+      if (prev.length >= 15) return prev;
+      return prev + val;
+    });
   };
 
   const handleBackspace = () => {
@@ -67,13 +75,14 @@ export function useExamNavigation(questions, appText) {
   const moveToNextQuestion = () => {
     setCurrentInput("");
     setCurrentQuestionIndex((prev) => prev + 1);
+    // Lift the anti-spam lock after the next question renders
+    setTimeout(() => setIsTransitioning(false), 100);
   };
 
-  // 2. COMMA FORGIVENESS & SUBMIT
   const handleSubmitQuestion = useCallback(() => {
-    if (!currentInput.trim()) return;
+    if (!currentInput.trim() || isTransitioning) return;
+    setIsTransitioning(true); // Lock it to prevent double-mashing
 
-    // Strip commas from both the student's input and the database answer before comparing
     const cleanInput = currentInput.replace(/,/g, "").trim();
     const cleanCorrect = String(currentQ?.correctAnswer || "")
       .replace(/,/g, "")
@@ -90,10 +99,10 @@ export function useExamNavigation(questions, appText) {
 
     setStudentAnswers((prev) => [...prev, answerRecord]);
     moveToNextQuestion();
-  }, [currentInput, currentQ]);
+  }, [currentInput, currentQ, isTransitioning]);
 
-  // 3. THE 2-SKIP LIMIT
   const handlePassQuestion = useCallback(() => {
+    if (isTransitioning) return;
     if (skipsUsed >= 2) {
       alert(
         "Out of Skips! You have already skipped 2 questions. You must attempt this one.",
@@ -101,6 +110,7 @@ export function useExamNavigation(questions, appText) {
       return;
     }
 
+    setIsTransitioning(true);
     setSkipsUsed((prev) => prev + 1);
 
     const answerRecord = {
@@ -112,29 +122,23 @@ export function useExamNavigation(questions, appText) {
 
     setStudentAnswers((prev) => [...prev, answerRecord]);
     moveToNextQuestion();
-  }, [skipsUsed, currentQ]);
+  }, [skipsUsed, currentQ, isTransitioning]);
 
-  // 4. CHROMEBOOK PHYSICAL KEYBOARD SUPPORT
+  // CHROMEBOOK PHYSICAL KEYBOARD SUPPORT
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Do not interfere if they are typing in a real text box (like the teacher PIN override)
       if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")
         return;
 
       const key = e.key;
 
-      // Only allow numbers, commas, and decimals. Blocks letters entirely.
       if (/^[0-9,.]$/.test(key)) {
         e.preventDefault();
         handlePadClick(key);
-      }
-      // Bind physical Backspace key
-      else if (key === "Backspace") {
+      } else if (key === "Backspace") {
         e.preventDefault();
         handleBackspace();
-      }
-      // Bind physical Enter key to submit the question instantly
-      else if (key === "Enter") {
+      } else if (key === "Enter") {
         e.preventDefault();
         handleSubmitQuestion();
       }
@@ -150,11 +154,12 @@ export function useExamNavigation(questions, appText) {
     setCurrentInput("");
     setDemerits(0);
     setSkipsUsed(0);
-    // Wipe the backup memory so the next student starts fresh
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem("exam_backup_answers");
-      window.localStorage.removeItem("exam_backup_index");
-      window.localStorage.removeItem("exam_backup_skips");
+
+    // Clean up their specific backup memory
+    if (typeof window !== "undefined" && student?.uid) {
+      window.localStorage.removeItem(getStorageKey("answers"));
+      window.localStorage.removeItem(getStorageKey("index"));
+      window.localStorage.removeItem(getStorageKey("skips"));
     }
   };
 
