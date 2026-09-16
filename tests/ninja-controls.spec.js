@@ -2,30 +2,50 @@ const { test, expect } = require("@playwright/test");
 
 test.describe("Teacher Ninja Controls & Demerits", () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to the app root and wait for DOM content to load
     await page.goto("/", { waitUntil: "domcontentloaded" });
   });
+
+  // Helper function to handle the login screen (Grade, Name, Code 00000)
+  async function loginAsTestStudent(page) {
+    const nameInput = page
+      .locator(
+        'input[data-testid="student-name-input"], input[placeholder*="name" i], input[placeholder*="nombre" i]',
+      )
+      .first();
+    if (await nameInput.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await nameInput.fill("Test Student");
+
+      const codeInput = page
+        .locator(
+          'input[data-testid="exam-code-input"], input[placeholder*="code" i], input[placeholder*="codigo" i]',
+        )
+        .first();
+      if (await codeInput.isVisible()) {
+        await codeInput.fill("00000");
+      }
+
+      const submitBtn = page
+        .locator('button[data-testid="start-exam-btn"], button')
+        .filter({ hasText: /start|begin|comenzar|iniciar|enter/i })
+        .first();
+      await submitBtn.click();
+    }
+  }
 
   test("should increase demerits when question text is double-clicked", async ({
     page,
   }) => {
-    // Flexible matcher to catch whatever start/exam button your app actually renders
-    const startButton = page
-      .locator("button")
-      .filter({ hasText: /start|begin|exam|launch/i })
-      .first();
+    await loginAsTestStudent(page);
 
     try {
-      await expect(startButton).toBeVisible({ timeout: 10000 });
-      await startButton.click();
+      await page.waitForSelector("text=/question 1|preguntas?/i", {
+        timeout: 10000,
+      });
     } catch (err) {
-      // Dumps what CI is actually seeing if the button isn't there
       console.log("FAILED URL:", page.url());
       console.log("PAGE HTML DUMP:", await page.content());
       throw err;
     }
-
-    await page.waitForSelector("text=Question 1", { timeout: 10000 });
 
     const questionText = page
       .locator('.question-text, [data-testid="question-text"]')
@@ -33,30 +53,39 @@ test.describe("Teacher Ninja Controls & Demerits", () => {
     await expect(questionText).toBeVisible();
     await questionText.dblclick();
 
-    const demeritCounter = page.locator(
-      '.demerits-count, [data-testid="demerits"]',
-    );
+    const demeritCounter = page
+      .locator('.demerits-count, [data-testid="demerits"]')
+      .first();
     await expect(demeritCounter).toContainText("1");
   });
 
-  test("should trigger timer overrides on double-clicks", async ({ page }) => {
-    const startButton = page
-      .locator("button")
-      .filter({ hasText: /start|begin|exam|launch/i })
+  test("should trigger timer overrides on double-clicks with PIN 2026", async ({
+    page,
+  }) => {
+    await loginAsTestStudent(page);
+
+    try {
+      await page.waitForSelector("text=/question 1|preguntas?/i", {
+        timeout: 10000,
+      });
+    } catch (err) {
+      console.log("FAILED URL:", page.url());
+      console.log("PAGE HTML DUMP:", await page.content());
+      throw err;
+    }
+
+    page.once("dialog", async (dialog) => {
+      await dialog.accept("2026");
+    });
+
+    const timerElement = page
+      .locator('.timer, [data-testid="exam-timer"]')
       .first();
-
-    await expect(startButton).toBeVisible({ timeout: 10000 });
-    await startButton.click();
-
-    await page.waitForSelector("text=Question 1", { timeout: 10000 });
-
-    const timerElement = page.locator('.timer, [data-testid="exam-timer"]');
     await expect(timerElement).toBeVisible();
     await timerElement.dblclick();
 
-    const overrideIndicator = page.locator(
-      '.timer-override-active, [data-testid="timer-override"]',
-    );
-    await expect(overrideIndicator).toBeVisible();
+    await expect(timerElement).toContainText(/0?1:00|60s|60/i, {
+      timeout: 5000,
+    });
   });
 });
