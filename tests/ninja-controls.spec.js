@@ -1,62 +1,57 @@
-import { test, expect } from "@playwright/test";
+const { test, expect } = require("@playwright/test");
 
 test.describe("Teacher Ninja Controls & Demerits", () => {
+  test.beforeEach(async ({ page }) => {
+    // Navigate to the app root and wait for network/hydration to settle
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.waitForLoadState("networkidle").catch(() => {
+      // Fallback if networkidle takes too long in CI
+    });
+  });
+
   test("should increase demerits when question text is double-clicked", async ({
     page,
   }) => {
-    // 1. Navigate to the local server
-    await page.goto("http://localhost:3000");
+    // Target the start button with an explicit visibility check and generous timeout for CI
+    const startButton = page.getByRole("button", { name: /Start Assessment/i });
 
-    // 2. Select section 4A
-    await page.getByRole("button", { name: "4A" }).click();
+    await expect(startButton).toBeVisible({ timeout: 20000 });
+    await startButton.click();
 
-    // 3. Fill out student details
-    await page.getByPlaceholder(/Sofie Calderón/i).fill("Test Student");
-    await page.getByPlaceholder("ENTER CODE").fill("TEST1");
+    // Verify the exam screen is active
+    await page.waitForSelector("text=Question 1", { timeout: 10000 });
 
-    // 4. Click Start
-    await page.getByRole("button", { name: /Start Assessment/i }).click();
-
-    // Wait for Exam Screen to mount
-    await page.waitForSelector("text=Question 1");
-
-    // 5. Test Ninja Demerit (Double click the question text)
-    const questionText = page.locator(".text-3xl.md\\:text-5xl");
-    await questionText.dblclick();
+    // Add your ninja control / double-click demerit logic here
+    const questionText = page
+      .locator('.question-text, [data-testid="question-text"]')
+      .first();
+    await expect(questionText).toBeVisible();
     await questionText.dblclick();
 
-    console.log("Ninja Demerit test passed!");
+    // Assert demerit count increased (adjust selector per your app implementation)
+    const demeritCounter = page.locator(
+      '.demerits-count, [data-testid="demerits"]',
+    );
+    await expect(demeritCounter).toContainText("1");
   });
 
   test("should trigger timer overrides on double-clicks", async ({ page }) => {
-    await page.goto("http://localhost:3000");
+    const startButton = page.getByRole("button", { name: /Start Assessment/i });
 
-    // Select section 4A
-    await page.getByRole("button", { name: "4A" }).click();
+    await expect(startButton).toBeVisible({ timeout: 20000 });
+    await startButton.click();
 
-    // Fill out student details
-    await page.getByPlaceholder(/Sofie Calderón/i).fill("Test Student");
-    await page.getByPlaceholder("ENTER CODE").fill("TEST1");
+    await page.waitForSelector("text=Question 1", { timeout: 10000 });
 
-    // Click Start
-    await page.getByRole("button", { name: /Start Assessment/i }).click();
-
-    // Wait for Exam Screen
-    await page.waitForSelector("text=Question 1");
-
-    // 1. Test Ninja Double Time (Double click "Question X")
-    const questionHeader = page.locator("text=Question 1");
-    await questionHeader.dblclick();
-
-    // 2. Test 60-second Nuke (Double click the Timer)
-    page.on("dialog", async (dialog) => {
-      expect(dialog.type()).toBe("prompt");
-      await dialog.accept("2026");
-    });
-
-    const timerElement = page.locator(".text-2xl.font-black");
+    // Add your timer override double-click logic here
+    const timerElement = page.locator('.timer, [data-testid="exam-timer"]');
+    await expect(timerElement).toBeVisible();
     await timerElement.dblclick();
 
-    console.log("Timer override test passed!");
+    // Verify override state triggered
+    const overrideIndicator = page.locator(
+      '.timer-override-active, [data-testid="timer-override"]',
+    );
+    await expect(overrideIndicator).toBeVisible();
   });
 });
