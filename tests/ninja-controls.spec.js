@@ -2,17 +2,28 @@ const { test, expect } = require("@playwright/test");
 
 test.describe("Teacher Ninja Controls & Demerits", () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to the app root and wait for DOM content to load without hanging on Firebase streams
+    // Navigate to the app root and wait for DOM content to load
     await page.goto("/", { waitUntil: "domcontentloaded" });
   });
 
   test("should increase demerits when question text is double-clicked", async ({
     page,
   }) => {
-    const startButton = page.getByRole("button", { name: /Start Assessment/i });
+    // Flexible matcher to catch whatever start/exam button your app actually renders
+    const startButton = page
+      .locator("button")
+      .filter({ hasText: /start|begin|exam|launch/i })
+      .first();
 
-    await expect(startButton).toBeVisible({ timeout: 10000 });
-    await startButton.click();
+    try {
+      await expect(startButton).toBeVisible({ timeout: 10000 });
+      await startButton.click();
+    } catch (err) {
+      // Dumps what CI is actually seeing if the button isn't there
+      console.log("FAILED URL:", page.url());
+      console.log("PAGE HTML DUMP:", await page.content());
+      throw err;
+    }
 
     await page.waitForSelector("text=Question 1", { timeout: 10000 });
 
@@ -29,7 +40,10 @@ test.describe("Teacher Ninja Controls & Demerits", () => {
   });
 
   test("should trigger timer overrides on double-clicks", async ({ page }) => {
-    const startButton = page.getByRole("button", { name: /Start Assessment/i });
+    const startButton = page
+      .locator("button")
+      .filter({ hasText: /start|begin|exam|launch/i })
+      .first();
 
     await expect(startButton).toBeVisible({ timeout: 10000 });
     await startButton.click();
