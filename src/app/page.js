@@ -18,14 +18,26 @@ const DevAdminPanel = dynamic(() => import("../components/DevAdminPanel"));
 export default function ExamApp() {
   const [scannedReportId, setScannedReportId] = useState(null);
 
-  // Synchronous initial check so urlBypass is true on the very first render pass
-  const [urlBypass, setUrlBypass] = useState(() => {
+  // 1. Synchronous URL Bypass check
+  const [urlBypass] = useState(() => {
     if (typeof window !== "undefined") {
       return (
         new URLSearchParams(window.location.search).get("bypass") === "true"
       );
     }
     return false;
+  });
+
+  // 2. Synchronous Cache Check: Survives Shift+Cmd+R!
+  // Reads from local storage before the page even finishes painting
+  const [cachedSections, setCachedSections] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("math_app_sections");
+        if (saved) return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return null;
   });
 
   useEffect(() => {
@@ -38,6 +50,19 @@ export default function ExamApp() {
   }, []);
 
   const state = useExamState();
+
+  // 3. Silent Cache Update: When Firebase actually finishes fetching, save it for next time
+  useEffect(() => {
+    if (state?.availableSections && state.availableSections.length > 0) {
+      localStorage.setItem(
+        "math_app_sections",
+        JSON.stringify(state.availableSections),
+      );
+      if (!cachedSections) {
+        setCachedSections(state.availableSections);
+      }
+    }
+  }, [state?.availableSections, cachedSections]);
 
   if (scannedReportId) {
     return <ParentReportView reportId={scannedReportId} />;
@@ -135,14 +160,18 @@ export default function ExamApp() {
     );
   }
 
+  // 4. Calculate what to show: Prefer the cache. If cache is empty, wait for Firebase.
+  const displaySections = cachedSections ||
+    state?.availableSections || ["4A", "4B", "4C", "4D", "4E", "5B"];
+  const isActuallyLoading =
+    !cachedSections &&
+    (!state?.availableSections || state.availableSections.length === 0);
+
   return (
     <StartScreen
       setIsAdminMode={state?.isAdminMode}
-      availableSections={
-        state?.availableSections || ["4A", "4B", "4C", "4D", "4E", "5B"]
-      }
-      // Pass loading flag from your state hook (defaults to false if hook doesn't track it yet)
-      isLoading={state?.isSectionsLoading || false}
+      availableSections={displaySections}
+      isLoading={isActuallyLoading}
       onJoinSuccess={(name, code, uid, section) => {
         state?.setCustomStudentName?.(name);
         state?.setSessionCodeInput?.(code);
