@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { auth, db } from "../firebase";
 import {
   signInAnonymously,
@@ -8,6 +8,11 @@ import {
   signOut,
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
+import { useAppTheme } from "../hooks/useAppTheme";
+import { useExamBypass } from "../hooks/useExamBypass";
+import { handleMasterBypass } from "../utils/bypassUtils";
+import { START_SCREEN_COPY } from "../utils/themeStyles";
+import ThemeToggle from "./ThemeToggle";
 
 export default function StartScreen({
   setIsAdminMode,
@@ -21,27 +26,25 @@ export default function StartScreen({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Auto-bypass for Playwright tests when ?bypass=true is present in the URL
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get("bypass") === "true") {
-        onJoinSuccess("Test Student", "00000", "test-uid-00000", "4A");
-      }
-    }
-  }, [onJoinSuccess]);
+  const { theme, changeTheme, getThemeClasses } = useAppTheme();
+  const styles = getThemeClasses();
+
+  useExamBypass(onJoinSuccess);
 
   const handleStart = async (e) => {
     e.preventDefault();
     const cleanCode = examCode.trim().toUpperCase().replace(/\s+/g, "");
 
-    if (cleanCode === "00000") {
-      if (!name.trim()) {
-        setError("Please type your name.");
-        return;
-      }
-      const chosenSec = selectedSection || availableSections[0] || "4A";
-      onJoinSuccess(name.trim(), "00000", "test-uid-00000", chosenSec);
+    if (
+      handleMasterBypass({
+        cleanCode,
+        name,
+        selectedSection,
+        availableSections,
+        onJoinSuccess,
+        setError,
+      })
+    ) {
       return;
     }
 
@@ -78,49 +81,44 @@ export default function StartScreen({
   const handleTeacherLogin = async () => {
     setError("");
     const provider = new GoogleAuthProvider();
-
     try {
       const result = await signInWithPopup(auth, provider);
-      const email = result.user.email;
-
-      if (email && email.includes("cesar015.2016")) {
+      if (result.user.email?.includes("cesar015.2016")) {
         setIsAdminMode(true);
       } else {
         await signOut(auth);
-        setError(
-          "Access Denied: You are not authorized to view the dashboard.",
-        );
+        setError("Access Denied: You are not authorized.");
       }
     } catch (err) {
-      console.error("Teacher login failed:", err);
-      setError("Failed to verify teacher account. Please try again.");
+      setError("Failed to verify teacher account.");
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 relative">
-      <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
+    <div
+      className={`min-h-screen flex flex-col items-center justify-center p-4 relative transition-colors duration-200 ${styles.bg}`}
+    >
+      <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
+        <ThemeToggle theme={theme} changeTheme={changeTheme} />
         <button
           type="button"
           onClick={handleTeacherLogin}
-          className="bg-slate-800 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-slate-700 shadow-md transition"
+          className={styles.teacherBtn}
         >
-          Open Teacher Dashboard →
+          {START_SCREEN_COPY.teacherButton}
         </button>
       </div>
 
-      <div className="w-full max-w-xl bg-white rounded-2xl shadow-xl p-8 border border-slate-100 mt-12">
-        <h1 className="text-3xl font-black text-center text-slate-800 mb-2">
-          Mathematics with Mr. Castro
-        </h1>
-        <p className="text-center text-slate-500 mb-8 font-medium">
-          Welcome! Please select your section and enter your details to begin.
-        </p>
+      <div
+        className={`w-full max-w-xl rounded-2xl shadow-xl p-8 border mt-16 transition-colors duration-200 ${styles.card}`}
+      >
+        <h1 className={styles.title}>{START_SCREEN_COPY.title}</h1>
+        <p className={styles.subtitle}>{START_SCREEN_COPY.subtitle}</p>
 
         <form onSubmit={handleStart} className="space-y-6">
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-3 text-center">
-              Select your class section:
+            <label className={styles.labelCenter}>
+              {START_SCREEN_COPY.sectionLabel}
             </label>
             <div className="flex flex-wrap justify-center gap-3">
               {availableSections.map((sec) => (
@@ -128,11 +126,11 @@ export default function StartScreen({
                   key={sec}
                   type="button"
                   onClick={() => setSelectedSection(sec)}
-                  className={`w-14 h-14 rounded-xl font-bold text-lg transition-all ${
+                  className={
                     selectedSection === sec
-                      ? "bg-blue-600 text-white shadow-lg shadow-blue-200 scale-110"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
+                      ? styles.activeSectionBtn
+                      : styles.sectionBtn
+                  }
                 >
                   {sec}
                 </button>
@@ -141,45 +139,39 @@ export default function StartScreen({
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">
-              Type your Full Name:
+            <label className={styles.labelDefault}>
+              {START_SCREEN_COPY.nameLabel}
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoComplete="off"
-              className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none text-lg font-medium"
-              placeholder="e.g. Sofie Calderón"
+              className={styles.input}
+              placeholder={START_SCREEN_COPY.namePlaceholder}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">
-              Session Code:
+            <label className={styles.labelDefault}>
+              {START_SCREEN_COPY.codeLabel}
             </label>
             <input
               type="text"
               value={examCode}
               onChange={(e) => setExamCode(e.target.value)}
               autoComplete="off"
-              className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none text-lg uppercase font-mono font-bold tracking-widest text-center"
-              placeholder="ENTER CODE"
+              className={`${styles.input} uppercase font-mono tracking-widest text-center`}
+              placeholder={START_SCREEN_COPY.codePlaceholder}
             />
           </div>
 
-          {error && (
-            <p className="text-red-500 text-sm font-bold text-center bg-red-50 p-3 rounded-lg border border-red-100">
-              {error}
-            </p>
-          )}
+          {error && <p className={styles.errorBanner}>{error}</p>}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white font-black text-xl py-4 rounded-xl hover:bg-blue-700 transition disabled:opacity-50 shadow-lg shadow-blue-200 mt-4"
-          >
-            {loading ? "Connecting..." : "Start"}
+          <button type="submit" disabled={loading} className={styles.submitBtn}>
+            {loading
+              ? START_SCREEN_COPY.submitLoading
+              : START_SCREEN_COPY.submitIdle}
           </button>
         </form>
       </div>
