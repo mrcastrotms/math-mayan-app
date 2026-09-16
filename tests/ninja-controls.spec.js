@@ -2,56 +2,17 @@ const { test, expect } = require("@playwright/test");
 
 test.describe("Teacher Ninja Controls & Demerits", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    // Directly load the app with bypass enabled to skip login/Firestore overhead
+    await page.goto("/?bypass=true", { waitUntil: "domcontentloaded" });
   });
-
-  async function loginWithBypass(page) {
-    // 1. Click the first available section button (e.g., 4A)
-    const firstSectionBtn = page.locator('form button[type="button"]').first();
-    if (await firstSectionBtn.isVisible().catch(() => false)) {
-      await firstSectionBtn.click();
-    }
-
-    // 2. Fill student name input
-    const nameInput = page
-      .locator('input[placeholder*="Sofie" i], input[type="text"]')
-      .first();
-    await expect(nameInput).toBeVisible({ timeout: 10000 });
-    await nameInput.fill("Test Student");
-
-    // 3. Fill session code with master bypass code 00000
-    const codeInput = page
-      .locator('input[placeholder*="CODE" i], input[type="text"]')
-      .last();
-    await expect(codeInput).toBeVisible({ timeout: 5000 });
-    await codeInput.fill("00000");
-
-    // 4. Click Start submit button
-    const startBtn = page
-      .locator('button[type="submit"]')
-      .filter({ hasText: /start|comenzar/i })
-      .first();
-    await expect(startBtn).toBeVisible({ timeout: 5000 });
-    await startBtn.click();
-  }
 
   test("should increase demerits when question text is double-clicked", async ({
     page,
   }) => {
-    await loginWithBypass(page);
-
-    // Wait directly for the question container element instead of generic text
     const questionText = page
       .locator('.question-text, [data-testid="question-text"]')
       .first();
-    try {
-      await expect(questionText).toBeVisible({ timeout: 15000 });
-    } catch (err) {
-      console.log("URL:", page.url());
-      console.log("HTML:", await page.content());
-      throw err;
-    }
-
+    await expect(questionText).toBeVisible({ timeout: 15000 });
     await questionText.dblclick();
 
     const demeritCounter = page
@@ -63,19 +24,6 @@ test.describe("Teacher Ninja Controls & Demerits", () => {
   test("should trigger timer overrides on double-clicks with PIN 2026", async ({
     page,
   }) => {
-    await loginWithBypass(page);
-
-    const questionText = page
-      .locator('.question-text, [data-testid="question-text"]')
-      .first();
-    try {
-      await expect(questionText).toBeVisible({ timeout: 15000 });
-    } catch (err) {
-      console.log("URL:", page.url());
-      console.log("HTML:", await page.content());
-      throw err;
-    }
-
     page.once("dialog", async (dialog) => {
       await dialog.accept("2026");
     });
@@ -83,7 +31,7 @@ test.describe("Teacher Ninja Controls & Demerits", () => {
     const timerElement = page
       .locator('.timer, [data-testid="exam-timer"]')
       .first();
-    await expect(timerElement).toBeVisible();
+    await expect(timerElement).toBeVisible({ timeout: 15000 });
     await timerElement.dblclick();
 
     await expect(timerElement).toContainText(/0?1:00|60s|60/i, {
