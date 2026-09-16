@@ -23,7 +23,7 @@ export default function ActiveExamScreen({
   secondsOnCurrentQuestion,
   canTriggerHarder,
   isTeacherTesting,
-  isSaving, // Passed down from page.js to prevent double-clicks
+  isSaving,
   children,
 }) {
   const [hintsUsed, setLocalHintsUsed] = useState(0);
@@ -109,7 +109,11 @@ export default function ActiveExamScreen({
 
       {/* Main Question Area */}
       <div className="flex-1 flex flex-col items-center justify-center mb-8">
-        <div className="text-3xl md:text-5xl font-black text-slate-800 mb-8 text-center max-w-4xl">
+        {/* FIXED: Double click for ninja demerits, select-none to prevent text highlight */}
+        <div
+          onDoubleClick={() => setDemerits(demerits + 1)}
+          className="text-3xl md:text-5xl font-black text-slate-800 mb-8 text-center max-w-4xl select-none"
+        >
           {currentQ?.text || currentQ?.question || "Loading question..."}
         </div>
 
@@ -118,9 +122,9 @@ export default function ActiveExamScreen({
           {currentInput || "?"}
         </div>
 
-        {/* Math Keypad */}
+        {/* FIXED: Math Keypad now includes the comma and spans backspace */}
         <div className="grid grid-cols-3 gap-3 w-full max-w-sm mb-8">
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, ".", 0].map((num) => (
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, ",", 0, "."].map((num) => (
             <button
               key={num}
               onClick={() => handlePadClick(num.toString())}
@@ -131,9 +135,9 @@ export default function ActiveExamScreen({
           ))}
           <button
             onClick={handleBackspace}
-            className="bg-slate-200 text-slate-700 text-2xl font-bold py-4 rounded-xl shadow-sm hover:bg-slate-300 active:scale-95 transition"
+            className="col-span-3 bg-slate-200 text-slate-700 text-2xl font-bold py-4 rounded-xl shadow-sm hover:bg-slate-300 active:scale-95 transition"
           >
-            ⌫
+            ⌫ Backspace
           </button>
         </div>
 
@@ -176,7 +180,7 @@ export default function ActiveExamScreen({
         </div>
       </div>
 
-      {/* FIXED: The Finish Exam Button (Disabled while saving) */}
+      {/* The Finish Exam Button (Disabled while saving) */}
       {showEndExamButton && (
         <div className="w-full flex justify-center mb-8">
           <button
