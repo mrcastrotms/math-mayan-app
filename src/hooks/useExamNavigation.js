@@ -101,9 +101,7 @@ export function useExamNavigation(questions, appText, student) {
   const handlePassQuestion = useCallback(() => {
     if (isTransitioning) return;
     if (skipsUsed >= 2) {
-      alert(
-        "Out of Skips! You have already skipped 2 questions. You must attempt this one.",
-      );
+      alert("You have already skipped. You must attempt this one.");
       return;
     }
 

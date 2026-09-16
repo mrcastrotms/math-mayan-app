@@ -1,15 +1,14 @@
 export const START_SCREEN_COPY = {
   title: "Mathematics with Mr. Castro",
-  subtitle:
-    "Welcome! Please select your section and enter your details to begin.",
+  subtitle: "Select your section and enter your details",
   sectionLabel: "Select your class section:",
-  nameLabel: "Type your Full Name:",
-  namePlaceholder: "Type your Full Name Here",
-  codeLabel: "Session Code:",
-  codePlaceholder: "ENTER CODE",
+  nameLabel: "Full Name:",
+  namePlaceholder: "Full Name",
+  codeLabel: "Code:",
+  codePlaceholder: "CODE",
   submitLoading: "Connecting...",
   submitIdle: "Start",
-  teacherButton: "Open Teacher Dashboard →",
+  teacherButton: "Open Teacher Dashboard",
 };
 
 export const THEME_CONFIG = {

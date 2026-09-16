@@ -1,12 +1,7 @@
 "use client";
 import { useState } from "react";
 import { auth, db } from "../firebase";
-import {
-  signInAnonymously,
-  signInWithPopup,
-  GoogleAuthProvider,
-  signOut,
-} from "firebase/auth";
+import { signInAnonymously } from "firebase/auth"; // Removed Google Auth!
 import { doc, setDoc } from "firebase/firestore";
 import { useAppTheme } from "../hooks/useAppTheme";
 import { useExamBypass } from "../hooks/useExamBypass";
@@ -79,19 +74,15 @@ export default function StartScreen({
     }
   };
 
-  const handleTeacherLogin = async () => {
+  // Completely bypass Gmail - purely string matching
+  const handleTeacherLogin = () => {
     setError("");
-    const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, provider);
-      if (result.user.email?.includes("cesar015.2016")) {
-        setIsAdminMode(true);
-      } else {
-        await signOut(auth);
-        setError("Access Denied: You are not authorized.");
-      }
-    } catch (err) {
-      setError("Failed to verify teacher account.");
+    const code = window.prompt("Enter Teacher Access Code:");
+
+    if (code === "0801196604650") {
+      setIsAdminMode(true);
+    } else if (code) {
+      setError("Access Denied: Invalid Teacher Code.");
     }
   };
 

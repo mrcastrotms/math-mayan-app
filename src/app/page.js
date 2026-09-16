@@ -18,18 +18,6 @@ const DevAdminPanel = dynamic(() => import("../components/DevAdminPanel"));
 export default function ExamApp() {
   const [scannedReportId, setScannedReportId] = useState(null);
 
-  // 1. Synchronous URL Bypass check
-  const [urlBypass] = useState(() => {
-    if (typeof window !== "undefined") {
-      return (
-        new URLSearchParams(window.location.search).get("bypass") === "true"
-      );
-    }
-    return false;
-  });
-
-  // 2. Synchronous Cache Check: Survives Shift+Cmd+R!
-  // Reads from local storage before the page even finishes painting
   const [cachedSections, setCachedSections] = useState(() => {
     if (typeof window !== "undefined") {
       try {
@@ -51,7 +39,6 @@ export default function ExamApp() {
 
   const state = useExamState();
 
-  // 3. Silent Cache Update: When Firebase actually finishes fetching, save it for next time
   useEffect(() => {
     if (state?.availableSections && state.availableSections.length > 0) {
       localStorage.setItem(
@@ -100,7 +87,8 @@ export default function ExamApp() {
     );
   }
 
-  if (urlBypass || state?.examStarted) {
+  // Relying entirely on state.examStarted instead of a fragile url check
+  if (state?.examStarted) {
     return (
       <ActiveExamScreen
         question={
@@ -160,7 +148,6 @@ export default function ExamApp() {
     );
   }
 
-  // 4. Calculate what to show: Prefer the cache. If cache is empty, wait for Firebase.
   const displaySections = cachedSections ||
     state?.availableSections || ["4A", "4B", "4C", "4D", "4E", "5B"];
   const isActuallyLoading =
@@ -181,7 +168,15 @@ export default function ExamApp() {
         }
 
         if (code === "00000") {
-          window.location.href = "/?bypass=true";
+          // INFINITE LOOP FIX: Don't redirect if we are already in bypass mode!
+          if (
+            typeof window !== "undefined" &&
+            !window.location.search.includes("bypass=true")
+          ) {
+            window.location.href = "/?bypass=true";
+          } else {
+            if (state?.setExamStarted) state.setExamStarted(true);
+          }
         } else {
           state?.handleVerifyAndStart?.(code, section);
         }

@@ -3,18 +3,38 @@ import { saveExamResult, verifySessionCode } from "../services/examService";
 import { useTimer } from "./useTimer";
 import { useExamNavigation } from "./useExamNavigation";
 import { useAppConfig } from "./useAppConfig";
+import { useAdminState } from "./useAdminState";
+import { useExamLock } from "./useExamLock";
+import { computeEnhancedScore } from "../utils/scoringUtils";
+
+const CORRECT_PIN = "2026";
+const DEFAULT_DURATION = 2400;
 
 export function useExamState() {
+  const isDevMode = process.env.NODE_ENV === "development";
+
   const [student, setStudent] = useState(null);
   const [hintsUsed, setHintsUsed] = useState(0);
-
-  const [isAdminMode, setIsAdminMode] = useState(false);
   const [sessionCodeInput, setSessionCodeInput] = useState("");
   const [isValidatingCode, setIsValidatingCode] = useState(false);
   const [selectedSection, setSelectedSection] = useState("");
+
+  // Clean bypass handling using effects
+  const [isBypassMode, setIsBypassMode] = useState(false);
   const [examStarted, setExamStarted] = useState(false);
-  const [isLocked, setIsLocked] = useState(false);
-  const [overrideCode, setOverrideCode] = useState("");
+  const [examDuration, setExamDuration] = useState(DEFAULT_DURATION);
+
+  useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      window.location.search.includes("bypass=true")
+    ) {
+      setIsBypassMode(true);
+      setExamStarted(true);
+      setExamDuration(60); // 60s for testing
+    }
+  }, []);
+
   const [customStudentName, setCustomStudentName] = useState("");
   const [examFinished, setExamFinished] = useState(false);
   const [attemptHistory, setAttemptHistory] = useState([]);
@@ -22,7 +42,6 @@ export function useExamState() {
   const [showBehaviorMenu, setShowBehaviorMenu] = useState(false);
   const [activeActivityType, setActiveActivityType] =
     useState("Assessment / Exam");
-
   const [loginTime, setLoginTime] = useState(null);
   const [startTime, setStartTime] = useState(null);
 
@@ -33,47 +52,57 @@ export function useExamState() {
     availableSections,
     setAvailableSections,
   } = useAppConfig();
+  const { isAdminMode, setIsAdminMode } = useAdminState();
 
-  const CORRECT_PIN = "2026";
-  const isDevMode = process.env.NODE_ENV === "development";
-  const DEFAULT_DURATION = 2400;
-  const [examDuration, setExamDuration] = useState(DEFAULT_DURATION);
-
-  // SAFE FALLBACK: Prevents crash if customStudentName is ever undefined
   const isTeacher =
-    isAdminMode || (customStudentName || "").toLowerCase().includes("castro");
+    isAdminMode ||
+    (customStudentName || "").toLowerCase().includes("castro") ||
+    isBypassMode;
+  const SHOW_END_BUTTON_AFTER = isBypassMode
+    ? 0
+    : examDuration > 600
+      ? 1500
+      : 300;
 
-  const SHOW_END_BUTTON_AFTER = examDuration > 600 ? 1500 : 300;
+  const { isLocked, setIsLocked, overrideCode, setOverrideCode, handleUnlock } =
+    useExamLock({
+      examStarted,
+      examFinished,
+      isTeacher,
+      CORRECT_PIN,
+    });
 
-  const computeEnhancedScore = (answers, demerits) => {
-    if (!answers || answers.length === 0) {
-      return 40;
+  const filteredQuestions = examQuestions.filter((q) => {
+    if (
+      activeActivityType.includes("Classwork") ||
+      activeActivityType.includes("Quiz")
+    ) {
+      return q.tier === "classwork" || !q.tier;
     }
-    const minRequired = examDuration <= 600 ? 8 : 20;
-    const correctCount = answers.filter((a) => a.isCorrect).length;
-    const gradedOutOf = Math.max(answers.length, minRequired);
-    const accuracy = correctCount / gradedOutOf;
+    return true;
+  });
 
-    let finalScore = 60 + accuracy * 40;
-    finalScore -= (demerits || 0) * 5;
-    return Math.max(50, Math.min(100, Math.round(finalScore)));
-  };
+  const navigation = useExamNavigation(
+    filteredQuestions.length > 0 ? filteredQuestions : examQuestions,
+    appText,
+    student,
+  );
 
   const handleFinishExam = async () => {
     setExamFinished(true);
     if (!isTeacher && document.exitFullscreen) {
       try {
-        if (document.fullscreenElement) {
-          await document.exitFullscreen();
-        }
-      } catch (e) {
-        console.warn("Fullscreen exit handled safely:", e);
-      }
+        if (document.fullscreenElement) await document.exitFullscreen();
+      } catch (e) {}
     }
 
     setIsSaving(true);
-    const isTestRun = isTeacher || activeActivityType.includes("10-Min");
+    if (isBypassMode) {
+      setIsSaving(false);
+      return;
+    }
 
+    const isTestRun = isTeacher || activeActivityType.includes("10-Min");
     const safeStudentPayload = {
       uid: student?.uid || "anonymous",
       name: customStudentName,
@@ -87,7 +116,11 @@ export function useExamState() {
       sessionCodeInput,
       activeActivityType,
       isTestRun,
-      computeEnhancedScore(navigation.studentAnswers, navigation.demerits),
+      computeEnhancedScore(
+        navigation.studentAnswers,
+        navigation.demerits,
+        examDuration,
+      ),
       navigation.demerits,
       navigation.questionsAttempted,
       navigation.studentAnswers,
@@ -112,57 +145,30 @@ export function useExamState() {
     handleFinishExam,
   );
 
-  const handleNinjaDoubleTime = () => {
-    setTimeLeft((prev) => prev * 2);
-  };
-
+  const handleNinjaDoubleTime = () => setTimeLeft((prev) => prev * 2);
   const handleNinjaOneMinute = () => {
-    const pin = window.prompt("Teacher Override PIN:");
-    if (pin === CORRECT_PIN) {
-      setTimeLeft(60);
-    }
+    if (window.prompt("Teacher Override PIN:") === CORRECT_PIN) setTimeLeft(60);
   };
-
-  const filteredQuestions = examQuestions.filter((q) => {
-    if (
-      activeActivityType.includes("Classwork") ||
-      activeActivityType.includes("Quiz")
-    ) {
-      return q.tier === "classwork" || !q.tier;
-    }
-    return true;
-  });
-
-  const navigation = useExamNavigation(
-    filteredQuestions.length > 0 ? filteredQuestions : examQuestions,
-    appText,
-    student,
-  );
 
   const handleVerifyAndStart = async (passedCode, passedSection) => {
     setIsValidatingCode(true);
-
     const codeToTest = passedCode || sessionCodeInput;
     const sectionToTest = passedSection || selectedSection;
 
     try {
       const result = await verifySessionCode(codeToTest, sectionToTest);
-
-      if (result.error === "wrong_section") {
+      if (result.error === "wrong_section")
         alert("Wrong class section selected. Please check the board.");
-      } else if (result.error === "invalid_code") {
+      else if (result.error === "invalid_code")
         alert("Invalid or expired Session Code.");
-      } else if (result) {
+      else if (result) {
         if (result.duration) {
           setExamDuration(result.duration);
           setTimeLeft(result.duration);
         }
-        if (result.activityType) {
-          setActiveActivityType(result.activityType);
-        }
-        if (!isTeacher && document.documentElement.requestFullscreen) {
+        if (result.activityType) setActiveActivityType(result.activityType);
+        if (!isTeacher && document.documentElement.requestFullscreen)
           document.documentElement.requestFullscreen().catch(() => {});
-        }
         setStartTime(new Date().toLocaleTimeString());
         setExamStarted(true);
       }
@@ -170,46 +176,6 @@ export function useExamState() {
       alert("Error verifying code.");
     }
     setIsValidatingCode(false);
-  };
-
-  useEffect(() => {
-    const triggerLock = () => {
-      if (examStarted && !examFinished && !isTeacher) {
-        setIsLocked(true);
-      }
-    };
-
-    const handleVis = () => {
-      if (document.hidden) triggerLock();
-    };
-
-    const handleBlur = () => {
-      triggerLock();
-    };
-
-    const handleFullscreenChange = () => {
-      if (!document.fullscreenElement) triggerLock();
-    };
-
-    document.addEventListener("visibilitychange", handleVis);
-    window.addEventListener("blur", handleBlur);
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVis);
-      window.removeEventListener("blur", handleBlur);
-      document.removeEventListener("fullscreenchange", handleFullscreenChange);
-    };
-  }, [examStarted, examFinished, isTeacher]);
-
-  const handleUnlock = () => {
-    if (overrideCode === CORRECT_PIN) {
-      setIsLocked(false);
-      setOverrideCode("");
-      if (!isTeacher && document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen().catch(() => {});
-      }
-    } else alert("Incorrect PIN");
   };
 
   const handleTryAgain = () => {
@@ -220,6 +186,7 @@ export function useExamState() {
         score: computeEnhancedScore(
           navigation.studentAnswers,
           navigation.demerits,
+          examDuration,
         ),
         demerits: navigation.demerits,
         answers: navigation.studentAnswers,
@@ -245,10 +212,11 @@ export function useExamState() {
     selectedSection,
     setSelectedSection,
     examStarted,
+    setExamStarted,
     isLocked,
     setIsLocked,
     overrideCode,
-    setOverrideCode,
+    setOverrideCode, // <--- EXPOSED
     availableSections,
     setAvailableSections,
     customStudentName,
@@ -259,7 +227,7 @@ export function useExamState() {
     showBehaviorMenu,
     setShowBehaviorMenu,
     secondsOnCurrentQuestion,
-    isTeacher: isTeacher,
+    isTeacher,
     appText,
     setAppText,
     examQuestions,
@@ -275,7 +243,11 @@ export function useExamState() {
     SHOW_END_BUTTON_AFTER,
     EXAM_DURATION: examDuration,
     calculateFinalScore: () =>
-      computeEnhancedScore(navigation.studentAnswers, navigation.demerits),
+      computeEnhancedScore(
+        navigation.studentAnswers,
+        navigation.demerits,
+        examDuration,
+      ),
     ...navigation,
   };
 }

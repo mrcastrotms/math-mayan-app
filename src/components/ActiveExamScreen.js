@@ -76,7 +76,7 @@ export default function ActiveExamScreen({
           className="question-text text-3xl font-black text-slate-800 mb-6 cursor-pointer hover:text-blue-600 transition"
           data-testid="question-text"
           onDoubleClick={() => setShowBehaviorMenu(true)}
-          title="Double-click to open Teacher Behavior Menu"
+          title="Behavior Menu"
         >
           {typeof question === "string"
             ? question
@@ -138,7 +138,7 @@ export default function ActiveExamScreen({
         >
           <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full border border-slate-100">
             <h3 className="text-xl font-black text-slate-800 mb-4 text-center">
-              Teacher Behavior / Demerit Menu
+              Demerits
             </h3>
             <div className="space-y-3">
               <button
@@ -149,7 +149,7 @@ export default function ActiveExamScreen({
                 }}
                 className="w-full bg-red-50 text-red-700 border border-red-200 font-bold py-3 rounded-xl hover:bg-red-100 transition text-left px-4"
               >
-                ⚠️ Talking / Off-Task (+1 Demerit)
+                Off-Task
               </button>
               <button
                 onClick={() => setShowBehaviorMenu(false)}

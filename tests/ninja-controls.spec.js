@@ -1,6 +1,6 @@
 const { test, expect } = require("@playwright/test");
 
-test.describe("Teacher Ninja Controls & Demerits", () => {
+test.describe("Teacher Ninja Controls", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/?bypass=true", { waitUntil: "domcontentloaded" });
   });
@@ -16,7 +16,7 @@ test.describe("Teacher Ninja Controls & Demerits", () => {
     // Use clickCount: 2 for robust headless CI double-click simulation
     await questionText.click({ clickCount: 2 });
 
-    const infractionBtn = page.getByRole("button", { name: /Talking/i });
+    const infractionBtn = page.getByRole("button", { name: /Off-Task/i });
     await expect(infractionBtn).toBeVisible({ timeout: 5000 });
     await infractionBtn.click();
 
