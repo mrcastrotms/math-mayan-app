@@ -40,20 +40,18 @@ test.describe("Teacher Ninja Controls & Demerits", () => {
   }) => {
     await loginWithBypass(page);
 
+    // Wait directly for the question container element instead of generic text
+    const questionText = page
+      .locator('.question-text, [data-testid="question-text"]')
+      .first();
     try {
-      await page.waitForSelector("text=/question|preguntas?/i", {
-        timeout: 15000,
-      });
+      await expect(questionText).toBeVisible({ timeout: 15000 });
     } catch (err) {
       console.log("URL:", page.url());
       console.log("HTML:", await page.content());
       throw err;
     }
 
-    const questionText = page
-      .locator('.question-text, [data-testid="question-text"], h2, p')
-      .first();
-    await expect(questionText).toBeVisible();
     await questionText.dblclick();
 
     const demeritCounter = page
@@ -67,10 +65,11 @@ test.describe("Teacher Ninja Controls & Demerits", () => {
   }) => {
     await loginWithBypass(page);
 
+    const questionText = page
+      .locator('.question-text, [data-testid="question-text"]')
+      .first();
     try {
-      await page.waitForSelector("text=/question|preguntas?/i", {
-        timeout: 15000,
-      });
+      await expect(questionText).toBeVisible({ timeout: 15000 });
     } catch (err) {
       console.log("URL:", page.url());
       console.log("HTML:", await page.content());
