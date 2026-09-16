@@ -1,13 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
-import dynamic from "next/dynamic"; // 1. IMPORT NEXT.JS DYNAMIC ROUTER
+import dynamic from "next/dynamic";
 import { useExamState } from "../hooks/useExamState";
-import StartScreen from "../components/StartScreen"; // Keep this normal, everyone needs it immediately
+import StudentLogin from "../components/StudentLogin"; // <-- Swapped StartScreen for this
 
 // =====================================================================
-// 2. DYNAMIC IMPORTS (LAZY LOADING)
-// These components (and their heavy libraries) will NEVER be downloaded
-// to a student's tablet unless they actively trigger them.
+// DYNAMIC IMPORTS (LAZY LOADING)
 // =====================================================================
 const ParentReportView = dynamic(
   () => import("../components/ParentReportView"),
@@ -54,7 +52,6 @@ const DevAdminPanel = dynamic(() => import("../components/DevAdminPanel"));
 // =====================================================================
 
 export default function ExamApp() {
-  // QR CODE SCANNER LOGIC
   const [scannedReportId, setScannedReportId] = useState(null);
 
   useEffect(() => {
@@ -66,15 +63,12 @@ export default function ExamApp() {
     }
   }, []);
 
-  // LOAD EXAM STATE
   const state = useExamState();
 
-  // IF SCANNED, ONLY SHOW THE PARENT VIEW
   if (scannedReportId) {
     return <ParentReportView reportId={scannedReportId} />;
   }
 
-  // DEV ADMIN PANEL (Lazy Loaded)
   const adminPanel = (
     <DevAdminPanel
       isDevMode={state.isDevMode}
@@ -94,7 +88,6 @@ export default function ExamApp() {
     />
   );
 
-  // TEACHER DASHBOARD (Lazy Loaded)
   if (state.isAdminMode) {
     return (
       <TeacherDashboard
@@ -107,7 +100,6 @@ export default function ExamApp() {
     );
   }
 
-  // LOCKED SCREEN (Lazy Loaded)
   if (state.isLocked) {
     return (
       <LockedScreen
@@ -120,30 +112,29 @@ export default function ExamApp() {
     );
   }
 
-  // START SCREEN (Loaded Instantly)
+  // =====================================================================
+  // NEW LOGIN FLOW (Bypasses Google, mounts instantly)
+  // =====================================================================
   if (!state.examStarted) {
     return (
-      <StartScreen
-        student={state.student}
+      <StudentLogin
         setIsAdminMode={state.setIsAdminMode}
-        selectedSection={state.selectedSection}
-        setSelectedSection={state.setSelectedSection}
-        sessionCodeInput={state.sessionCodeInput}
-        setSessionCodeInput={state.setSessionCodeInput}
-        handleVerifyAndStart={state.handleVerifyAndStart}
-        isValidatingCode={state.isValidatingCode}
-        handleLogin={state.handleLogin}
-        availableSections={state.availableSections}
-        customStudentName={state.customStudentName}
-        setCustomStudentName={state.setCustomStudentName}
-        isTeacher={state.isTeacher}
-      >
-        {adminPanel}
-      </StartScreen>
+        onJoinSuccess={(name, code, uid) => {
+          // Pipe the entered info back into your hook state
+          state.setCustomStudentName(name);
+          state.setSessionCodeInput(code);
+          // If you have a specific student ID tracking in state, set it here
+          if (state.setStudent) {
+            state.setStudent({ name, uid });
+          }
+          // Fire your existing hook logic to officially mount the exam view
+          state.handleVerifyAndStart();
+        }}
+      />
     );
   }
+  // =====================================================================
 
-  // FINISHED SCREEN (Lazy Loaded)
   if (state.examFinished) {
     return (
       <FinishedScreen
@@ -160,7 +151,6 @@ export default function ExamApp() {
     );
   }
 
-  // ACTIVE EXAM SCREEN (Lazy Loaded)
   return (
     <ActiveExamScreen
       currentQ={state.getCurrentQuestion()}
