@@ -2,10 +2,12 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { useExamState } from "../hooks/useExamState";
-import StudentLogin from "../components/StudentLogin"; // <-- Swapped StartScreen for this
+import StartScreen from "../components/StartScreen"; // Your newly updated StartScreen
 
 // =====================================================================
 // DYNAMIC IMPORTS (LAZY LOADING)
+// These components will NEVER be downloaded to a student's tablet
+// unless they actively trigger them.
 // =====================================================================
 const ParentReportView = dynamic(
   () => import("../components/ParentReportView"),
@@ -52,6 +54,7 @@ const DevAdminPanel = dynamic(() => import("../components/DevAdminPanel"));
 // =====================================================================
 
 export default function ExamApp() {
+  // QR CODE SCANNER LOGIC
   const [scannedReportId, setScannedReportId] = useState(null);
 
   useEffect(() => {
@@ -63,12 +66,15 @@ export default function ExamApp() {
     }
   }, []);
 
+  // LOAD EXAM STATE
   const state = useExamState();
 
+  // IF SCANNED, ONLY SHOW THE PARENT VIEW (Bypasses everything else)
   if (scannedReportId) {
     return <ParentReportView reportId={scannedReportId} />;
   }
 
+  // DEV ADMIN PANEL
   const adminPanel = (
     <DevAdminPanel
       isDevMode={state.isDevMode}
@@ -88,6 +94,7 @@ export default function ExamApp() {
     />
   );
 
+  // TEACHER DASHBOARD
   if (state.isAdminMode) {
     return (
       <TeacherDashboard
@@ -100,6 +107,7 @@ export default function ExamApp() {
     );
   }
 
+  // LOCKED SCREEN
   if (state.isLocked) {
     return (
       <LockedScreen
@@ -113,28 +121,34 @@ export default function ExamApp() {
   }
 
   // =====================================================================
-  // NEW LOGIN FLOW (Bypasses Google, mounts instantly)
+  // START SCREEN (Now using the Anonymous Auth Bypass flow)
   // =====================================================================
   if (!state.examStarted) {
     return (
-      <StudentLogin
+      <StartScreen
         setIsAdminMode={state.setIsAdminMode}
-        onJoinSuccess={(name, code, uid) => {
-          // Pipe the entered info back into your hook state
+        availableSections={state.availableSections}
+        onJoinSuccess={(name, code, uid, section) => {
+          // Push the StartScreen's local state into your global hook state
           state.setCustomStudentName(name);
           state.setSessionCodeInput(code);
-          // If you have a specific student ID tracking in state, set it here
+          state.setSelectedSection(section);
+
           if (state.setStudent) {
-            state.setStudent({ name, uid });
+            state.setStudent({ name, uid, section });
           }
-          // Fire your existing hook logic to officially mount the exam view
+
+          // Trigger the hook function to transition to the active exam
           state.handleVerifyAndStart();
         }}
-      />
+      >
+        {adminPanel}
+      </StartScreen>
     );
   }
   // =====================================================================
 
+  // FINISHED SCREEN
   if (state.examFinished) {
     return (
       <FinishedScreen
@@ -151,6 +165,7 @@ export default function ExamApp() {
     );
   }
 
+  // ACTIVE EXAM SCREEN
   return (
     <ActiveExamScreen
       currentQ={state.getCurrentQuestion()}
