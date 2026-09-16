@@ -1,7 +1,12 @@
 "use client";
 import { useState } from "react";
 import { auth, db } from "../firebase";
-import { signInAnonymously } from "firebase/auth";
+import {
+  signInAnonymously,
+  signInWithPopup,
+  GoogleAuthProvider,
+  signOut,
+} from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 
 export default function StartScreen({
@@ -16,6 +21,9 @@ export default function StartScreen({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // ==========================================
+  // STUDENT FLOW (Anonymous Auth)
+  // ==========================================
   const handleStart = async (e) => {
     e.preventDefault();
     if (!name.trim() || !examCode.trim() || !selectedSection) {
@@ -51,12 +59,39 @@ export default function StartScreen({
     }
   };
 
+  // ==========================================
+  // TEACHER FLOW (Google Auth + Email Check)
+  // ==========================================
+  const handleTeacherLogin = async () => {
+    setError("");
+    const provider = new GoogleAuthProvider();
+
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const email = result.user.email;
+
+      // Strict check: Only let your specific email into the dashboard
+      if (email && email.includes("cesar015.2016")) {
+        setIsAdminMode(true);
+      } else {
+        // If anyone else tries to log in, boot them and show an error
+        await signOut(auth);
+        setError(
+          "Access Denied: You are not authorized to view the dashboard.",
+        );
+      }
+    } catch (err) {
+      console.error("Teacher login failed:", err);
+      setError("Failed to verify teacher account. Please try again.");
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 relative">
       {/* High Contrast / Teacher Entry Header */}
       <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
         <button
-          onClick={() => setIsAdminMode(true)}
+          onClick={handleTeacherLogin}
           className="bg-slate-800 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-slate-700 shadow-md transition"
         >
           Open Teacher Dashboard →
@@ -124,7 +159,7 @@ export default function StartScreen({
           </div>
 
           {error && (
-            <p className="text-red-500 text-sm font-bold text-center bg-red-50 p-3 rounded-lg">
+            <p className="text-red-500 text-sm font-bold text-center bg-red-50 p-3 rounded-lg border border-red-100">
               {error}
             </p>
           )}

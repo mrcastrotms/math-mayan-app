@@ -1,13 +1,11 @@
 import { useState, useEffect } from "react";
-import { signInWithPopup } from "firebase/auth";
-import { auth, provider } from "../firebase";
 import { saveExamResult, verifySessionCode } from "../services/examService";
 import { useTimer } from "./useTimer";
 import { useExamNavigation } from "./useExamNavigation";
 import { useAppConfig } from "./useAppConfig";
 
 export function useExamState() {
-  const [student, setStudent] = useState(null);
+  const [student, setStudent] = useState(null); // Now stores { name, uid, section }
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [sessionCodeInput, setSessionCodeInput] = useState("");
   const [isValidatingCode, setIsValidatingCode] = useState(false);
@@ -40,31 +38,21 @@ export function useExamState() {
   const DEFAULT_DURATION = 2400;
   const [examDuration, setExamDuration] = useState(DEFAULT_DURATION);
 
-  // Finish Button appears after 25 minutes (1500 seconds). Change this if needed!
   const SHOW_END_BUTTON_AFTER = 1500;
 
-  const isTeacher = student?.email === "cesar015.2016@gmail.com";
+  // FIXED: No longer relies on Google Auth email.
+  // Checks if you unlocked the dashboard OR if you typed your name as a test.
+  const isTeacher =
+    isAdminMode || customStudentName.toLowerCase().includes("castro");
 
   // --- BULLETPROOF GAMIFIED GRADING LOGIC ---
   const computeEnhancedScore = (answers, demerits) => {
-    // 1. If they haven't generated any answers at all, score is 0
     if (!answers || answers.length === 0) return 0;
-
-    // 2. Count correct answers
     const correctCount = answers.filter((a) => a.isCorrect).length;
-
-    // 3. Base grade based strictly on the exact number of answers logged
     const baseScore = (correctCount / answers.length) * 100;
-
-    // 4. Volume Bonus (+2% for every 5 correct answers)
     const volumeBonus = Math.floor(correctCount / 5) * 2;
-
     let finalScore = baseScore + volumeBonus;
-
-    // 5. Subtract 5% per behavior demerit
     finalScore -= (demerits || 0) * 5;
-
-    // 6. Round to nearest whole number, cap between 0 and 100
     return Math.max(0, Math.min(100, Math.round(finalScore)));
   };
 
@@ -83,8 +71,15 @@ export function useExamState() {
     setIsSaving(true);
     const isTestRun = isTeacher || activeActivityType.includes("10-Min");
 
+    // FIXED: Creating a safe student payload that won't crash your examService
+    const safeStudentPayload = {
+      uid: student?.uid || "anonymous",
+      name: customStudentName,
+      section: selectedSection,
+    };
+
     await saveExamResult(
-      student,
+      safeStudentPayload, // Passing the safe payload instead of the raw Google object
       customStudentName,
       selectedSection,
       sessionCodeInput,
@@ -94,8 +89,8 @@ export function useExamState() {
       navigation.demerits,
       navigation.questionsAttempted,
       navigation.studentAnswers,
-      loginTime,
-      startTime,
+      loginTime || new Date().toLocaleTimeString(),
+      startTime || new Date().toLocaleTimeString(),
     );
     setIsSaving(false);
   };
@@ -128,16 +123,6 @@ export function useExamState() {
     filteredQuestions.length > 0 ? filteredQuestions : examQuestions,
     appText,
   );
-
-  const handleLogin = async () => {
-    try {
-      const res = await signInWithPopup(auth, provider);
-      setStudent(res.user);
-      setLoginTime(new Date().toLocaleTimeString());
-    } catch (e) {
-      alert("Failed to log in.");
-    }
-  };
 
   const handleVerifyAndStart = async () => {
     setIsValidatingCode(true);
@@ -209,6 +194,7 @@ export function useExamState() {
 
   return {
     student,
+    setStudent, // Added so page.js can inject the anonymous student data
     isAdminMode,
     setIsAdminMode,
     sessionCodeInput,
@@ -236,7 +222,6 @@ export function useExamState() {
     setAppText,
     examQuestions,
     activeActivityType,
-    handleLogin,
     handleVerifyAndStart,
     handleUnlock,
     handleTryAgain,

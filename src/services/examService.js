@@ -25,10 +25,15 @@ export async function saveExamResult(
   if (!student) return;
   try {
     await addDoc(collection(db, "exam_results"), {
-      studentName: customStudentName.trim() || student.displayName,
-      googleAccountName: student.displayName,
-      studentEmail: student.email,
-      uid: student.uid,
+      // Safely pull the typed name, fallback to "Unknown" if missing
+      studentName:
+        customStudentName?.trim() || student.name || "Unknown Student",
+
+      // Provide string fallbacks so Firestore doesn't crash on 'undefined'
+      googleAccountName: student.displayName || "Anonymous",
+      studentEmail: student.email || "No Email (Anonymous)",
+      uid: student.uid || "anonymous",
+
       section: selectedSection,
       sessionCode: sessionCodeInput,
       activityType: activeActivityType,
