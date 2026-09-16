@@ -5,7 +5,9 @@ import { useExamNavigation } from "./useExamNavigation";
 import { useAppConfig } from "./useAppConfig";
 
 export function useExamState() {
-  const [student, setStudent] = useState(null); // Now stores { name, uid, section }
+  const [student, setStudent] = useState(null);
+  const [hintsUsed, setHintsUsed] = useState(0);
+
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [sessionCodeInput, setSessionCodeInput] = useState("");
   const [isValidatingCode, setIsValidatingCode] = useState(false);
@@ -40,20 +42,28 @@ export function useExamState() {
 
   const SHOW_END_BUTTON_AFTER = 1500;
 
-  // FIXED: No longer relies on Google Auth email.
-  // Checks if you unlocked the dashboard OR if you typed your name as a test.
   const isTeacher =
     isAdminMode || customStudentName.toLowerCase().includes("castro");
 
-  // --- BULLETPROOF GAMIFIED GRADING LOGIC ---
+  // --- GAMIFIED GRADING LOGIC (WITH BLANK TEST 50 PENALTY) ---
   const computeEnhancedScore = (answers, demerits) => {
-    if (!answers || answers.length === 0) return 0;
+    // 1. If they submitted a completely blank test, score is explicitly 50.
+    if (!answers || answers.length === 0) {
+      return 50;
+    }
+
+    // 2. Otherwise, calculate their accuracy
     const correctCount = answers.filter((a) => a.isCorrect).length;
-    const baseScore = (correctCount / answers.length) * 100;
-    const volumeBonus = Math.floor(correctCount / 5) * 2;
-    let finalScore = baseScore + volumeBonus;
+    const accuracy = correctCount / answers.length;
+
+    // 3. Map 0% to 100% accuracy onto a 70 to 100 score scale
+    let finalScore = 70 + accuracy * 30;
+
+    // 4. Subtract 5 points per behavior demerit
     finalScore -= (demerits || 0) * 5;
-    return Math.max(0, Math.min(100, Math.round(finalScore)));
+
+    // 5. Cap the max score at 100, and create a hard floor at 60 for kids who actually tried
+    return Math.max(60, Math.min(100, Math.round(finalScore)));
   };
 
   const handleFinishExam = async () => {
@@ -71,7 +81,6 @@ export function useExamState() {
     setIsSaving(true);
     const isTestRun = isTeacher || activeActivityType.includes("10-Min");
 
-    // FIXED: Creating a safe student payload that won't crash your examService
     const safeStudentPayload = {
       uid: student?.uid || "anonymous",
       name: customStudentName,
@@ -79,7 +88,7 @@ export function useExamState() {
     };
 
     await saveExamResult(
-      safeStudentPayload, // Passing the safe payload instead of the raw Google object
+      safeStudentPayload,
       customStudentName,
       selectedSection,
       sessionCodeInput,
@@ -91,6 +100,7 @@ export function useExamState() {
       navigation.studentAnswers,
       loginTime || new Date().toLocaleTimeString(),
       startTime || new Date().toLocaleTimeString(),
+      hintsUsed,
     );
     setIsSaving(false);
   };
@@ -124,10 +134,15 @@ export function useExamState() {
     appText,
   );
 
-  const handleVerifyAndStart = async () => {
+  const handleVerifyAndStart = async (passedCode, passedSection) => {
     setIsValidatingCode(true);
+
+    const codeToTest = passedCode || sessionCodeInput;
+    const sectionToTest = passedSection || selectedSection;
+
     try {
-      const result = await verifySessionCode(sessionCodeInput, selectedSection);
+      const result = await verifySessionCode(codeToTest, sectionToTest);
+
       if (result.error === "wrong_section") {
         alert(appText.start.wrongSection);
       } else if (result.error === "invalid_code") {
@@ -194,7 +209,9 @@ export function useExamState() {
 
   return {
     student,
-    setStudent, // Added so page.js can inject the anonymous student data
+    setStudent,
+    hintsUsed,
+    setHintsUsed,
     isAdminMode,
     setIsAdminMode,
     sessionCodeInput,

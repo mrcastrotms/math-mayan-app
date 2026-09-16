@@ -37,20 +37,23 @@ export default function StartScreen({
     setError("");
 
     try {
-      // 1. Silent anonymous login (No Google Popups)
+      // 1. Clean the code: remove all spaces (including tablet auto-spaces) and uppercase it
+      const cleanCode = examCode.trim().toUpperCase().replace(/\s+/g, "");
+
+      // 2. Silent anonymous login (No Google Popups)
       const userCredential = await signInAnonymously(auth);
       const uid = userCredential.user.uid;
 
-      // 2. Register student in the active exam session in Firestore
-      await setDoc(doc(db, "exams", examCode.toUpperCase(), "students", uid), {
+      // 3. Register student in the active exam session in Firestore using the CLEANED code
+      await setDoc(doc(db, "exams", cleanCode, "students", uid), {
         studentName: name.trim(),
         section: selectedSection,
         joinedAt: new Date(),
         uid: uid,
       });
 
-      // 3. Mount the ActiveExam component in page.js
-      onJoinSuccess(name.trim(), examCode.toUpperCase(), uid, selectedSection);
+      // 4. Mount the ActiveExam component in page.js with the CLEANED code
+      onJoinSuccess(name.trim(), cleanCode, uid, selectedSection);
     } catch (err) {
       console.error("Auth error:", err);
       setError("Could not join. Check the exam code on the board.");
@@ -91,6 +94,7 @@ export default function StartScreen({
       {/* High Contrast / Teacher Entry Header */}
       <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
         <button
+          type="button"
           onClick={handleTeacherLogin}
           className="bg-slate-800 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-slate-700 shadow-md transition"
         >

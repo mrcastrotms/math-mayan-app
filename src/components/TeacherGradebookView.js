@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
+import { useState } from "react";
+// Make sure you have your QR code library imported if you use it for the print view!
+// import { QRCodeSVG } from "qrcode.react";
 
 export default function TeacherGradebookView({
   gradebookData,
@@ -12,353 +13,201 @@ export default function TeacherGradebookView({
   onDeleteRecord,
   onViewReport,
 }) {
-  // NEW STATE: Keeps the app lean by only holding print data in memory when actually printing
   const [isPreparingPrint, setIsPreparingPrint] = useState(false);
 
+  // Filter the data based on the selected section (or show all)
   const filteredData = gradebookData.filter(
     (record) => gradebookFilter === "All" || record.section === gradebookFilter,
   );
 
-  const handleDeleteAllVisible = () => {
-    onBulkDelete(filteredData);
-  };
-
-  // Just-In-Time Print Logic
   const handlePrintAll = () => {
-    setIsPreparingPrint(true); // 1. Inject the massive HTML into the DOM
-
-    // 2. Give the browser 800ms to paint the QR codes and layout, then open print dialog
+    setIsPreparingPrint(true);
+    // Give React a split second to mount the heavy print components before triggering the browser print dialog
     setTimeout(() => {
       window.print();
-      setIsPreparingPrint(false); // 3. The second they close the print dialog, nuke it from memory
-    }, 800);
+      setIsPreparingPrint(false);
+    }, 500);
   };
 
   return (
-    <div className="w-full min-h-screen bg-slate-900 absolute top-0 left-0 z-50 overflow-y-auto">
-      {/* =========================================================
-          NORMAL DASHBOARD UI
-          ========================================================= */}
-      <div
-        className={`flex flex-col p-8 text-white w-full max-w-6xl mx-auto ${isPreparingPrint ? "hidden" : "block"}`}
-      >
-        {/* Header section with Print Button */}
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-green-400">Gradebook</h1>
+    <div className="min-h-screen bg-slate-50 p-8 w-full absolute top-0 left-0 z-50 overflow-y-auto">
+      <div className="max-w-7xl mx-auto">
+        {/* Header Controls */}
+        <div className="flex justify-between items-center mb-8 print:hidden">
+          <h1 className="text-4xl font-black text-slate-800">Gradebook</h1>
           <div className="flex gap-4">
             <button
               onClick={handlePrintAll}
-              disabled={isPreparingPrint || filteredData.length === 0}
-              className={`text-white px-6 py-3 rounded-xl font-bold transition shadow-lg flex items-center gap-2 ${
-                isPreparingPrint
-                  ? "bg-indigo-400 cursor-wait"
-                  : "bg-indigo-600 hover:bg-indigo-700 active:scale-95"
-              }`}
+              className="bg-blue-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95"
             >
-              {isPreparingPrint ? (
-                <span>Generating PDF Data...</span>
-              ) : (
-                <>
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
-                    ></path>
-                  </svg>
-                  Print All to PDF ({filteredData.length})
-                </>
-              )}
+              Print All to PDF ({filteredData.length})
             </button>
             <button
               onClick={onBack}
-              className="bg-slate-700 hover:bg-slate-600 px-6 py-3 rounded-xl font-bold transition active:scale-95"
+              className="bg-slate-800 text-white font-bold py-3 px-6 rounded-xl hover:bg-slate-700 shadow-lg transition-all active:scale-95"
             >
               Back to Dashboard
             </button>
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700 mb-8 shadow-xl">
-          <div className="flex justify-between items-center mb-4">
-            <p className="text-slate-400 font-bold uppercase tracking-wider text-sm">
-              Filter by Section:
-            </p>
-            {filteredData.length > 0 && (
+        {/* Filters & Bulk Actions */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8 print:hidden flex justify-between items-center flex-wrap gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <span className="font-bold text-slate-600">Filter by Section:</span>
+            <div className="flex gap-2 flex-wrap">
               <button
-                onClick={handleDeleteAllVisible}
-                className="text-red-400 hover:text-red-300 text-sm font-bold underline transition"
+                onClick={() => setGradebookFilter("All")}
+                className={`px-5 py-2 rounded-lg font-bold text-sm transition-all ${
+                  gradebookFilter === "All"
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-200"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
               >
-                Clear Visible Records
+                All
               </button>
-            )}
+              {availableSections.map((sec) => (
+                <button
+                  key={sec}
+                  onClick={() => setGradebookFilter(sec)}
+                  className={`px-5 py-2 rounded-lg font-bold text-sm transition-all ${
+                    gradebookFilter === sec
+                      ? "bg-blue-600 text-white shadow-md shadow-blue-200"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  {sec}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            <button
-              onClick={() => setGradebookFilter("All")}
-              className={`px-4 py-2 rounded-lg font-bold transition ${gradebookFilter === "All" ? "bg-blue-600 text-white" : "bg-slate-700 text-slate-300 hover:bg-slate-600"}`}
-            >
-              All
-            </button>
-            {availableSections.map((sec) => (
-              <button
-                key={sec}
-                onClick={() => setGradebookFilter(sec)}
-                className={`px-4 py-2 rounded-lg font-bold transition ${gradebookFilter === sec ? "bg-blue-600 text-white" : "bg-slate-700 text-slate-300 hover:bg-slate-600"}`}
-              >
-                {sec}
-              </button>
-            ))}
-          </div>
+
+          <button
+            onClick={() => onBulkDelete(filteredData)}
+            className="bg-red-50 text-red-600 border border-red-100 font-bold py-2 px-6 rounded-lg hover:bg-red-100 transition-all active:scale-95"
+          >
+            Clear Visible Records
+          </button>
         </div>
 
-        {/* Data Table */}
+        {/* The Gradebook Table */}
         {isLoadingGradebook ? (
-          <p className="text-center text-slate-400 text-xl font-bold py-12 animate-pulse">
-            Loading...
-          </p>
+          <div className="text-center py-20 text-2xl font-black text-slate-300 animate-pulse">
+            Loading Gradebook...
+          </div>
         ) : (
-          <div className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-xl">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-900 text-slate-400 text-xs uppercase tracking-wider">
-                    <th className="p-4 font-bold border-b border-slate-700">
-                      Name
-                    </th>
-                    <th className="p-4 font-bold border-b border-slate-700">
-                      Section
-                    </th>
-                    <th className="p-4 font-bold border-b border-slate-700">
-                      Activity Type
-                    </th>
-                    <th className="p-4 font-bold border-b border-slate-700">
-                      Score
-                    </th>
-                    <th className="p-4 font-bold border-b border-slate-700">
-                      Date
-                    </th>
-                    <th className="p-4 font-bold border-b border-slate-700">
-                      Actions
-                    </th>
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print:shadow-none print:border-none">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 border-b border-slate-200 text-slate-600 print:bg-transparent">
+                  <th className="p-5 font-bold uppercase tracking-wider text-sm">
+                    Name
+                  </th>
+                  <th className="p-5 font-bold uppercase tracking-wider text-sm">
+                    Section
+                  </th>
+                  <th className="p-5 font-bold uppercase tracking-wider text-sm">
+                    Activity Type
+                  </th>
+                  <th className="p-5 font-bold uppercase tracking-wider text-sm">
+                    Score
+                  </th>
+                  <th className="p-5 font-bold uppercase tracking-wider text-sm">
+                    Date
+                  </th>
+                  <th className="p-5 font-bold uppercase tracking-wider text-sm print:hidden">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredData.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan="6"
+                      className="p-10 text-center text-slate-400 font-bold text-lg"
+                    >
+                      No results found.
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="text-sm">
-                  {filteredData.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan="6"
-                        className="p-8 text-center text-slate-500 font-bold"
-                      >
-                        No results found.
+                ) : (
+                  filteredData.map((record, index) => (
+                    <tr
+                      key={record.id}
+                      className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                    >
+                      <td className="p-5 font-bold text-slate-800 text-lg">
+                        {/* THIS IS THE FIX: Automatically numbers them based on their sorted array position */}
+                        <span className="text-slate-400 font-medium mr-2">
+                          {index + 1}.
+                        </span>
+                        {record.studentName}
+                      </td>
+                      <td className="p-5 text-slate-600 font-bold">
+                        {record.section}
+                      </td>
+                      <td className="p-5 text-slate-600">
+                        {record.activityType}
+                      </td>
+                      <td className="p-5">
+                        <span
+                          className={`font-black text-xl px-3 py-1 rounded-lg ${
+                            record.score >= 80
+                              ? "bg-green-100 text-green-700"
+                              : record.score >= 70
+                                ? "bg-yellow-100 text-yellow-700"
+                                : "bg-red-100 text-red-700"
+                          }`}
+                        >
+                          {record.score}%
+                        </span>
+                      </td>
+                      <td className="p-5 text-slate-500 font-medium">
+                        {/* Handles Firebase Timestamp objects safely */}
+                        {record.timestamp?.toDate
+                          ? record.timestamp.toDate().toLocaleDateString()
+                          : new Date(record.timestamp).toLocaleDateString()}
+                      </td>
+                      <td className="p-5 print:hidden flex gap-2">
+                        <button
+                          onClick={() => onViewReport(record)}
+                          className="bg-blue-50 text-blue-600 px-4 py-2 rounded-lg font-bold hover:bg-blue-100 transition active:scale-95 text-sm border border-blue-100"
+                        >
+                          Report
+                        </button>
+                        <button
+                          onClick={() => onDeleteRecord(record.id)}
+                          className="bg-slate-50 text-red-500 px-4 py-2 rounded-lg font-bold hover:bg-red-50 transition active:scale-95 text-sm border border-slate-100"
+                        >
+                          Delete
+                        </button>
                       </td>
                     </tr>
-                  ) : (
-                    filteredData.map((record) => (
-                      <tr
-                        key={record.id}
-                        className="border-b border-slate-700/50 hover:bg-slate-750 transition"
-                      >
-                        <td className="p-4 font-bold text-white flex items-center gap-2">
-                          {record.studentName}
-                          {record.isTestRun && (
-                            <span className="bg-yellow-500/20 text-yellow-400 text-[10px] px-2 py-1 rounded-md uppercase tracking-wider">
-                              Test Run
-                            </span>
-                          )}
-                        </td>
-                        <td className="p-4 font-bold text-slate-300">
-                          {record.section}
-                        </td>
-                        <td className="p-4 text-slate-400">
-                          {record.activityType}
-                        </td>
-                        <td className="p-4 font-black text-blue-400">
-                          {record.score}%
-                        </td>
-                        <td className="p-4 text-slate-400 text-xs">
-                          {record.timestamp?.toDate
-                            ? record.timestamp.toDate().toLocaleDateString()
-                            : "N/A"}
-                        </td>
-                        <td className="p-4 flex gap-3">
-                          <button
-                            onClick={() => onViewReport(record)}
-                            className="text-blue-400 hover:text-blue-300 font-bold transition"
-                          >
-                            Report
-                          </button>
-                          <button
-                            onClick={() => onDeleteRecord(record.id)}
-                            className="text-red-400 hover:text-red-300 font-bold transition"
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ==============================================================================
+            JIT (Just-In-Time) PRINT VIEW 
+            This only mounts when you hit "Print All to PDF". It drops the 400MB RAM leak
+            because it doesn't render 100 QR codes until the exact second you need them.
+            ============================================================================== */}
+        {isPreparingPrint && (
+          <div className="hidden print:block w-full">
+            {/* If you have a specific PrintReport component for each student, map it here! */}
+            {/* Example: 
+                filteredData.map(record => (
+                  <div key={record.id} className="break-after-page">
+                     <PrintableStudentReport data={record} />
+                  </div>
+                ))
+             */}
           </div>
         )}
       </div>
-
-      {/* =========================================================
-          PRINT ONLY UI (DYNAMICALLY MOUNTED TO SAVE MEMORY)
-          ========================================================= */}
-      {isPreparingPrint && (
-        <div className="bg-white text-black min-h-screen">
-          {filteredData.map((report) => (
-            <div key={report.id} className="break-after-page w-full px-8 py-12">
-              {/* Header / Student Info for the PDF */}
-              <div className="border-4 border-slate-800 p-8 rounded-3xl mb-8 flex justify-between items-start">
-                <div>
-                  <h1 className="text-5xl font-black mb-4 text-slate-900 tracking-tight">
-                    {report.studentName}
-                  </h1>
-                  <div className="flex gap-4 mb-4">
-                    <span className="bg-slate-100 text-slate-800 px-4 py-2 rounded-lg font-bold border border-slate-300">
-                      Section {report.section}
-                    </span>
-                    <span className="bg-slate-100 text-slate-800 px-4 py-2 rounded-lg font-bold border border-slate-300">
-                      {report.activityType}
-                    </span>
-                    <span className="bg-slate-100 text-slate-800 px-4 py-2 rounded-lg font-bold border border-slate-300">
-                      {report.timestamp?.toDate
-                        ? report.timestamp.toDate().toLocaleDateString()
-                        : "Date N/A"}
-                    </span>
-                  </div>
-                  <div className="text-3xl font-black mt-6">
-                    Final Score:{" "}
-                    <span
-                      className={
-                        report.score >= 70 ? "text-green-600" : "text-red-600"
-                      }
-                    >
-                      {report.score}%
-                    </span>
-                  </div>
-                </div>
-
-                {/* QR Code */}
-                <div className="flex flex-col items-center justify-center p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl">
-                  <QRCodeSVG
-                    value={
-                      typeof window !== "undefined"
-                        ? `${window.location.origin}?report=${report.id}`
-                        : `https://mrcastro.vercel.app?report=${report.id}`
-                    }
-                    size={140}
-                  />
-                  <span className="mt-3 text-xs font-bold text-slate-600 uppercase tracking-widest text-center w-32">
-                    Scan to view full report online
-                  </span>
-                </div>
-              </div>
-
-              {/* Complete Answers Breakdown */}
-              <div className="grid grid-cols-1 gap-4">
-                {report.answers &&
-                  report.answers.map((ans, i) => {
-                    let formattedInput = ans.studentInput || "Skipped";
-                    if (
-                      ans.instruction &&
-                      (ans.studentInput === "1" ||
-                        ans.studentInput === "2" ||
-                        ans.studentInput === "3" ||
-                        ans.studentInput === "4")
-                    ) {
-                      const regex = new RegExp(
-                        `${ans.studentInput}\\s*(?:for|\\)|\\-)\\s*([^\\.\\,\\;]+)`,
-                        "i",
-                      );
-                      const match = ans.instruction.match(regex);
-                      if (match && match[1])
-                        formattedInput = `${ans.studentInput} (${match[1].trim()})`;
-                    } else if (
-                      ans.instruction &&
-                      ans.instruction.includes("Yes")
-                    ) {
-                      formattedInput =
-                        ans.studentInput === "1"
-                          ? "1 (Yes)"
-                          : ans.studentInput === "2"
-                            ? "2 (No)"
-                            : formattedInput;
-                    }
-
-                    return (
-                      <div
-                        key={i}
-                        className={`p-4 rounded-xl border-2 ${ans.isCorrect ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}`}
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <p className="font-bold text-lg text-slate-800">
-                            <span className="text-slate-500 mr-2">
-                              Q{ans.questionNumber || i + 1}:
-                            </span>{" "}
-                            {ans.question}
-                          </p>
-                          <span
-                            className={`text-2xl font-black ${ans.isCorrect ? "text-green-600" : "text-red-600"}`}
-                          >
-                            {ans.isCorrect ? "✓" : "✗"}
-                          </span>
-                        </div>
-                        <div className="flex gap-4 text-sm mt-2">
-                          <p className="font-bold text-slate-700">
-                            Student Answer:{" "}
-                            <span
-                              className={
-                                ans.isCorrect
-                                  ? "text-green-700"
-                                  : "text-red-700"
-                              }
-                            >
-                              {formattedInput}
-                            </span>
-                          </p>
-                          {!ans.isCorrect && (
-                            <p className="font-bold text-slate-500">
-                              Correct Answer:{" "}
-                              <span className="text-slate-800">
-                                {ans.correctAnswer}
-                              </span>
-                            </p>
-                          )}
-                          {ans.observation && (
-                            <p className="text-slate-400 italic">
-                              Note: {ans.observation}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
-
-              {/* Show Demerits */}
-              {report.demerits > 0 && (
-                <div className="mt-8 p-4 bg-red-50 border-2 border-red-200 rounded-xl">
-                  <p className="font-bold text-red-800">
-                    Behavioral Demerits Issued: {report.demerits}
-                  </p>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

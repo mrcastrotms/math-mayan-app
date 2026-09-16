@@ -28,6 +28,7 @@ export default function TeacherDashboard({
   const [selectedSessionSection, setSelectedSessionSection] = useState("");
   const [selectedActivityType, setSelectedActivityType] =
     useState("Assessment / Exam");
+  const [isGenerating, setIsGenerating] = useState(false); // NEW: Loading state
 
   const [isViewingGradebook, setIsViewingGradebook] = useState(false);
   const [gradebookData, setGradebookData] = useState([]);
@@ -39,7 +40,15 @@ export default function TeacherDashboard({
 
   const handleGenerateCode = async () => {
     if (!selectedSessionSection) return;
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    setIsGenerating(true); // Turn on loading mode
+
+    // KID-PROOF GENERATOR: Removes 0, O, 1, I, L to prevent reading mistakes
+    // Also shortened to 5 characters for easier copying from the board
+    const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+    let code = "";
+    for (let i = 0; i < 5; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
 
     // 10 minutes (600s) for Classwork or Quiz, 40 minutes (2400s) for others
     const durationSeconds =
@@ -47,8 +56,8 @@ export default function TeacherDashboard({
         ? 600
         : 2400;
 
-    setGeneratedCode(code);
     try {
+      // WAIT for Firebase to confirm the write before updating the UI
       await addDoc(collection(db, "exam_sessions"), {
         code,
         section: selectedSessionSection,
@@ -57,8 +66,14 @@ export default function TeacherDashboard({
         createdAt: serverTimestamp(),
         active: true,
       });
+
+      // Now that it's in the cloud, show it to the teacher
+      setGeneratedCode(code);
     } catch (e) {
-      console.error(e);
+      console.error("Failed to start session:", e);
+      alert("Database error. Try generating again.");
+    } finally {
+      setIsGenerating(false); // Turn off loading mode
     }
   };
 
@@ -232,10 +247,16 @@ export default function TeacherDashboard({
 
               <button
                 onClick={handleGenerateCode}
-                disabled={!selectedSessionSection}
-                className={`mt-2 px-8 py-3 rounded-xl text-xl font-bold transition shadow-lg ${selectedSessionSection ? "bg-blue-600 text-white hover:bg-blue-700 active:scale-95" : "bg-slate-700 text-slate-500 cursor-not-allowed"}`}
+                disabled={!selectedSessionSection || isGenerating}
+                className={`mt-2 px-8 py-3 rounded-xl text-xl font-bold transition shadow-lg ${
+                  isGenerating
+                    ? "bg-slate-500 text-slate-300 cursor-not-allowed"
+                    : selectedSessionSection
+                      ? "bg-blue-600 text-white hover:bg-blue-700 active:scale-95"
+                      : "bg-slate-700 text-slate-500 cursor-not-allowed"
+                }`}
               >
-                Generate Code
+                {isGenerating ? "Connecting..." : "Generate Code"}
               </button>
             </div>
           )}
