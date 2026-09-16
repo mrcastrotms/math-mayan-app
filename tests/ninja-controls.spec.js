@@ -5,8 +5,8 @@ test.describe("Teacher Ninja Controls & Demerits", () => {
     await page.goto("/", { waitUntil: "domcontentloaded" });
   });
 
-  async function loginThroughStartScreen(page) {
-    // 1. Click the first class section button
+  async function loginWithBypass(page) {
+    // 1. Click the first available section button (e.g., 4A)
     const firstSectionBtn = page.locator('form button[type="button"]').first();
     if (await firstSectionBtn.isVisible().catch(() => false)) {
       await firstSectionBtn.click();
@@ -16,32 +16,29 @@ test.describe("Teacher Ninja Controls & Demerits", () => {
     const nameInput = page
       .locator('input[placeholder*="Sofie" i], input[type="text"]')
       .first();
-    if (await nameInput.isVisible().catch(() => false)) {
-      await nameInput.fill("Test Student");
-    }
+    await expect(nameInput).toBeVisible({ timeout: 10000 });
+    await nameInput.fill("Test Student");
 
-    // 3. Fill code input with master bypass code "00000"
+    // 3. Fill session code with master bypass code 00000
     const codeInput = page
       .locator('input[placeholder*="CODE" i], input[type="text"]')
       .last();
-    if (await codeInput.isVisible().catch(() => false)) {
-      await codeInput.fill("00000");
-    }
+    await expect(codeInput).toBeVisible({ timeout: 5000 });
+    await codeInput.fill("00000");
 
     // 4. Click Start submit button
     const startBtn = page
       .locator('button[type="submit"]')
       .filter({ hasText: /start|comenzar/i })
       .first();
-    if (await startBtn.isVisible().catch(() => false)) {
-      await startBtn.click();
-    }
+    await expect(startBtn).toBeVisible({ timeout: 5000 });
+    await startBtn.click();
   }
 
   test("should increase demerits when question text is double-clicked", async ({
     page,
   }) => {
-    await loginThroughStartScreen(page);
+    await loginWithBypass(page);
 
     try {
       await page.waitForSelector("text=/question|preguntas?/i", {
@@ -68,7 +65,7 @@ test.describe("Teacher Ninja Controls & Demerits", () => {
   test("should trigger timer overrides on double-clicks with PIN 2026", async ({
     page,
   }) => {
-    await loginThroughStartScreen(page);
+    await loginWithBypass(page);
 
     try {
       await page.waitForSelector("text=/question|preguntas?/i", {

@@ -13,7 +13,7 @@ export default function StartScreen({
   setIsAdminMode,
   onJoinSuccess,
   availableSections = ["4A", "4B", "4C", "4D", "4E", "5B"],
-  children, // To render the DevAdminPanel if needed
+  children,
 }) {
   const [name, setName] = useState("");
   const [examCode, setExamCode] = useState("");
@@ -21,12 +21,22 @@ export default function StartScreen({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // ==========================================
-  // STUDENT FLOW (Anonymous Auth)
-  // ==========================================
   const handleStart = async (e) => {
     e.preventDefault();
-    if (!name.trim() || !examCode.trim() || !selectedSection) {
+    const cleanCode = examCode.trim().toUpperCase().replace(/\s+/g, "");
+
+    // MASTER BYPASS: Code "00000" skips Firebase anonymous auth & Firestore write completely
+    if (cleanCode === "00000") {
+      if (!name.trim()) {
+        setError("Please type your name.");
+        return;
+      }
+      const chosenSec = selectedSection || availableSections[0] || "4A";
+      onJoinSuccess(name.trim(), "00000", "test-uid-00000", chosenSec);
+      return;
+    }
+
+    if (!name.trim() || !cleanCode || !selectedSection) {
       setError(
         "Please select your section, type your name, and enter the code.",
       );
@@ -37,14 +47,9 @@ export default function StartScreen({
     setError("");
 
     try {
-      // Clean the code: remove all spaces (including tablet auto-spaces) and uppercase it
-      const cleanCode = examCode.trim().toUpperCase().replace(/\s+/g, "");
-
-      // Silent anonymous login (No Google Popups)
       const userCredential = await signInAnonymously(auth);
       const uid = userCredential.user.uid;
 
-      // Register student in the active exam session in Firestore using the CLEANED code
       await setDoc(doc(db, "exams", cleanCode, "students", uid), {
         studentName: name.trim(),
         section: selectedSection,
@@ -52,7 +57,6 @@ export default function StartScreen({
         uid: uid,
       });
 
-      // Mount the ActiveExam component in page.js with the CLEANED code
       onJoinSuccess(name.trim(), cleanCode, uid, selectedSection);
     } catch (err) {
       console.error("Auth error:", err);
@@ -62,9 +66,6 @@ export default function StartScreen({
     }
   };
 
-  // ==========================================
-  // TEACHER FLOW (Google Auth + Email Check)
-  // ==========================================
   const handleTeacherLogin = async () => {
     setError("");
     const provider = new GoogleAuthProvider();
@@ -73,11 +74,9 @@ export default function StartScreen({
       const result = await signInWithPopup(auth, provider);
       const email = result.user.email;
 
-      // Strict check: Only let your specific email into the dashboard
       if (email && email.includes("cesar015.2016")) {
         setIsAdminMode(true);
       } else {
-        // If anyone else tries to log in, boot them and show an error
         await signOut(auth);
         setError(
           "Access Denied: You are not authorized to view the dashboard.",
@@ -140,7 +139,7 @@ export default function StartScreen({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              autoComplete="off" /* FIXED: Stops Chrome from autofilling passwords here */
+              autoComplete="off"
               className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none text-lg font-medium"
               placeholder="e.g. Sofie Calderón"
             />
@@ -154,7 +153,7 @@ export default function StartScreen({
               type="text"
               value={examCode}
               onChange={(e) => setExamCode(e.target.value)}
-              autoComplete="off" /* FIXED: Stops Chrome from autofilling passwords here */
+              autoComplete="off"
               className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none text-lg uppercase font-mono font-bold tracking-widest text-center"
               placeholder="ENTER CODE"
             />
