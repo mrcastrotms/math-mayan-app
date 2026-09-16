@@ -37,14 +37,14 @@ export default function StartScreen({
     setError("");
 
     try {
-      // 1. Clean the code: remove all spaces (including tablet auto-spaces) and uppercase it
+      // Clean the code: remove all spaces (including tablet auto-spaces) and uppercase it
       const cleanCode = examCode.trim().toUpperCase().replace(/\s+/g, "");
 
-      // 2. Silent anonymous login (No Google Popups)
+      // Silent anonymous login (No Google Popups)
       const userCredential = await signInAnonymously(auth);
       const uid = userCredential.user.uid;
 
-      // 3. Register student in the active exam session in Firestore using the CLEANED code
+      // Register student in the active exam session in Firestore using the CLEANED code
       await setDoc(doc(db, "exams", cleanCode, "students", uid), {
         studentName: name.trim(),
         section: selectedSection,
@@ -52,7 +52,7 @@ export default function StartScreen({
         uid: uid,
       });
 
-      // 4. Mount the ActiveExam component in page.js with the CLEANED code
+      // Mount the ActiveExam component in page.js with the CLEANED code
       onJoinSuccess(name.trim(), cleanCode, uid, selectedSection);
     } catch (err) {
       console.error("Auth error:", err);
@@ -91,7 +91,6 @@ export default function StartScreen({
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 relative">
-      {/* High Contrast / Teacher Entry Header */}
       <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
         <button
           type="button"
@@ -111,7 +110,6 @@ export default function StartScreen({
         </p>
 
         <form onSubmit={handleStart} className="space-y-6">
-          {/* Section Selector */}
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-3 text-center">
               Select your class section:
@@ -134,7 +132,6 @@ export default function StartScreen({
             </div>
           </div>
 
-          {/* Name Input */}
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">
               Type your Full Name:
@@ -143,12 +140,12 @@ export default function StartScreen({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              autoComplete="off" /* FIXED: Stops Chrome from autofilling passwords here */
               className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none text-lg font-medium"
               placeholder="e.g. Sofie Calderón"
             />
           </div>
 
-          {/* Code Input */}
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">
               Session Code:
@@ -157,6 +154,7 @@ export default function StartScreen({
               type="text"
               value={examCode}
               onChange={(e) => setExamCode(e.target.value)}
+              autoComplete="off" /* FIXED: Stops Chrome from autofilling passwords here */
               className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none text-lg uppercase font-mono font-bold tracking-widest text-center"
               placeholder="ENTER CODE"
             />
@@ -178,7 +176,6 @@ export default function StartScreen({
         </form>
       </div>
 
-      {/* Dev panel injection if you use it */}
       {children}
     </div>
   );

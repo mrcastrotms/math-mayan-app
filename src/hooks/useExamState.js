@@ -45,26 +45,30 @@ export function useExamState() {
   const isTeacher =
     isAdminMode || customStudentName.toLowerCase().includes("castro");
 
-  // --- REVISED GRADING SCALE (40-50-60-100) ---
+  // --- LOOPHOLE-FREE GRADING SCALE (40-50-60-100) ---
   const computeEnhancedScore = (answers, demerits) => {
-    // 1. If they submitted a completely blank test, hard 40.
+    // 1. THE 40 FLOOR: If they submitted a completely blank test, hard 40.
     if (!answers || answers.length === 0) {
       return 40;
     }
 
-    // 2. Calculate their true accuracy (safely avoids NaN)
-    const correctCount = answers.filter((a) => a.isCorrect).length;
-    const accuracy = correctCount / answers.length;
+    // 2. Determine the Minimum Required Questions based on exam duration
+    // 10 mins (600s) = 8 questions. 40 mins (2400s) = 20 questions.
+    const minRequired = examDuration <= 600 ? 8 : 20;
 
-    // 3. Map 0% to 100% accuracy onto a 60 to 100 score scale
-    // (If they get 0 right, they get a 60. If they get 100% right, they get 100)
+    // 3. Calculate true accuracy by grading out of the MINIMUM REQUIRED
+    // If they only did 3 questions but needed 8, they are graded out of 8.
+    const correctCount = answers.filter((a) => a.isCorrect).length;
+    const gradedOutOf = Math.max(answers.length, minRequired);
+    const accuracy = correctCount / gradedOutOf;
+
+    // 4. THE 60 FLOOR: Map 0% to 100% accuracy onto a 60 to 100 score scale
     let finalScore = 60 + accuracy * 40;
 
-    // 4. Subtract 5 points per behavior demerit
+    // 5. Subtract 5 points per behavior demerit
     finalScore -= (demerits || 0) * 5;
 
-    // 5. Cap the max score at 100.
-    // The hard floor is now 50 (if a kid got a 60 but caught 2 demerits)
+    // 6. THE 50 FLOOR: Cap the max score at 100, hard floor at 50 for demerits
     return Math.max(50, Math.min(100, Math.round(finalScore)));
   };
 

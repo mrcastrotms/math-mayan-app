@@ -1,27 +1,46 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export function useTimer(
   examStarted,
   examFinished,
   isLocked,
-  initialDuration,
-  onTimeUp,
+  examDuration,
+  handleFinishExam,
 ) {
-  const [timeLeft, setTimeLeft] = useState(initialDuration);
+  const [timeLeft, setTimeLeft] = useState(examDuration);
   const [secondsOnCurrentQuestion, setSecondsOnCurrentQuestion] = useState(0);
 
+  // We use a ref so the interval always has the latest submit function
+  // without triggering infinite re-renders.
+  const submitExamRef = useRef(handleFinishExam);
   useEffect(() => {
-    let timer;
-    if (examStarted && !examFinished && !isLocked && timeLeft > 0) {
-      timer = setInterval(() => {
-        setTimeLeft((p) => p - 1);
-        setSecondsOnCurrentQuestion((p) => p + 1);
+    submitExamRef.current = handleFinishExam;
+  }, [handleFinishExam]);
+
+  useEffect(() => {
+    let interval = null;
+
+    if (examStarted && !examFinished && !isLocked) {
+      interval = setInterval(() => {
+        setTimeLeft((prev) => {
+          // THE FIX: If the timer hits zero, stop the clock and FORCE SUBMIT!
+          if (prev <= 1) {
+            clearInterval(interval);
+            submitExamRef.current();
+            return 0;
+          }
+          return prev - 1;
+        });
+        setSecondsOnCurrentQuestion((prev) => prev + 1);
       }, 1000);
-    } else if (timeLeft === 0 && !examFinished) {
-      onTimeUp();
+    } else if (interval) {
+      clearInterval(interval);
     }
-    return () => clearInterval(timer);
-  }, [examStarted, examFinished, isLocked, timeLeft]);
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [examStarted, examFinished, isLocked]);
 
   const resetQuestionTimer = () => setSecondsOnCurrentQuestion(0);
 

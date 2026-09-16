@@ -1,5 +1,5 @@
-import { appText } from "../data/content";
-import NumberPad from "./NumberPad";
+"use client";
+import { useState, useEffect } from "react";
 
 export default function ActiveExamScreen({
   currentQ,
@@ -21,132 +21,180 @@ export default function ActiveExamScreen({
   handleTryHarder,
   handleSimulateCorrect,
   secondsOnCurrentQuestion,
-  isTeacherTesting,
   canTriggerHarder,
+  isTeacherTesting,
+  isSaving, // Passed down from page.js to prevent double-clicks
   children,
 }) {
-  const showPassButton = isTeacherTesting || secondsOnCurrentQuestion >= 55;
+  const [hintsUsed, setLocalHintsUsed] = useState(0);
+  const [isHintLoading, setIsHintLoading] = useState(false);
+
+  // Trap the back button and prevent swipe-backs on iPads/Chromebooks
+  useEffect(() => {
+    window.history.pushState(null, null, window.location.href);
+    const handlePopState = () => {
+      window.history.pushState(null, null, window.location.href);
+    };
+    window.addEventListener("popstate", handlePopState);
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
+
+  const handleHintClick = async () => {
+    if (hintsUsed >= 3) {
+      alert(
+        "Out of hints! You have to use your own brain power for the rest of this test!",
+      );
+      return;
+    }
+
+    setLocalHintsUsed((prev) => prev + 1);
+
+    if (currentQ?.hint) {
+      alert(`QUICK HINT:\n\n${currentQ.hint}`);
+      return;
+    }
+
+    setIsHintLoading(true);
+    try {
+      const questionText =
+        currentQ?.text || currentQ?.question || "Math problem";
+      const res = await fetch("/api/hint", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: questionText }),
+      });
+      if (!res.ok) throw new Error("API failed");
+      const data = await res.json();
+      alert(`AI MATH COACH:\n\n${data.hint}`);
+    } catch (err) {
+      alert(
+        "GROWTH MINDSET CHECK:\n\n" +
+          "Take a deep breath! Try breaking the problem into smaller pieces, or draw a quick picture on your paper.\n\n" +
+          "You haven't figured it out YET, but your brain is growing every time you try!",
+      );
+    } finally {
+      setIsHintLoading(false);
+    }
+  };
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50 font-sans relative">
-      {children}
-
-      {showBehaviorMenu && (
-        <div className="absolute inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
-          <div className="bg-white p-6 rounded-2xl shadow-2xl w-96 max-w-[90%]">
-            <h3 className="text-xl font-bold text-slate-800 mb-4">
-              {appText.behavior.title}
-            </h3>
-            <div className="flex flex-col gap-3">
-              {appText.behavior.options.map((reason) => (
-                <button
-                  key={reason}
-                  onClick={() => {
-                    setDemerits([
-                      ...demerits,
-                      { reason, timestamp: new Date().toISOString() },
-                    ]);
-                    setShowBehaviorMenu(false);
-                  }}
-                  className="bg-red-50 text-red-700 p-4 rounded-xl font-bold text-left hover:bg-red-100 transition active:scale-95 border border-red-100"
-                >
-                  {reason}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={() => setShowBehaviorMenu(false)}
-              className="mt-6 w-full text-slate-500 font-bold p-3 hover:bg-slate-100 rounded-xl transition"
-            >
-              {appText.behavior.cancel}
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div className="flex justify-between items-center bg-white px-8 py-4 shadow-sm border-b">
-        <h2
-          className="text-2xl font-bold text-slate-500 cursor-pointer select-none"
-          onDoubleClick={() => setShowBehaviorMenu(true)}
-        >
+    <div className="min-h-screen bg-slate-50 flex flex-col p-4 md:p-8 font-sans">
+      {/* Top HUD */}
+      <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+        <div className="text-xl font-bold text-slate-700">
           Question {questionsAttempted + 1}
-        </h2>
-        <div className="text-2xl font-mono font-bold text-slate-700 bg-slate-100 px-4 py-2 rounded-lg">
+        </div>
+        <div
+          className={`text-2xl font-black ${timeLeft < 300 ? "text-red-500 animate-pulse" : "text-slate-800"}`}
+        >
           {formatTime(timeLeft)}
         </div>
+        {isTeacherTesting && (
+          <button
+            onClick={() => setShowBehaviorMenu(!showBehaviorMenu)}
+            className="text-red-500 font-bold border border-red-200 bg-red-50 px-3 py-1 rounded-lg"
+          >
+            Demerits: {demerits}
+          </button>
+        )}
       </div>
 
-      {isTeacherTesting && (
-        <div className="w-full flex justify-center mt-4">
+      {/* Main Question Area */}
+      <div className="flex-1 flex flex-col items-center justify-center mb-8">
+        <div className="text-3xl md:text-5xl font-black text-slate-800 mb-8 text-center max-w-4xl">
+          {currentQ?.text || currentQ?.question || "Loading question..."}
+        </div>
+
+        {/* Big Answer Display */}
+        <div className="bg-white border-4 border-blue-200 h-24 w-full max-w-sm rounded-2xl flex items-center justify-center text-4xl font-mono font-bold text-blue-600 mb-8 shadow-inner">
+          {currentInput || "?"}
+        </div>
+
+        {/* Math Keypad */}
+        <div className="grid grid-cols-3 gap-3 w-full max-w-sm mb-8">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, ".", 0].map((num) => (
+            <button
+              key={num}
+              onClick={() => handlePadClick(num.toString())}
+              className="bg-white border border-slate-200 text-2xl font-bold py-4 rounded-xl shadow-sm hover:bg-slate-50 active:scale-95 transition"
+            >
+              {num}
+            </button>
+          ))}
           <button
-            onClick={handleSimulateCorrect}
-            className="bg-purple-100 text-purple-700 border border-purple-300 px-4 py-1 rounded text-sm font-bold active:scale-95 transition"
+            onClick={handleBackspace}
+            className="bg-slate-200 text-slate-700 text-2xl font-bold py-4 rounded-xl shadow-sm hover:bg-slate-300 active:scale-95 transition"
           >
-            {appText.active.simulateBtn}
+            ⌫
           </button>
         </div>
-      )}
 
-      <div className="w-full flex justify-center mt-4 h-10">
-        {canTriggerHarder ? (
+        {/* Action Buttons */}
+        <div className="grid grid-cols-2 gap-4 w-full max-w-sm">
           <button
-            onClick={handleTryHarder}
-            className="bg-orange-100 text-orange-700 px-6 py-2 rounded-full font-bold shadow-sm hover:bg-orange-200 active:scale-95 transition animate-fade-in border border-orange-200"
+            onClick={handleClear}
+            className="bg-slate-100 text-slate-600 font-bold py-3 rounded-xl hover:bg-slate-200 active:scale-95 transition"
           >
-            {appText.active.harderBtn}
+            Clear
           </button>
-        ) : showPassButton ? (
           <button
             onClick={handlePassQuestion}
-            className="bg-slate-200 text-slate-600 px-6 py-2 rounded-full font-bold shadow-sm hover:bg-slate-300 active:scale-95 transition animate-fade-in"
+            className="bg-amber-100 text-amber-700 font-bold py-3 rounded-xl hover:bg-amber-200 active:scale-95 transition"
           >
-            {appText.active.passBtn}
+            Skip
           </button>
-        ) : null}
-      </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-        {/* QUESTION DISPLAYED FIRST */}
-        <div className="text-5xl font-extrabold text-slate-800 tracking-wider bg-white px-12 py-8 rounded-2xl shadow-sm border-2 border-slate-200 mb-6 max-w-3xl">
-          {currentQ.question}
-        </div>
-        {/* INSTRUCTION MOVED BELOW */}
-        <p className="text-lg text-blue-600 max-w-lg font-medium">
-          {currentQ.instruction}
-        </p>
-      </div>
-
-      <div className="flex flex-col items-center bg-white pb-8 pt-4 rounded-t-3xl shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
-        <div className="w-full max-w-md px-6 mb-6">
-          <div className="bg-slate-100 border-b-4 border-blue-500 h-20 rounded-t-lg flex items-center justify-end px-4 text-5xl font-bold text-slate-800 tracking-widest overflow-hidden">
-            {currentInput || <span className="text-slate-300">_</span>}
-          </div>
-        </div>
-
-        <NumberPad
-          onPadClick={handlePadClick}
-          onBackspace={handleBackspace}
-          onClear={handleClear}
-        />
-
-        <div className="w-full max-w-md px-6 flex gap-4">
-          {showEndExamButton && (
-            <button
-              onClick={handleFinishExam}
-              className="w-1/3 py-5 rounded-xl text-xl font-bold shadow-md bg-red-100 text-red-700 hover:bg-red-200 active:scale-95 transition-all"
-            >
-              End Exam
-            </button>
-          )}
           <button
             onClick={handleSubmitQuestion}
-            disabled={!currentInput}
-            className={`py-5 rounded-xl text-2xl font-bold shadow-md transition-all ${showEndExamButton ? "w-2/3" : "w-full"} ${currentInput ? "bg-green-500 text-white hover:bg-green-600 active:scale-95" : "bg-slate-200 text-slate-400 cursor-not-allowed"}`}
+            className="col-span-2 bg-blue-600 text-white text-xl font-black py-4 rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 active:scale-95 transition"
           >
             Submit Answer
           </button>
+
+          <button
+            type="button"
+            onClick={handleHintClick}
+            disabled={isHintLoading}
+            className={`col-span-2 font-bold text-lg py-4 px-6 rounded-xl shadow-sm transition border ${
+              isHintLoading
+                ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
+                : "bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100 active:scale-95"
+            }`}
+          >
+            {isHintLoading
+              ? "Coach is thinking..."
+              : `Need a Hint? (${3 - hintsUsed} left)`}
+          </button>
         </div>
       </div>
+
+      {/* FIXED: The Finish Exam Button (Disabled while saving) */}
+      {showEndExamButton && (
+        <div className="w-full flex justify-center mb-8">
+          <button
+            onClick={handleFinishExam}
+            disabled={isSaving}
+            className={`px-8 py-4 rounded-xl font-black text-xl transition shadow-lg ${
+              isSaving
+                ? "bg-slate-300 text-slate-500 cursor-not-allowed"
+                : "bg-red-600 text-white shadow-red-200 hover:bg-red-700 active:scale-95"
+            }`}
+          >
+            {isSaving ? "Saving Test..." : "Finish & Grade Exam"}
+          </button>
+        </div>
+      )}
+
+      {/* Dev Tools */}
+      <div className="w-full flex justify-center mt-auto">{children}</div>
     </div>
   );
 }
