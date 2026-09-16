@@ -2,12 +2,10 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { useExamState } from "../hooks/useExamState";
-import StartScreen from "../components/StartScreen"; // Your newly updated StartScreen
+import StartScreen from "../components/StartScreen";
 
 // =====================================================================
 // DYNAMIC IMPORTS (LAZY LOADING)
-// These components will NEVER be downloaded to a student's tablet
-// unless they actively trigger them.
 // =====================================================================
 const ParentReportView = dynamic(
   () => import("../components/ParentReportView"),
@@ -54,7 +52,6 @@ const DevAdminPanel = dynamic(() => import("../components/DevAdminPanel"));
 // =====================================================================
 
 export default function ExamApp() {
-  // QR CODE SCANNER LOGIC
   const [scannedReportId, setScannedReportId] = useState(null);
 
   useEffect(() => {
@@ -66,35 +63,21 @@ export default function ExamApp() {
     }
   }, []);
 
-  // LOAD EXAM STATE
   const state = useExamState();
 
-  // IF SCANNED, ONLY SHOW THE PARENT VIEW (Bypasses everything else)
   if (scannedReportId) {
     return <ParentReportView reportId={scannedReportId} />;
   }
 
-  // DEV ADMIN PANEL
+  // Cleaned up dev panel mapping
   const adminPanel = (
     <DevAdminPanel
       isDevMode={state.isDevMode}
       setIsLocked={state.setIsLocked}
       handleFinishExam={state.handleFinishExam}
-      handleSimulateCorrect={() =>
-        state.handleSimulateCorrect(() =>
-          state.resetQuestionTimer ? state.resetQuestionTimer() : null,
-        )
-      }
-      handleTryHarder={() =>
-        state.handleTryHarder(() =>
-          state.resetQuestionTimer ? state.resetQuestionTimer() : null,
-        )
-      }
-      canTriggerHarder={state.canTriggerHarder}
     />
   );
 
-  // TEACHER DASHBOARD
   if (state.isAdminMode) {
     return (
       <TeacherDashboard
@@ -107,7 +90,6 @@ export default function ExamApp() {
     );
   }
 
-  // LOCKED SCREEN
   if (state.isLocked) {
     return (
       <LockedScreen
@@ -120,35 +102,26 @@ export default function ExamApp() {
     );
   }
 
-  // =====================================================================
-  // START SCREEN (Now using the Anonymous Auth Bypass flow)
-  // =====================================================================
   if (!state.examStarted) {
     return (
       <StartScreen
         setIsAdminMode={state.setIsAdminMode}
         availableSections={state.availableSections}
         onJoinSuccess={(name, code, uid, section) => {
-          // Push the StartScreen's local state into your global hook state
           state.setCustomStudentName(name);
           state.setSessionCodeInput(code);
           state.setSelectedSection(section);
-
           if (state.setStudent) {
             state.setStudent({ name, uid, section });
           }
-
-          // Trigger the hook function to transition to the active exam
-          state.handleVerifyAndStart();
+          state.handleVerifyAndStart(code, section);
         }}
       >
         {adminPanel}
       </StartScreen>
     );
   }
-  // =====================================================================
 
-  // FINISHED SCREEN
   if (state.examFinished) {
     return (
       <FinishedScreen
@@ -159,16 +132,21 @@ export default function ExamApp() {
         }
         isSaving={state.isSaving}
         handleTryAgain={state.handleTryAgain}
+        studentAnswers={state.studentAnswers}
+        demerits={state.demerits}
       >
         {adminPanel}
       </FinishedScreen>
     );
   }
 
-  // ACTIVE EXAM SCREEN
+  // ==========================================================
+  // THE FATAL CRASH FIX
+  // Everything below maps perfectly to the updated hooks now.
+  // ==========================================================
   return (
     <ActiveExamScreen
-      currentQ={state.getCurrentQuestion()}
+      currentQ={state.currentQ}
       questionsAttempted={state.questionsAttempted}
       formatTime={state.formatTime}
       timeLeft={state.timeLeft}
@@ -177,36 +155,17 @@ export default function ExamApp() {
       setDemerits={state.setDemerits}
       demerits={state.demerits}
       currentInput={state.currentInput}
-      handlePadClick={(v) => state.setCurrentInput((p) => p + v)}
-      handleBackspace={() => state.setCurrentInput((p) => p.slice(0, -1))}
-      handleClear={() => state.setCurrentInput("")}
-      showEndExamButton={
-        state.EXAM_DURATION - state.timeLeft >= state.SHOW_END_BUTTON_AFTER
-      }
+      handlePadClick={state.handlePadClick}
+      handleBackspace={state.handleBackspace}
+      handleClear={state.handleClear}
+      showEndExamButton={state.showEndExamButton}
       handleFinishExam={state.handleFinishExam}
-      handleSubmitQuestion={() =>
-        state.handleSubmitQuestion(() =>
-          state.resetQuestionTimer ? state.resetQuestionTimer() : null,
-        )
-      }
-      handlePassQuestion={() =>
-        state.handlePassQuestion(() =>
-          state.resetQuestionTimer ? state.resetQuestionTimer() : null,
-        )
-      }
-      handleTryHarder={() =>
-        state.handleTryHarder(() =>
-          state.resetQuestionTimer ? state.resetQuestionTimer() : null,
-        )
-      }
-      handleSimulateCorrect={() =>
-        state.handleSimulateCorrect(() =>
-          state.resetQuestionTimer ? state.resetQuestionTimer() : null,
-        )
-      }
-      secondsOnCurrentQuestion={state.secondsOnCurrentQuestion}
-      canTriggerHarder={state.canTriggerHarder}
-      isTeacherTesting={state.isTeacherTesting}
+      handleSubmitQuestion={state.handleSubmitQuestion}
+      handlePassQuestion={state.handlePassQuestion}
+      isTeacherTesting={state.isTeacher}
+      isSaving={state.isSaving}
+      handleNinjaDoubleTime={state.handleNinjaDoubleTime}
+      handleNinjaOneMinute={state.handleNinjaOneMinute}
     >
       {adminPanel}
     </ActiveExamScreen>
