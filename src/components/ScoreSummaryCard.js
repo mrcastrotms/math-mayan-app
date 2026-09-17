@@ -28,7 +28,7 @@ export default function ScoreSummaryCard({
       {/* Printable Header */}
       <div className="hidden print:block mb-6 text-left">
         <h2 className="text-3xl font-black text-slate-800">The Mayan School</h2>
-        <p className="text-slate-500 text-lg">Mathematics with Mr. Castro</p>
+        <p className="text-slate-500 text-lg">mrcastro.vercel.app</p>
         <hr className="my-4 border-slate-300" />
         <div className="flex justify-between font-bold text-slate-700">
           <p>Student: {student?.name || "Anonymous"}</p>

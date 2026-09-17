@@ -12,7 +12,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Mathematics with Mr. Castro",
+  title: "mrcastro.vercel.app",
   description: "Learning and Growing",
 };
 

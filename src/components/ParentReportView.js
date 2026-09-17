@@ -42,9 +42,7 @@ export default function ParentReportView({ reportId }) {
           <h1 className="text-3xl font-black mb-2 uppercase tracking-widest text-blue-400">
             The Mayan School
           </h1>
-          <p className="text-slate-400 font-bold">
-            Mathematics with Mr. Castro
-          </p>
+          <p className="text-slate-400 font-bold">mrcastro.vercel.app</p>
         </div>
 
         <div className="p-8 border-b border-slate-100 flex flex-col items-center text-center">
