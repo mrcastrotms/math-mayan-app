@@ -55,7 +55,6 @@ export default function ExamApp() {
         }
       },
       FORCE_FINISH: () => {
-        alert("Your exam has been collected and submitted by the teacher.");
         stateRef.current?.handleFinishExam?.();
       },
       FORCE_FULLSCREEN: () => {
@@ -113,6 +112,7 @@ export default function ExamApp() {
     student: state?.student,
     isTeacher: false,
     commandHandlers,
+    currentQuestionIndex: state?.currentQuestionIndex ?? 0,
   });
 
   const [scannedReportId] = useState(() => {
