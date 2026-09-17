@@ -1,6 +1,6 @@
 // src/components/StudentReportQuestionsTable.js
 import React from "react";
-import { formatReadableAnswer } from "../utils/reportFormattingUtils";
+import { formatReadableAnswer } from "../utils/gradebookUtils";
 
 export default function StudentReportQuestionsTable({ answers = [] }) {
   return (
