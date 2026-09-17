@@ -1,13 +1,26 @@
+// src/hooks/useBatchPrint.js
 import { useState } from "react";
 
-export function useBatchPrint(delayMs = 600) {
+export function useBatchPrint(delayMs = 800) {
   const [isPreparingPrint, setIsPreparingPrint] = useState(false);
 
   const triggerBatchPrint = () => {
     setIsPreparingPrint(true);
+
     setTimeout(() => {
+      const handleAfterPrint = () => {
+        setIsPreparingPrint(false);
+        window.removeEventListener("afterprint", handleAfterPrint);
+      };
+
+      window.addEventListener("afterprint", handleAfterPrint);
+
       window.print();
-      setIsPreparingPrint(false);
+
+      // Fallback cleanup in case afterprint does not fire on mobile/older browsers
+      setTimeout(() => {
+        setIsPreparingPrint(false);
+      }, 5000);
     }, delayMs);
   };
 

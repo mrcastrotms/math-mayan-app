@@ -43,7 +43,7 @@ export default function StudentReportPrintSheet({ record, baseUrl }) {
           <div>
             <span className="text-slate-500">Student:</span>{" "}
             <span className="font-bold text-slate-900">
-              {record.studentName}
+              {record.studentName || record.name}
             </span>
           </div>
           <div>
@@ -72,10 +72,26 @@ export default function StudentReportPrintSheet({ record, baseUrl }) {
             </thead>
             <tbody className="divide-y divide-slate-200">
               {visibleAnswers.map((ans, idx) => {
+                const rawPrompt =
+                  typeof ans.question === "object" && ans.question !== null
+                    ? ans.question.question ||
+                      ans.question.instruction ||
+                      ans.question.prompt
+                    : ans.question || ans.questionText || `Question ${idx + 1}`;
                 const prompt =
-                  ans.question || ans.questionText || `Question ${idx + 1}`;
-                const studentVal = ans.studentInput ?? ans.userAnswer ?? "—";
-                const isCorrect = ans.isCorrect;
+                  typeof rawPrompt === "object"
+                    ? JSON.stringify(rawPrompt)
+                    : String(rawPrompt ?? `Question ${idx + 1}`);
+
+                const rawVal =
+                  typeof ans.studentInput === "object" &&
+                  ans.studentInput !== null
+                    ? (ans.studentInput.value ??
+                      JSON.stringify(ans.studentInput))
+                    : (ans.studentInput ?? ans.userAnswer ?? "—");
+                const studentVal = String(rawVal ?? "—");
+
+                const isCorrect = Boolean(ans.isCorrect);
 
                 return (
                   <tr
@@ -87,7 +103,7 @@ export default function StudentReportPrintSheet({ record, baseUrl }) {
                       {prompt}
                     </td>
                     <td className="p-2 font-mono font-bold text-slate-800">
-                      {String(studentVal)}
+                      {studentVal}
                     </td>
                     <td className="p-2 text-center font-bold">
                       {isCorrect ? (

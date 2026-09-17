@@ -18,27 +18,63 @@ export default function StudentReportQuestionsTable({ answers = [] }) {
               <th className="p-3 border-b">Observation</th>
             </tr>
           </thead>
-          <tbody>
-            {answers.map((ans, idx) => (
-              <tr key={idx} className="border-b last:border-0">
-                <td className="p-3 font-mono">{ans.questionNumber}</td>
-                <td className="p-3 font-bold">{ans.question}</td>
-                <td className="p-3 font-mono">{formatReadableAnswer(ans)}</td>
-                <td className="p-3 font-mono text-slate-600">
-                  {ans.correctAnswer}
-                </td>
-                <td className="p-3 font-bold">
-                  {ans.isCorrect ? (
-                    <span className="text-green-600">Correct</span>
-                  ) : (
-                    <span className="text-red-600">Incorrect</span>
-                  )}
-                </td>
-                <td className="p-3 text-slate-500 text-xs italic">
-                  {ans.observation}
-                </td>
-              </tr>
-            ))}
+          <tbody className="divide-y divide-slate-200">
+            {answers.map((ans, idx) => {
+              const rawQuestion =
+                typeof ans.question === "object" && ans.question !== null
+                  ? ans.question.question ||
+                    ans.question.instruction ||
+                    ans.question.prompt
+                  : ans.question || ans.questionText || `Question ${idx + 1}`;
+              const displayQuestion =
+                typeof rawQuestion === "object"
+                  ? JSON.stringify(rawQuestion)
+                  : String(rawQuestion ?? `Question ${idx + 1}`);
+
+              const rawCorrect =
+                typeof ans.correctAnswer === "object" &&
+                ans.correctAnswer !== null
+                  ? ans.correctAnswer.answer ||
+                    ans.correctAnswer.value ||
+                    JSON.stringify(ans.correctAnswer)
+                  : (ans.correctAnswer ?? "—");
+              const displayCorrect = String(rawCorrect);
+
+              const rawObs =
+                typeof ans.observation === "object" && ans.observation !== null
+                  ? ans.observation.note ||
+                    ans.observation.text ||
+                    JSON.stringify(ans.observation)
+                  : (ans.observation ??
+                    (ans.isCorrect ? "Mastered" : "Needs review"));
+              const displayObservation = String(rawObs);
+
+              return (
+                <tr
+                  key={idx}
+                  className="border-b last:border-0 hover:bg-slate-50/50"
+                >
+                  <td className="p-3 font-mono">
+                    {ans.questionNumber ?? idx + 1}
+                  </td>
+                  <td className="p-3 font-bold">{displayQuestion}</td>
+                  <td className="p-3 font-mono">{formatReadableAnswer(ans)}</td>
+                  <td className="p-3 font-mono text-slate-600">
+                    {displayCorrect}
+                  </td>
+                  <td className="p-3 font-bold">
+                    {ans.isCorrect ? (
+                      <span className="text-green-600">Correct</span>
+                    ) : (
+                      <span className="text-red-600">Incorrect</span>
+                    )}
+                  </td>
+                  <td className="p-3 text-slate-500 text-xs italic">
+                    {displayObservation}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
