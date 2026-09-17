@@ -2,7 +2,7 @@ export function computeEnhancedScore(answers, demerits, examDuration) {
   if (!answers || answers.length === 0) {
     return 40;
   }
-  const minRequired = examDuration <= 600 ? 8 : 20;
+  const minRequired = examDuration <= 600 ? 8 : 12;
   const correctCount = answers.filter((a) => a.isCorrect).length;
   const gradedOutOf = Math.max(answers.length, minRequired);
   const accuracy = correctCount / gradedOutOf;
