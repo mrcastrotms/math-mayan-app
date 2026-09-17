@@ -21,6 +21,7 @@ export default function ActiveExamScreen({
   handleSubmitQuestion,
   handlePassQuestion,
   handleNinjaOneMinute,
+  handleFinishExam,
   children,
 }) {
   const timerHook = useTimerOverride(timeLeft, handleNinjaOneMinute);
@@ -46,7 +47,7 @@ export default function ActiveExamScreen({
       <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200">
         <div className="flex items-center gap-4">
           <span className="text-sm font-bold text-slate-500">
-            Question {questionIndex + 1}
+            Question {Number(questionIndex ?? 0) + 1}
           </span>
           <span className="text-sm font-bold text-red-500 bg-red-50 px-3 py-1 rounded-full border border-red-100">
             Demerits: <span data-testid="demerits">{demerits}</span>
@@ -59,7 +60,9 @@ export default function ActiveExamScreen({
         >
           {formatTime
             ? formatTime(timerHook.effectiveTimeLeft)
-            : `${Math.floor(timerHook.effectiveTimeLeft / 60)}:${timerHook.effectiveTimeLeft % 60 < 10 ? "0" : ""}${timerHook.effectiveTimeLeft % 60}`}
+            : `${Math.floor(timerHook.effectiveTimeLeft / 60)}:${
+                timerHook.effectiveTimeLeft % 60 < 10 ? "0" : ""
+              }${timerHook.effectiveTimeLeft % 60}`}
         </div>
       </div>
       {/* Main Play Area */}
@@ -85,6 +88,8 @@ export default function ActiveExamScreen({
           handleClear={handleClear}
           handlePassQuestion={handlePassQuestion}
           handleSubmitQuestion={handleSubmitQuestion}
+          handleFinishExam={handleFinishExam}
+          timeLeft={timerHook.effectiveTimeLeft ?? timeLeft}
         />
       </div>
       {children}
