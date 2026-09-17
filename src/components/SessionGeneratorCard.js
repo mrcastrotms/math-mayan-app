@@ -1,3 +1,4 @@
+// src/components/SessionGeneratorCard.js
 export default function SessionGeneratorCard({
   generatedCode,
   selectedSessionSection,
@@ -8,6 +9,7 @@ export default function SessionGeneratorCard({
   availableSections,
   isGenerating,
   onGenerateCode,
+  onResetSession,
 }) {
   return (
     <div className="bg-slate-800 p-8 rounded-2xl flex-1 shadow-2xl border border-slate-700 flex flex-col justify-between">
@@ -19,16 +21,36 @@ export default function SessionGeneratorCard({
       </div>
 
       {generatedCode ? (
-        <div className="bg-slate-900 p-6 rounded-xl border-2 border-blue-500 shadow-inner flex flex-col justify-center items-center my-4">
-          <p className="text-xs text-yellow-400 mb-1 uppercase tracking-widest font-bold">
-            {selectedActivityType}
-          </p>
-          <p className="text-sm text-slate-400 mb-1 uppercase tracking-widest font-bold">
-            Section {selectedSessionSection}
-          </p>
-          <p className="text-6xl font-mono tracking-widest text-green-400 text-center">
-            {generatedCode}
-          </p>
+        <div className="flex flex-col gap-4 my-4">
+          <div className="bg-slate-900 p-6 rounded-xl border-2 border-blue-500 shadow-inner flex flex-col justify-center items-center">
+            <p className="text-xs text-yellow-400 mb-1 uppercase tracking-widest font-bold">
+              {selectedActivityType}
+            </p>
+            <p className="text-sm text-slate-400 mb-1 uppercase tracking-widest font-bold">
+              Section {selectedSessionSection}
+            </p>
+            <p className="text-6xl font-mono tracking-widest text-green-400 text-center select-all">
+              {generatedCode}
+            </p>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={onResetSession}
+              className="flex-1 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-bold rounded-xl transition active:scale-95 cursor-pointer"
+            >
+              ← End / Change Session
+            </button>
+            <button
+              type="button"
+              onClick={onGenerateCode}
+              disabled={isGenerating}
+              className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition active:scale-95 cursor-pointer disabled:opacity-50"
+            >
+              {isGenerating ? "..." : "Roll New Code"}
+            </button>
+          </div>
         </div>
       ) : (
         <div className="flex flex-col gap-4 my-4">
@@ -79,7 +101,7 @@ export default function SessionGeneratorCard({
               isGenerating
                 ? "bg-slate-500 text-slate-300 cursor-not-allowed"
                 : selectedSessionSection
-                  ? "bg-blue-600 text-white hover:bg-blue-700 active:scale-95"
+                  ? "bg-blue-600 text-white hover:bg-blue-700 active:scale-95 cursor-pointer"
                   : "bg-slate-700 text-slate-500 cursor-not-allowed"
             }`}
           >
