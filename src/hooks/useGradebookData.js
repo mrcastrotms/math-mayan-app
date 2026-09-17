@@ -1,15 +1,12 @@
+// src/hooks/useGradebookData.js
 import { useState } from "react";
-import {
-  collection,
-  query,
-  orderBy,
-  getDocs,
-  deleteDoc,
-  doc,
-  updateDoc,
-} from "firebase/firestore";
+import { collection, query, orderBy, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
-import { recalculateRecordScore } from "../utils/regradeUtils";
+import {
+  executeDeleteRecord,
+  executeBulkDelete,
+  executeBatchRegrade,
+} from "../services/gradebookOperations";
 
 export function useGradebookData() {
   const [gradebookData, setGradebookData] = useState([]);
@@ -40,81 +37,29 @@ export function useGradebookData() {
   };
 
   const deleteRecord = async (id) => {
-    if (!window.confirm("Delete this specific record?")) return;
-    try {
-      await deleteDoc(doc(db, "exam_results", id));
+    const success = await executeDeleteRecord(id);
+    if (success) {
       setGradebookData((prev) => prev.filter((item) => item.id !== id));
-    } catch (error) {
-      console.error("Delete error:", error);
-      alert("Failed to delete record.");
     }
   };
 
   const bulkDeleteRecords = async (recordsToDelete) => {
-    if (!recordsToDelete || recordsToDelete.length === 0) return;
-
-    if (
-      recordsToDelete.length >= 15 &&
-      window.prompt(
-        `WARNING: ${recordsToDelete.length} records. Type: CONFIRM DELETE`,
-      ) !== "CONFIRM DELETE"
-    ) {
-      return;
-    }
-
-    if (
-      recordsToDelete.length < 15 &&
-      !window.confirm(`Delete these ${recordsToDelete.length} records?`)
-    ) {
-      return;
-    }
-
     setIsLoadingGradebook(true);
-    try {
-      await Promise.all(
-        recordsToDelete.map((record) =>
-          deleteDoc(doc(db, "exam_results", record.id)),
-        ),
-      );
+    const success = await executeBulkDelete(recordsToDelete);
+    if (success) {
       await fetchGradebook();
-    } catch (error) {
-      console.error("Bulk delete error:", error);
-      alert("Failed to delete records.");
+    } else {
       setIsLoadingGradebook(false);
     }
   };
 
   const runRetroactiveRegrade = async () => {
-    if (
-      !window.confirm(
-        "This will scan ALL visible records, fix the missing comma bug, recalculate the scores, and update the database. Proceed?",
-      )
-    ) {
-      return;
-    }
-
     setIsLoadingGradebook(true);
-    let updatedCount = 0;
-
-    try {
-      for (const record of gradebookData) {
-        const { needsUpdate, updatedAnswers, newScore } =
-          recalculateRecordScore(record);
-
-        if (needsUpdate) {
-          await updateDoc(doc(db, "exam_results", record.id), {
-            answers: updatedAnswers,
-            score: newScore,
-          });
-          updatedCount++;
-        }
-      }
-
-      alert(`Successfully regraded and fixed ${updatedCount} exams!`);
+    const count = await executeBatchRegrade(gradebookData);
+    if (count !== null) {
+      alert(`Successfully regraded and fixed ${count} exams!`);
       await fetchGradebook();
-    } catch (error) {
-      console.error("Regrade error:", error);
-      alert("Failed to regrade exams. Check console.");
+    } else {
       setIsLoadingGradebook(false);
     }
   };

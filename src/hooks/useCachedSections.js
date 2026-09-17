@@ -2,9 +2,10 @@
 import { useState, useEffect } from "react";
 
 const STORAGE_KEY = "math_app_sections";
-const DEFAULT_SECTIONS = ["4A", "4B", "4C", "4D", "4E", "5B"];
+const FALLBACK_SECTIONS = ["4A", "4B", "4C", "4D", "4E", "5B"];
 
 export function useCachedSections(availableSections = []) {
+  // 1. Synchronously grab cached list on mount
   const [cachedSections, setCachedSections] = useState(() => {
     if (typeof window !== "undefined") {
       try {
@@ -15,17 +16,26 @@ export function useCachedSections(availableSections = []) {
     return null;
   });
 
+  // 2. Persist live incoming sections to localStorage when available
   useEffect(() => {
-    if (availableSections?.length > 0) {
+    if (typeof window !== "undefined" && availableSections?.length > 0) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(availableSections));
-      if (!cachedSections) setCachedSections(availableSections);
     }
-  }, [availableSections, cachedSections]);
+  }, [availableSections]);
 
+  // 3. Derive display list purely during render (No setState in effect)
   const displaySections =
-    cachedSections || availableSections || DEFAULT_SECTIONS;
-  const isLoading =
-    !cachedSections && (!availableSections || availableSections.length === 0);
+    availableSections?.length > 0
+      ? availableSections
+      : cachedSections?.length > 0
+        ? cachedSections
+        : FALLBACK_SECTIONS;
 
-  return { displaySections, isLoading };
+  const isLoading = !availableSections?.length && !cachedSections?.length;
+
+  return {
+    displaySections,
+    isLoading,
+    setCachedSections,
+  };
 }

@@ -2,17 +2,21 @@
 import { useState, useEffect } from "react";
 
 export function useViewPersistence(initialFallback = "start") {
-  const [view, setView] = useState(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      return (
-        params.get("view") ||
-        sessionStorage.getItem("exam_active_view") ||
-        initialFallback
-      );
+  const [view, setView] = useState(initialFallback);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    const params = new URLSearchParams(window.location.search);
+    const savedView =
+      params.get("view") ||
+      sessionStorage.getItem("exam_active_view") ||
+      initialFallback;
+
+    if (savedView !== initialFallback) {
+      setView(savedView);
     }
-    return initialFallback;
-  });
+  }, [initialFallback]);
 
   const navigateTo = (viewName) => {
     setView(viewName);
@@ -28,5 +32,5 @@ export function useViewPersistence(initialFallback = "start") {
     }
   };
 
-  return { view, navigateTo };
+  return { view, navigateTo, isMounted };
 }

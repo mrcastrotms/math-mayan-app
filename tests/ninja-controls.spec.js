@@ -13,15 +13,11 @@ test.describe("Teacher Ninja Controls", () => {
       .first();
     await expect(questionText).toBeVisible({ timeout: 15000 });
 
-    // Dispatch native dblclick to ensure event fires reliably across headless CI
     await questionText.dispatchEvent("dblclick");
 
-    // Check if the infraction button or behavior modal is triggered
     const infractionBtn = page.getByRole("button", { name: /Off-Task/i });
-
-    // Fallback: if double-click didn't register via dispatch, try standard dblclick
     if (
-      !(await infractionBtn.isVisible({ timeout: 2000 }).catch(() => false))
+      !(await infractionBtn.isVisible({ timeout: 1500 }).catch(() => false))
     ) {
       await questionText.dblclick({ force: true });
     }
@@ -38,31 +34,26 @@ test.describe("Teacher Ninja Controls", () => {
   test("should trigger timer overrides on double-clicks with PIN 2026", async ({
     page,
   }) => {
+    page.on("dialog", async (dialog) => {
+      await dialog.accept("2026");
+    });
+
     const timerElement = page
       .locator('.timer, [data-testid="exam-timer"]')
       .first();
     await expect(timerElement).toBeVisible({ timeout: 15000 });
 
-    // Set up dialog handler before triggering event
-    page.on("dialog", async (dialog) => {
-      await dialog.accept("2026");
-    });
-
-    // Dispatch direct native dblclick
     await timerElement.dispatchEvent("dblclick");
 
-    // Check if modal appears (if migrated to PinModal) or if prompt handled it
     const modalInput = page
       .locator('input[placeholder*="PIN"], input[type="password"]')
       .first();
-    if (await modalInput.isVisible({ timeout: 1000 }).catch(() => false)) {
+
+    if (await modalInput.isVisible({ timeout: 2000 }).catch(() => false)) {
       await modalInput.fill("2026");
-      const confirmBtn = page.getByRole("button", {
-        name: /Confirm|OK|Submit/i,
-      });
+      const confirmBtn = page.getByRole("button", { name: /^Confirm$/i });
       await confirmBtn.click();
     } else {
-      // Fallback for clickCount: 2 if dispatchEvent didn't trigger prompt
       const timerText = await timerElement.innerText();
       if (
         !timerText.includes("01:00") &&

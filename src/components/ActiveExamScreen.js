@@ -34,7 +34,6 @@ export default function ActiveExamScreen({
         title="Timer Override"
         placeholder="Enter Teacher PIN"
       />
-
       <BehaviorModal
         isOpen={showBehaviorMenu}
         onClose={() => setShowBehaviorMenu(false)}
@@ -43,7 +42,6 @@ export default function ActiveExamScreen({
           setShowBehaviorMenu(false);
         }}
       />
-
       {/* Top Bar */}
       <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200">
         <div className="flex items-center gap-4">
@@ -64,11 +62,11 @@ export default function ActiveExamScreen({
             : `${Math.floor(timerHook.effectiveTimeLeft / 60)}:${timerHook.effectiveTimeLeft % 60 < 10 ? "0" : ""}${timerHook.effectiveTimeLeft % 60}`}
         </div>
       </div>
-
       {/* Main Play Area */}
       <div className="my-auto max-w-2xl mx-auto w-full bg-white p-8 rounded-2xl shadow-xl border border-slate-200 text-center">
         <h2
-          className="text-3xl font-black text-slate-800 mb-6 cursor-pointer hover:text-blue-600 transition"
+          data-testid="question-text"
+          className="question-text text-3xl font-black text-slate-800 mb-6 cursor-pointer hover:text-blue-600 transition"
           onDoubleClick={() => setShowBehaviorMenu(true)}
           title="Behavior Menu"
         >
@@ -89,7 +87,6 @@ export default function ActiveExamScreen({
           handleSubmitQuestion={handleSubmitQuestion}
         />
       </div>
-
       {children}
     </div>
   );
