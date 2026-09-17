@@ -15,7 +15,7 @@ export default function TeacherGradebookContainer({
         <button
           type="button"
           onClick={gradebook.runRetroactiveRegrade}
-          className="bg-yellow-400 text-yellow-900 font-bold px-6 py-2 rounded-full shadow-lg border border-yellow-500 hover:bg-yellow-500 transition active:scale-95"
+          className="bg-yellow-400 text-yellow-900 font-bold px-6 py-2 rounded-full shadow-lg border border-yellow-500 hover:bg-yellow-500 transition active:scale-95 cursor-pointer"
         >
           Regrade
         </button>
@@ -28,8 +28,11 @@ export default function TeacherGradebookContainer({
         availableSections={availableSections}
         isLoadingGradebook={gradebook.isLoadingGradebook}
         onBack={onBack}
-        onBulkDelete={gradebook.bulkDeleteRecords}
-        onDeleteRecord={gradebook.deleteRecord}
+        onBulkSoftDelete={gradebook.bulkSoftDeleteRecords}
+        onBulkHardDelete={gradebook.bulkHardDeleteRecords}
+        onSoftDelete={gradebook.softDeleteRecord}
+        onRestoreRecord={gradebook.restoreRecord}
+        onHardDelete={gradebook.hardDeleteRecord}
         onViewReport={onViewReport}
       />
 

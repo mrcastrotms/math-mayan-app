@@ -82,6 +82,7 @@ export default function TeacherDashboard({
           availableSections={availableSections}
           isGenerating={session.isGenerating}
           onGenerateCode={session.generateCode}
+          onResetSession={session.resetSession}
         />
         <GradebookSummaryCard onOpenGradebook={handleOpenGradebook} />
       </div>
@@ -109,7 +110,7 @@ export default function TeacherDashboard({
       <button
         type="button"
         onClick={() => setIsAdminMode(false)}
-        className="text-slate-400 hover:text-white underline text-lg font-bold"
+        className="text-slate-400 hover:text-white underline text-lg font-bold cursor-pointer"
       >
         Test Student Version -&gt;
       </button>
