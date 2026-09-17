@@ -1,3 +1,5 @@
+// src/components/TeacherGradebookView.js
+import React from "react";
 import STYLES from "../styles/gradebookStyles.json";
 import { useBatchPrint } from "../hooks/useBatchPrint";
 import GradebookTable from "./GradebookTable";
@@ -15,15 +17,16 @@ export default function TeacherGradebookView({
   onViewReport,
 }) {
   const { isPreparingPrint, triggerBatchPrint, currentOrigin } =
-    useBatchPrint(600);
+    useBatchPrint(800);
 
-  const filteredData = gradebookData.filter(
+  const filteredData = (gradebookData || []).filter(
     (record) => gradebookFilter === "All" || record.section === gradebookFilter,
   );
 
   return (
-    <div className={STYLES.container}>
-      <div className={STYLES.innerWrapper}>
+    <div className={`${STYLES.container} relative`}>
+      {/* Interactive UI - Suppressed during print */}
+      <div className={`${STYLES.innerWrapper} print:hidden`}>
         {/* Header Controls */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
           <h1 className={STYLES.title}>Gradebook</h1>
@@ -32,13 +35,17 @@ export default function TeacherGradebookView({
               type="button"
               onClick={triggerBatchPrint}
               disabled={isPreparingPrint || filteredData.length === 0}
-              className={STYLES.primaryBtn}
+              className={`${STYLES.primaryBtn} cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               {isPreparingPrint
                 ? "Preparing PDF..."
                 : `Print All (${filteredData.length})`}
             </button>
-            <button type="button" onClick={onBack} className={STYLES.darkBtn}>
+            <button
+              type="button"
+              onClick={onBack}
+              className={`${STYLES.darkBtn} cursor-pointer`}
+            >
               Back to Dashboard
             </button>
           </div>
@@ -60,7 +67,7 @@ export default function TeacherGradebookView({
               >
                 All
               </button>
-              {availableSections.map((sec) => (
+              {(availableSections || []).map((sec) => (
                 <button
                   key={sec}
                   type="button"
@@ -80,7 +87,8 @@ export default function TeacherGradebookView({
           <button
             type="button"
             onClick={() => onBulkDelete(filteredData)}
-            className={STYLES.clearBtn}
+            disabled={filteredData.length === 0}
+            className={`${STYLES.clearBtn} disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer`}
           >
             Clear Visible Records
           </button>
@@ -95,12 +103,40 @@ export default function TeacherGradebookView({
         />
       </div>
 
-      {/* Static Root-Level Print Container (Fixes the 1-page cutoff bug) */}
+      {/* Printable Sheet Container - Renders only when printing */}
       {isPreparingPrint && (
-        <div id="batch-print-container" className="hidden print:block w-full">
+        <div
+          id="batch-print-container"
+          className="hidden print:block w-full bg-white text-black"
+        >
+          <style
+            dangerouslySetInnerHTML={{
+              __html: `
+                @media print {
+                  body {
+                    background: white !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                  }
+                  #batch-print-container {
+                    display: block !important;
+                  }
+                  .report-page {
+                    page-break-after: always !important;
+                    break-after: page !important;
+                    min-height: 100vh;
+                  }
+                  .report-page:last-child {
+                    page-break-after: auto !important;
+                    break-after: auto !important;
+                  }
+                }
+              `,
+            }}
+          />
           {filteredData.map((record) => (
             <StudentReportPrintSheet
-              key={record.id}
+              key={record.id || `${record.name}-${record.timestamp}`}
               record={record}
               baseUrl={currentOrigin}
             />

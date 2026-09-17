@@ -1,6 +1,6 @@
 {
   "name": "exam-app",
-  "version": "1.8.3",
+  "version": "3.4.5",
   "private": true,
   "scripts": {
     "dev": "next dev",
