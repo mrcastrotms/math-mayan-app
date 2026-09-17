@@ -1,6 +1,6 @@
 <div align="center">
 
-# 📐 Math Mayan App (v3.4)
+# Math App (v3.4)
 
 An adaptive, real-time assessment platform and live classroom orchestration engine built with Next.js and Firebase.
 
