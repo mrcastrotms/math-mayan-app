@@ -2,7 +2,7 @@
 "use client";
 import { useState } from "react";
 import { useAppTheme } from "../hooks/useAppTheme";
-import { useExamBypass } from "../hooks/useExamBypass";
+import { useExamBypass } from "../utils/bypassUtils";
 import { useStudentJoin } from "../hooks/useStudentJoin";
 import { matchStudentToRoster } from "../utils/rosterUtils";
 import { START_SCREEN_COPY } from "../utils/themeStyles";

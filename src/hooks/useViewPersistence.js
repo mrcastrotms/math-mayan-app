@@ -1,5 +1,7 @@
 // src/hooks/useViewPersistence.js
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+
+const STORAGE_KEY = "exam_active_view";
 
 export function useViewPersistence(initialFallback = "start") {
   const [view, setView] = useState(initialFallback);
@@ -7,21 +9,25 @@ export function useViewPersistence(initialFallback = "start") {
 
   useEffect(() => {
     setIsMounted(true);
-    const params = new URLSearchParams(window.location.search);
-    const savedView =
-      params.get("view") ||
-      sessionStorage.getItem("exam_active_view") ||
-      initialFallback;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const savedView =
+        params.get("view") ||
+        sessionStorage.getItem(STORAGE_KEY) ||
+        initialFallback;
 
-    if (savedView !== initialFallback) {
-      setView(savedView);
-    }
+      if (savedView !== initialFallback) {
+        setView(savedView);
+      }
+    } catch {}
   }, [initialFallback]);
 
-  const navigateTo = (viewName) => {
+  const navigateTo = useCallback((viewName) => {
     setView(viewName);
-    if (typeof window !== "undefined") {
-      sessionStorage.setItem("exam_active_view", viewName);
+    if (typeof window === "undefined") return;
+
+    try {
+      sessionStorage.setItem(STORAGE_KEY, viewName);
       const url = new URL(window.location.href);
       if (viewName === "start") {
         url.searchParams.delete("view");
@@ -29,8 +35,8 @@ export function useViewPersistence(initialFallback = "start") {
         url.searchParams.set("view", viewName);
       }
       window.history.replaceState({}, "", url.toString());
-    }
-  };
+    } catch {}
+  }, []);
 
   return { view, navigateTo, isMounted };
 }

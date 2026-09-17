@@ -1,8 +1,68 @@
 // src/hooks/useExamNavigation.js
-import { useState, useCallback } from "react";
-import { createAnswerRecord } from "../utils/navigationUtils";
-import { useExamKeyboard } from "./useExamKeyboard";
+import { useState, useCallback, useEffect } from "react";
 import { useExamLocalStorage } from "./useExamLocalStorage";
+
+/* =========================================================================
+   1. ANSWER RECORD HELPERS
+   ========================================================================= */
+
+function cleanAnswerString(val) {
+  return String(val ?? "")
+    .replace(/,/g, "")
+    .trim();
+}
+
+function createAnswerRecord(currentQ, input, isSkipped = false) {
+  if (isSkipped) {
+    return {
+      question: currentQ,
+      studentInput: "Skipped",
+      correctAnswer: currentQ?.correctAnswer,
+      isCorrect: false,
+    };
+  }
+
+  const cleanInput = cleanAnswerString(input);
+  const cleanCorrect = cleanAnswerString(currentQ?.correctAnswer);
+
+  return {
+    question: currentQ,
+    studentInput: input,
+    correctAnswer: currentQ?.correctAnswer,
+    isCorrect: cleanInput === cleanCorrect,
+  };
+}
+
+/* =========================================================================
+   2. KEYBOARD LISTENER HOOK
+   ========================================================================= */
+
+function useExamKeyboard({ onInput, onBackspace, onSubmit }) {
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")
+        return;
+
+      if (/^[0-9,.]$/.test(e.key)) {
+        e.preventDefault();
+        onInput(e.key);
+      } else if (e.key === "Backspace") {
+        e.preventDefault();
+        onBackspace();
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        onSubmit();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onInput, onBackspace, onSubmit]);
+}
+
+/* =========================================================================
+   3. PRIMARY NAVIGATION HOOK
+   ========================================================================= */
 
 export function useExamNavigation(questions = [], appText, student) {
   const {
