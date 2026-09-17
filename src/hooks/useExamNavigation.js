@@ -76,6 +76,8 @@ export function useExamNavigation(questions = [], appText, student) {
 
   return {
     currentQ,
+    currentQuestionIndex,
+    setCurrentQuestionIndex,
     questionsAttempted,
     currentInput,
     handlePadClick,
