@@ -1,4 +1,5 @@
 import { useState } from "react";
+import StudentReportPrintSheet from "./StudentReportPrintSheet";
 
 export default function TeacherGradebookView({
   gradebookData,
@@ -20,12 +21,17 @@ export default function TeacherGradebookView({
 
   const handlePrintAll = () => {
     setIsPreparingPrint(true);
-    // Give React a split second to mount the heavy print components before triggering the browser print dialog
+    // Give React time to render all QR codes and sheets before launching the print preview
     setTimeout(() => {
       window.print();
       setIsPreparingPrint(false);
-    }, 500);
+    }, 600);
   };
+
+  const currentOrigin =
+    typeof window !== "undefined"
+      ? window.location.origin
+      : "https://math-mayan-app.vercel.app";
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8 w-full absolute top-0 left-0 z-50 overflow-y-auto">
@@ -36,9 +42,12 @@ export default function TeacherGradebookView({
           <div className="flex gap-4 w-full md:w-auto">
             <button
               onClick={handlePrintAll}
-              className="flex-1 md:flex-none bg-blue-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95"
+              disabled={isPreparingPrint || filteredData.length === 0}
+              className="flex-1 md:flex-none bg-blue-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95 disabled:opacity-50"
             >
-              Print All ({filteredData.length})
+              {isPreparingPrint
+                ? "Preparing PDF..."
+                : `Print All (${filteredData.length})`}
             </button>
             <button
               onClick={onBack}
@@ -84,20 +93,20 @@ export default function TeacherGradebookView({
             onClick={() => onBulkDelete(filteredData)}
             className="bg-red-50 text-red-600 border border-red-100 font-bold py-2 px-6 rounded-lg hover:bg-red-100 transition-all active:scale-95 whitespace-nowrap"
           >
-            Clear
+            Clear Visible Records
           </button>
         </div>
 
-        {/* The Gradebook Table */}
+        {/* The Gradebook Table (Hidden during print) */}
         {isLoadingGradebook ? (
-          <div className="text-center py-20 text-2xl font-black text-slate-300 animate-pulse">
+          <div className="text-center py-20 text-2xl font-black text-slate-300 animate-pulse print:hidden">
             Loading Gradebook...
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto print:shadow-none print:border-none">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto print:hidden">
             <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
-                <tr className="bg-slate-100 border-b border-slate-200 text-slate-600 print:bg-transparent">
+                <tr className="bg-slate-100 border-b border-slate-200 text-slate-600">
                   <th className="p-5 font-bold uppercase tracking-wider text-sm">
                     Name
                   </th>
@@ -113,7 +122,7 @@ export default function TeacherGradebookView({
                   <th className="p-5 font-bold uppercase tracking-wider text-sm">
                     Date
                   </th>
-                  <th className="p-5 font-bold uppercase tracking-wider text-sm print:hidden">
+                  <th className="p-5 font-bold uppercase tracking-wider text-sm">
                     Actions
                   </th>
                 </tr>
@@ -130,7 +139,6 @@ export default function TeacherGradebookView({
                   </tr>
                 ) : (
                   filteredData.map((record, index) => {
-                    // THE FIX: Intercept bad Firebase data. If score is NaN, null, or missing, force it to 0.
                     let safeScore = 0;
                     if (
                       typeof record.score === "number" &&
@@ -144,7 +152,6 @@ export default function TeacherGradebookView({
                       safeScore = parseFloat(record.score);
                     }
 
-                    // Fail-safe for missing timestamps
                     const displayDate = record.timestamp?.toDate
                       ? record.timestamp.toDate().toLocaleDateString()
                       : record.timestamp
@@ -172,10 +179,10 @@ export default function TeacherGradebookView({
                           <span
                             className={`font-black text-xl px-3 py-1 rounded-lg ${
                               safeScore >= 80
-                                ? "bg-green-100 text-green-700 print:bg-transparent print:text-black"
+                                ? "bg-green-100 text-green-700"
                                 : safeScore >= 70
-                                  ? "bg-yellow-100 text-yellow-700 print:bg-transparent print:text-black"
-                                  : "bg-red-100 text-red-700 print:bg-transparent print:text-black"
+                                  ? "bg-yellow-100 text-yellow-700"
+                                  : "bg-red-100 text-red-700"
                             }`}
                           >
                             {safeScore}%
@@ -184,7 +191,7 @@ export default function TeacherGradebookView({
                         <td className="p-5 text-slate-500 font-medium">
                           {displayDate}
                         </td>
-                        <td className="p-5 print:hidden flex gap-2">
+                        <td className="p-5 flex gap-2">
                           <button
                             onClick={() => onViewReport(record)}
                             className="bg-blue-50 text-blue-600 px-4 py-2 rounded-lg font-bold hover:bg-blue-100 transition active:scale-95 text-sm border border-blue-100"
@@ -207,8 +214,18 @@ export default function TeacherGradebookView({
           </div>
         )}
 
-        {/* JIT Print Rendering Container */}
-        {isPreparingPrint && <div className="hidden print:block w-full"></div>}
+        {/* JIT Batch Print Engine: Mounts solely during print */}
+        {isPreparingPrint && (
+          <div id="batch-print-container" className="hidden print:block w-full">
+            {filteredData.map((record) => (
+              <StudentReportPrintSheet
+                key={record.id}
+                record={record}
+                baseUrl={currentOrigin}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

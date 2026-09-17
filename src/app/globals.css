@@ -24,3 +24,48 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* ==========================================================================
+   Single-Page Batch Print Engine (Letter Size)
+   ========================================================================== */
+@media print {
+  /* Hide the entire interactive web app */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Make ONLY the print container and its contents visible */
+  #batch-print-container,
+  #batch-print-container * {
+    visibility: visible;
+  }
+
+  #batch-print-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+  }
+
+  /* Standard Letter Sheet Configuration */
+  @page {
+    size: letter portrait;
+    margin: 0.5in;
+  }
+
+  /* Exactly one student report per Letter sheet */
+  .report-page {
+    page-break-after: always;
+    break-after: page;
+    height: 9.8in;
+    max-height: 9.8in;
+    box-sizing: border-box;
+    overflow: hidden;
+    border: none !important;
+    background-color: #ffffff !important;
+    color: #0f172a !important; /* Force dark text regardless of dark mode */
+  }
+}
