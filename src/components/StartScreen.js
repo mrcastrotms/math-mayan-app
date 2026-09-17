@@ -1,7 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { auth, db } from "../firebase";
-import { signInAnonymously } from "firebase/auth"; // Removed Google Auth!
+import { signInAnonymously } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { useAppTheme } from "../hooks/useAppTheme";
 import { useExamBypass } from "../hooks/useExamBypass";
@@ -22,6 +22,9 @@ export default function StartScreen({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Modal visibility state
+  const [showTeacherModal, setShowTeacherModal] = useState(false);
+
   const { theme, changeTheme, getThemeClasses } = useAppTheme();
   const styles = getThemeClasses();
 
@@ -40,9 +43,8 @@ export default function StartScreen({
         onJoinSuccess,
         setError,
       })
-    ) {
+    )
       return;
-    }
 
     if (!name.trim() || !cleanCode || !selectedSection) {
       setError(
@@ -74,11 +76,7 @@ export default function StartScreen({
     }
   };
 
-  // Completely bypass Gmail - purely string matching
-  const handleTeacherLogin = () => {
-    setError("");
-    const code = window.prompt("Enter Teacher Access Code:");
-
+  const handleTeacherSubmit = (code) => {
     if (code === "0801196604650") {
       setIsAdminMode(true);
     } else if (code) {
@@ -90,11 +88,23 @@ export default function StartScreen({
     <div
       className={`min-h-screen flex flex-col items-center justify-center p-4 relative transition-colors duration-200 ${styles.bg}`}
     >
+      {/* Teacher PIN Modal */}
+      <PinModal
+        isOpen={showTeacherModal}
+        onClose={() => setShowTeacherModal(false)}
+        onSubmit={handleTeacherSubmit}
+        title="Teacher Authentication"
+        placeholder="Enter Access Code"
+      />
+
       <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
         <ThemeToggle theme={theme} changeTheme={changeTheme} />
         <button
           type="button"
-          onClick={handleTeacherLogin}
+          onClick={() => {
+            setError("");
+            setShowTeacherModal(true);
+          }}
           className={styles.teacherBtn}
         >
           {START_SCREEN_COPY.teacherButton}
@@ -173,6 +183,69 @@ export default function StartScreen({
       </div>
 
       {children}
+    </div>
+  );
+}
+
+function PinModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  title,
+  placeholder = "Enter PIN",
+}) {
+  const [pin, setPin] = useState("");
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setPin("");
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(pin);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+        <h3 className="text-xl font-black text-slate-800 mb-4 text-center">
+          {title}
+        </h3>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            ref={inputRef}
+            type="password"
+            value={pin}
+            onChange={(e) => setPin(e.target.value)}
+            className="w-full p-4 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 text-center text-2xl font-mono tracking-widest text-slate-900"
+            placeholder={placeholder}
+          />
+
+          <div className="flex gap-3 mt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition shadow-md shadow-blue-200"
+            >
+              Confirm
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
