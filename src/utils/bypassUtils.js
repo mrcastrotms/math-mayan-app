@@ -1,3 +1,18 @@
+// src/utils/bypassUtils.js
+"use client";
+import { useEffect } from "react";
+
+export function useExamBypass(onJoinSuccess) {
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("bypass") === "true") {
+        onJoinSuccess("Test Student", "00000", "test-uid-00000", "4A");
+      }
+    }
+  }, [onJoinSuccess]);
+}
+
 export function handleMasterBypass({
   cleanCode,
   name,
