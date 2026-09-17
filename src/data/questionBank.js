@@ -6,7 +6,7 @@ export const examQuestions = [
     difficulty: "easy",
     question: "5,000 is 10 times as much as what?",
     instruction: "",
-    correctAnswer: "300",
+    correctAnswer: "500",
     observation: "Understands base-ten scaling by powers of 10.",
   },
   {
