@@ -140,6 +140,12 @@ export function useExamState() {
     setExamStarted(false);
   };
 
+  const handleAddDemerit = () => {
+    if (typeof navigation.setDemerits === "function") {
+      navigation.setDemerits((prev) => (prev || 0) + 1);
+    }
+  };
+
   return {
     ...form,
     isAdminMode,
@@ -168,6 +174,8 @@ export function useExamState() {
         navigation.demerits,
         examDuration,
       ),
+    handleAddDemerit,
+    setDemerits: navigation.setDemerits,
     examStarted,
     setExamStarted,
     examFinished,
