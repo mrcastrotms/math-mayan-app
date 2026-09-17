@@ -1,43 +1,136 @@
+// src/app/page.js
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { useExamState } from "../hooks/useExamState";
 import { useViewPersistence } from "../hooks/useViewPersistence";
 import { useCachedSections } from "../hooks/useCachedSections";
+import { useLiveClassroomSync } from "../hooks/useLiveClassroomSync";
+import {
+  logKickedStudent,
+  cleanStudentSession,
+} from "../services/liveSyncService";
+import { handleStudentJoin } from "../utils/joinHandler";
+import ExamAppRouter from "../components/ExamAppRouter";
+import StudentLockOverlay from "../components/StudentLockOverlay";
 
-import StartScreen from "../components/StartScreen";
-import ActiveExamContainer from "../components/ActiveExamContainer";
-
-const ParentReportView = dynamic(
-  () => import("../components/ParentReportView"),
-);
-const TeacherDashboard = dynamic(
-  () => import("../components/TeacherDashboard"),
-);
-const FinishedScreen = dynamic(() => import("../components/FinishedScreen"));
-const LockedScreen = dynamic(() => import("../components/LockedScreen"));
-const DevAdminPanel = dynamic(() => import("../components/DevAdminPanel"));
+const DevAdminPanel = dynamic(() => import("../components/DevAdminPanel"), {
+  ssr: false,
+});
 
 export default function ExamApp() {
+  const router = useRouter();
   const state = useExamState();
   const { view, navigateTo } = useViewPersistence("start");
   const { displaySections, isLoading } = useCachedSections(
     state?.availableSections,
   );
-  const [scannedReportId, setScannedReportId] = useState(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const report = new URLSearchParams(window.location.search).get("report");
-      if (report) setScannedReportId(report);
-    }
+    setMounted(true);
   }, []);
+
+  // Keep state ref fresh to prevent handler closures from getting stale
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  const commandHandlers = useMemo(
+    () => ({
+      LOCK: () => {
+        stateRef.current?.setIsLocked?.(true);
+      },
+      UNLOCK: () => {
+        stateRef.current?.setIsLocked?.(false);
+      },
+      ADD_DEMERIT: () => {
+        const curr = stateRef.current;
+        if (typeof curr?.handleAddDemerit === "function") {
+          curr.handleAddDemerit();
+        } else if (typeof curr?.setDemerits === "function") {
+          curr.setDemerits((prev) => (prev || 0) + 1);
+        }
+      },
+      FORCE_FINISH: () => {
+        alert("Your exam has been collected and submitted by the teacher.");
+        stateRef.current?.handleFinishExam?.();
+      },
+      FORCE_FULLSCREEN: () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen?.().catch(() => {});
+        }
+      },
+      AWARD_FREEBIE: ({ points = 1, note = "Teacher Bonus" } = {}) => {
+        alert(`Freebie Awarded (+${points}): ${note}`);
+        stateRef.current?.setBonusPoints?.((prev) => (prev || 0) + points);
+      },
+      JUMP_QUESTION: ({ targetIndex } = {}) => {
+        if (typeof targetIndex === "number") {
+          stateRef.current?.setCurrentQuestionIndex?.(targetIndex);
+        }
+      },
+      SWAP_QUESTION: ({ difficulty = "hard" } = {}) => {
+        stateRef.current?.loadAlternativeQuestion?.(difficulty);
+      },
+      FLASH_MESSAGE: ({ text = "" } = {}) => {
+        alert(`Teacher Notice: ${text}`);
+      },
+      KICK: async ({ reason, code } = {}) => {
+        const student = stateRef.current?.student;
+        const kickReason = reason || "Behavior / Not following directions";
+
+        if (code && student?.uid) {
+          await logKickedStudent(code, student.uid, {
+            name: student.name || "Unknown",
+            section: student.section || "",
+            reason: kickReason,
+          });
+        }
+
+        if (student?.uid) {
+          cleanStudentSession(student.uid);
+        }
+
+        alert(
+          `Session Terminated: You were removed from the exam by the teacher (${kickReason}).`,
+        );
+
+        try {
+          sessionStorage.clear();
+          localStorage.removeItem("activeExamSession");
+        } catch (_) {}
+
+        window.location.href = "/";
+      },
+    }),
+    [],
+  );
+
+  useLiveClassroomSync({
+    student: state?.student,
+    isTeacher: false,
+    commandHandlers,
+  });
+
+  const [scannedReportId] = useState(() => {
+    if (typeof window !== "undefined") {
+      return new URLSearchParams(window.location.search).get("report") || null;
+    }
+    return null;
+  });
 
   useEffect(() => {
     if (view === "dashboard" && !state?.isAdminMode) {
       state?.setIsAdminMode?.(true);
     }
   }, [view, state]);
+
+  if (!mounted) {
+    return <div className="min-h-screen bg-slate-900" />;
+  }
 
   const adminPanel = (
     <DevAdminPanel
@@ -47,86 +140,24 @@ export default function ExamApp() {
     />
   );
 
-  if (scannedReportId) return <ParentReportView reportId={scannedReportId} />;
-
-  if (view === "dashboard" || state?.isAdminMode) {
-    return (
-      <TeacherDashboard
-        setIsAdminMode={(val) => {
-          state?.setIsAdminMode?.(val);
-          if (!val) navigateTo("start");
-        }}
-        availableSections={state?.availableSections || []}
-        setAvailableSections={state?.setAvailableSections || (() => {})}
-        appText={state?.appText || {}}
-        setAppText={state?.setAppText || (() => {})}
-      />
-    );
-  }
-
-  if (state?.isLocked) {
-    return (
-      <LockedScreen
-        overrideCode={state?.overrideCode || ""}
-        setOverrideCode={state?.setOverrideCode || (() => {})}
-        handleUnlock={state?.handleUnlock || (() => {})}
-      >
-        {adminPanel}
-      </LockedScreen>
-    );
-  }
-
-  if (state?.examStarted) {
-    return <ActiveExamContainer state={state} adminPanel={adminPanel} />;
-  }
-
-  if (state?.examFinished) {
-    return (
-      <FinishedScreen
-        student={state?.student}
-        selectedSection={state?.selectedSection}
-        finalScore={
-          state?.calculateFinalScore ? state.calculateFinalScore() : 70
-        }
-        isSaving={state?.isSaving}
-        handleTryAgain={state?.handleTryAgain}
-        studentAnswers={state?.studentAnswers}
-        demerits={state?.demerits || 0}
-      >
-        {adminPanel}
-      </FinishedScreen>
-    );
-  }
-
   return (
-    <StartScreen
-      setIsAdminMode={(val) => {
-        state?.setIsAdminMode?.(val);
-        if (val) navigateTo("dashboard");
-      }}
-      availableSections={displaySections}
-      isLoading={isLoading}
-      onJoinSuccess={(name, code, uid, section) => {
-        state?.setCustomStudentName?.(name);
-        state?.setSessionCodeInput?.(code);
-        state?.setSelectedSection?.(section);
-        state?.setStudent?.({ name, uid, section });
-
-        if (code === "00000") {
-          if (
-            typeof window !== "undefined" &&
-            !window.location.search.includes("bypass=true")
-          ) {
-            window.location.href = "/?bypass=true";
-          } else {
-            state?.setExamStarted?.(true);
-          }
-        } else {
-          state?.handleVerifyAndStart?.(code, section);
+    <>
+      <StudentLockOverlay
+        isLocked={state?.isLocked}
+        studentName={state?.student?.name}
+      />
+      <ExamAppRouter
+        state={state}
+        view={view}
+        navigateTo={navigateTo}
+        displaySections={displaySections}
+        isLoading={isLoading}
+        scannedReportId={scannedReportId}
+        adminPanel={adminPanel}
+        onJoin={(name, code, uid, section) =>
+          handleStudentJoin({ name, code, uid, section, state, router })
         }
-      }}
-    >
-      {adminPanel}
-    </StartScreen>
+      />
+    </>
   );
 }

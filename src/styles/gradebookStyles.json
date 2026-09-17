@@ -1,0 +1,15 @@
+{
+  "container": "min-h-screen bg-slate-50 p-4 md:p-8 w-full absolute top-0 left-0 z-50 overflow-y-auto print:static print:p-0 print:overflow-visible print:bg-white",
+  "innerWrapper": "max-w-7xl mx-auto print:hidden",
+  "title": "text-4xl font-black text-slate-800",
+  "primaryBtn": "flex-1 md:flex-none bg-blue-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95 disabled:opacity-50",
+  "darkBtn": "flex-1 md:flex-none bg-slate-800 text-white font-bold py-3 px-6 rounded-xl hover:bg-slate-700 shadow-lg transition-all active:scale-95",
+  "clearBtn": "bg-red-50 text-red-600 border border-red-100 font-bold py-2 px-6 rounded-lg hover:bg-red-100 transition-all active:scale-95 whitespace-nowrap",
+  "reportBtn": "bg-blue-50 text-blue-600 px-4 py-2 rounded-lg font-bold hover:bg-blue-100 transition active:scale-95 text-sm border border-blue-100",
+  "deleteBtn": "bg-slate-50 text-red-500 px-4 py-2 rounded-lg font-bold hover:bg-red-50 transition active:scale-95 text-sm border border-slate-100",
+  "filterBtnActive": "px-5 py-2 rounded-lg font-bold text-sm transition-all bg-blue-600 text-white shadow-md shadow-blue-200",
+  "filterBtnInactive": "px-5 py-2 rounded-lg font-bold text-sm transition-all bg-slate-100 text-slate-600 hover:bg-slate-200",
+  "scoreGreen": "bg-green-100 text-green-700",
+  "scoreYellow": "bg-yellow-100 text-yellow-700",
+  "scoreRed": "bg-red-100 text-red-700"
+}
