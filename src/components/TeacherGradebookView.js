@@ -38,7 +38,7 @@ export default function TeacherGradebookView({
               onClick={handlePrintAll}
               className="flex-1 md:flex-none bg-blue-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95"
             >
-              Print All to PDF ({filteredData.length})
+              Print All ({filteredData.length})
             </button>
             <button
               onClick={onBack}
@@ -84,7 +84,7 @@ export default function TeacherGradebookView({
             onClick={() => onBulkDelete(filteredData)}
             className="bg-red-50 text-red-600 border border-red-100 font-bold py-2 px-6 rounded-lg hover:bg-red-100 transition-all active:scale-95 whitespace-nowrap"
           >
-            Clear Visible Records
+            Clear
           </button>
         </div>
 
@@ -105,7 +105,7 @@ export default function TeacherGradebookView({
                     Section
                   </th>
                   <th className="p-5 font-bold uppercase tracking-wider text-sm">
-                    Activity Type
+                    Activity
                   </th>
                   <th className="p-5 font-bold uppercase tracking-wider text-sm">
                     Score

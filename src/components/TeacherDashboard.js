@@ -253,7 +253,7 @@ export default function TeacherDashboard({
             onClick={handleRetroactiveRegrade}
             className="bg-yellow-400 text-yellow-900 font-bold px-6 py-2 rounded-full shadow-lg border border-yellow-500 hover:bg-yellow-500 transition active:scale-95"
           >
-            Retroactive Regrade (Fix Commas)
+            Regrade
           </button>
         </div>
 
