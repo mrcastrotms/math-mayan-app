@@ -66,7 +66,7 @@ export default function ExamApp() {
   if (state?.isAdminMode) {
     return (
       <TeacherDashboard
-        setIsAdminMode={state.isAdminMode}
+        setIsAdminMode={state?.setIsAdminMode} // ✅ Pass setter so you can exit back to start
         availableSections={state?.availableSections || []}
         setAvailableSections={state?.setAvailableSections || (() => {})}
         appText={state?.appText || {}}
@@ -156,7 +156,7 @@ export default function ExamApp() {
 
   return (
     <StartScreen
-      setIsAdminMode={state?.isAdminMode}
+      setIsAdminMode={state?.setIsAdminMode} // ✅ Passing the actual function
       availableSections={displaySections}
       isLoading={isActuallyLoading}
       onJoinSuccess={(name, code, uid, section) => {

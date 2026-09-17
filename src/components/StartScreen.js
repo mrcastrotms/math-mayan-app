@@ -77,9 +77,10 @@ export default function StartScreen({
   };
 
   const handleTeacherSubmit = (code) => {
-    if (code === "0801196604650") {
+    const cleanPin = (code || "").trim();
+    if (cleanPin === "0801196604650") {
       setIsAdminMode(true);
-    } else if (code) {
+    } else if (cleanPin) {
       setError("Access Denied: Invalid Teacher Code.");
     }
   };
@@ -93,8 +94,8 @@ export default function StartScreen({
         isOpen={showTeacherModal}
         onClose={() => setShowTeacherModal(false)}
         onSubmit={handleTeacherSubmit}
-        title="Teacher Authentication"
-        placeholder="Enter Access Code"
+        title=""
+        placeholder="Access Code"
       />
 
       <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
