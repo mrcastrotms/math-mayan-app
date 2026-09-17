@@ -1,71 +1,69 @@
-@import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
 /* ==========================================================================
    Single-Page Batch Print Engine (Letter Size)
    ========================================================================== */
 @media print {
-  /* Hide the entire interactive web app */
+  /* 1. Reset standard layout traps that break multi-page pagination */
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    min-height: 100% !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+
+  /* 2. Neutralize parent scroll containers */
+  div {
+    overflow: visible !important;
+  }
+
+  /* 3. Hide all standard UI */
   body * {
     visibility: hidden;
   }
 
-  /* Make ONLY the print container and its contents visible */
+  /* 4. Position the batch container statically in normal document flow */
   #batch-print-container,
   #batch-print-container * {
     visibility: visible;
   }
 
   #batch-print-container {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    background: transparent;
+    display: block !important;
+    position: static !important; /* Prevents 1-page viewport clipping */
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
-  /* Standard Letter Sheet Configuration */
+  /* 5. Target standard Letter dimensions */
   @page {
     size: letter portrait;
-    margin: 0.5in;
+    margin: 0.4in;
   }
 
-  /* Exactly one student report per Letter sheet */
+  /* 6. Enforce hard page breaks after every student */
   .report-page {
-    page-break-after: always;
-    break-after: page;
-    height: 9.8in;
-    max-height: 9.8in;
-    box-sizing: border-box;
-    overflow: hidden;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    height: 10.1in !important; /* Exactly Letter height (11in) minus margins (0.8in) */
+    max-height: 10.1in !important;
+    min-height: 10.1in !important;
+    box-sizing: border-box !important;
     border: none !important;
     background-color: #ffffff !important;
-    color: #0f172a !important; /* Force dark text regardless of dark mode */
+    color: #0f172a !important;
+  }
+
+  /* Suppress browser auto headers & footers (URL, dates) */
+  @page {
+    margin-top: 0.4in;
+    margin-bottom: 0.4in;
   }
 }
