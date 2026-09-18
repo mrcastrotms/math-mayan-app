@@ -1,5 +1,6 @@
 // src/app/page.js
 "use client";
+
 import { useEffect, useState, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
@@ -19,6 +20,11 @@ const DevAdminPanel = dynamic(() => import("../components/DevAdminPanel"), {
   ssr: false,
 });
 
+const ExamGate = dynamic(() => import("../components/ExamGate"), {
+  ssr: false,
+  loading: () => <div className="min-h-screen bg-slate-900" />,
+});
+
 export default function ExamApp() {
   const router = useRouter();
   const state = useExamState();
@@ -32,11 +38,26 @@ export default function ExamApp() {
     setMounted(true);
   }, []);
 
-  // Keep state ref fresh to prevent handler closures from getting stale
+  // Keep state ref fresh to prevent handler closures from going stale
   const stateRef = useRef(state);
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
+
+  // Fullscreen guard during live exam
+  useEffect(() => {
+    if (!mounted || view !== "exam" || state?.isDevMode) return;
+
+    const enforceFullscreen = () => {
+      if (!document.fullscreenElement) {
+        stateRef.current?.setIsLocked?.(true);
+      }
+    };
+
+    document.addEventListener("fullscreenchange", enforceFullscreen);
+    return () =>
+      document.removeEventListener("fullscreenchange", enforceFullscreen);
+  }, [mounted, view, state?.isDevMode]);
 
   const commandHandlers = useMemo(
     () => ({
@@ -128,6 +149,41 @@ export default function ExamApp() {
     }
   }, [view, state]);
 
+  // Handle initialization from ExamGate
+  const handleGateStart = async ({
+    studentName,
+    section,
+    isTester,
+    deviceUuid,
+    mdnsCandidate,
+    code,
+  }) => {
+    if (isTester) {
+      state?.setIsDevMode?.(true);
+      state?.setIsAdminMode?.(true);
+    }
+
+    // Default assessment duration to 45 minutes
+    if (typeof state?.setTimeLeft === "function") {
+      state.setTimeLeft(45 * 60);
+    }
+
+    await handleStudentJoin({
+      name: studentName,
+      code: code || "00000",
+      uid: deviceUuid,
+      section,
+      state,
+      router,
+      telemetry: {
+        deviceUuid,
+        mdnsCandidate,
+      },
+    });
+
+    navigateTo("exam");
+  };
+
   if (!mounted) {
     return <div className="min-h-screen bg-slate-900" />;
   }
@@ -146,18 +202,27 @@ export default function ExamApp() {
         isLocked={state?.isLocked}
         studentName={state?.student?.name}
       />
-      <ExamAppRouter
-        state={state}
-        view={view}
-        navigateTo={navigateTo}
-        displaySections={displaySections}
-        isLoading={isLoading}
-        scannedReportId={scannedReportId}
-        adminPanel={adminPanel}
-        onJoin={(name, code, uid, section) =>
-          handleStudentJoin({ name, code, uid, section, state, router })
-        }
-      />
+
+      {view === "start" ? (
+        <ExamGate
+          availableSections={displaySections}
+          isLoading={isLoading}
+          onExamStart={handleGateStart}
+        />
+      ) : (
+        <ExamAppRouter
+          state={state}
+          view={view}
+          navigateTo={navigateTo}
+          displaySections={displaySections}
+          isLoading={isLoading}
+          scannedReportId={scannedReportId}
+          adminPanel={adminPanel}
+          onJoin={(name, code, uid, section) =>
+            handleStudentJoin({ name, code, uid, section, state, router })
+          }
+        />
+      )}
     </>
   );
 }
