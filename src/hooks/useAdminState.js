@@ -1,26 +1,23 @@
 "use client";
-import { useState, useEffect } from "react";
-
-const STORAGE_KEY = "math_mayan_teacher";
+import { useState } from "react";
 
 export function useAdminState() {
-  const [isAdminMode, setIsAdminModeState] = useState(false);
-
-  useEffect(() => {
-    try {
-      setIsAdminModeState(localStorage.getItem(STORAGE_KEY) === "true");
-    } catch {}
-  }, []);
+  const [isAdminMode, setIsAdminModeState] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("math_mayan_teacher") === "true";
+    }
+    return false;
+  });
 
   const setIsAdminMode = (value) => {
     setIsAdminModeState(value);
-    try {
+    if (typeof window !== "undefined") {
       if (value) {
-        localStorage.setItem(STORAGE_KEY, "true");
+        localStorage.setItem("math_mayan_teacher", "true");
       } else {
-        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem("math_mayan_teacher");
       }
-    } catch {}
+    }
   };
 
   return { isAdminMode, setIsAdminMode };

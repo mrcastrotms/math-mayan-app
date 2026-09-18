@@ -1,6 +1,6 @@
 // src/components/ParentQuestionCard.js
 import React from "react";
-import { formatReadableAnswer } from "../utils/gradebookUtils";
+import { formatReadableAnswer } from "../utils/reportFormattingUtils";
 
 export default function ParentQuestionCard({ ans, index }) {
   return (
