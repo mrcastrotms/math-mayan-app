@@ -1,5 +1,5 @@
 export const START_SCREEN_COPY = {
-  title: "Mathematics with Mr. Castro",
+  title: "mrcastro.vercel.app",
   subtitle: "Select your section and enter your details",
   sectionLabel: "Select your class section:",
   nameLabel: "Full Name:",

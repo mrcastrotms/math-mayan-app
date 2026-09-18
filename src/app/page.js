@@ -11,7 +11,7 @@ import {
   logKickedStudent,
   cleanStudentSession,
 } from "../services/liveSyncService";
-import { handleStudentJoin } from "../utils/studentSessionManager";
+import { handleStudentJoin } from "../utils/joinHandler";
 import ExamAppRouter from "../components/ExamAppRouter";
 import StudentLockOverlay from "../components/StudentLockOverlay";
 

@@ -1,20 +1,13 @@
 // src/hooks/useBatchPrint.js
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 
 export function useBatchPrint(delayMs = 800) {
   const [isPreparingPrint, setIsPreparingPrint] = useState(false);
-  const cleanupRef = useRef(null);
-
-  useEffect(() => {
-    return () => {
-      if (cleanupRef.current) cleanupRef.current();
-    };
-  }, []);
 
   const triggerBatchPrint = () => {
     setIsPreparingPrint(true);
 
-    const timer = setTimeout(() => {
+    setTimeout(() => {
       const handleAfterPrint = () => {
         setIsPreparingPrint(false);
         window.removeEventListener("afterprint", handleAfterPrint);
@@ -24,18 +17,11 @@ export function useBatchPrint(delayMs = 800) {
 
       window.print();
 
-      const fallbackTimer = setTimeout(() => {
+      // Fallback cleanup in case afterprint does not fire on mobile/older browsers
+      setTimeout(() => {
         setIsPreparingPrint(false);
-        window.removeEventListener("afterprint", handleAfterPrint);
       }, 5000);
-
-      cleanupRef.current = () => {
-        clearTimeout(fallbackTimer);
-        window.removeEventListener("afterprint", handleAfterPrint);
-      };
     }, delayMs);
-
-    cleanupRef.current = () => clearTimeout(timer);
   };
 
   const currentOrigin =
