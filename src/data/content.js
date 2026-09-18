@@ -1,7 +1,7 @@
 export const appText = {
   sections: ["4A", "4B", "4B", "4C", "4D", "5B"],
   global: {
-    title: "mrcastro.vercel.app",
+    title: "Mathematics with Mr. Castro",
     teacherPinPlaceholder: "PIN",
   },
   locked: {

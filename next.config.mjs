@@ -1,13 +1,6 @@
-// next.config.mjs
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  experimental: {
-    // Forces Webpack compilation engine
-    turbopack: false,
-  },
+  /* config options here */
 };
 
 export default nextConfig;
