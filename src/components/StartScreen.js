@@ -26,7 +26,7 @@ export default function StartScreen({
     styles.teacherBtn ||
     "text-xs font-bold text-slate-500 hover:text-slate-300 transition";
 
-  useExamBypass(onJoinSuccess);
+  // useExamBypass(onJoinSuccess);
 
   const joinState = useStudentJoin({ availableSections, onJoinSuccess });
 
