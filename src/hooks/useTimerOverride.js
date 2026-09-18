@@ -8,15 +8,15 @@ export function useTimerOverride(timeLeft, handleNinjaOneMinute) {
 
   const handleTimerPinSubmit = (pin) => {
     if (pin === "2026") {
-      setOverrideTimeLeft(60);
-      handleNinjaOneMinute?.();
-      setShowTimerModal(false);
+      setOverrideTimeLeft(60); // 1 minute
+      if (handleNinjaOneMinute) handleNinjaOneMinute();
     } else {
       alert("Invalid Teacher PIN");
     }
   };
 
-  const effectiveTimeLeft = overrideTimeLeft ?? timeLeft ?? 2400;
+  const effectiveTimeLeft =
+    overrideTimeLeft !== null ? overrideTimeLeft : timeLeft || 2400;
 
   return {
     showTimerModal,
@@ -24,6 +24,5 @@ export function useTimerOverride(timeLeft, handleNinjaOneMinute) {
     handleTimerDoubleClick,
     handleTimerPinSubmit,
     effectiveTimeLeft,
-    resetTimerOverride: () => setOverrideTimeLeft(null),
   };
 }
