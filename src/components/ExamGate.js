@@ -1,7 +1,8 @@
 // src/components/ExamGate.js
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { matchStudentToRoster } from "../utils/rosterUtils";
 
 const DEFAULT_SECTIONS = ["4A", "4B", "4C", "4D", "4E", "5B"];
 
@@ -19,7 +20,7 @@ export default function ExamGate({
   const [studentName, setStudentName] = useState("");
   const [storedName, setStoredName] = useState("");
   const [selectedSection, setSelectedSection] = useState(sections[0] || "4A");
-  const [theme, setTheme] = useState("standard"); // 'standard' | 'sepia' | 'contrast'
+  const [theme, setTheme] = useState("standard");
 
   // Secret Bypass State
   const [showCodeField, setShowCodeField] = useState(false);
@@ -29,7 +30,7 @@ export default function ExamGate({
 
   // Exam Runtime & Countdown
   const [examActive, setExamActive] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(45 * 60); // 45 minutes
+  const [timeLeft, setTimeLeft] = useState(45 * 60);
   const [deviceMeta, setDeviceMeta] = useState({ uuid: "", mdns: "" });
 
   const lastTapRef = useRef(0);
@@ -85,6 +86,16 @@ export default function ExamGate({
     return () => clearInterval(timer);
   }, [examActive]);
 
+  // Resolve official roster name from JSON whenever name or section changes
+  const resolvedOfficialName = useMemo(() => {
+    const targetName = studentName || storedName;
+    if (!targetName || !selectedSection) return "";
+    const match = matchStudentToRoster(targetName, selectedSection);
+    return match?.matched ? match.officialName : "";
+  }, [studentName, storedName, selectedSection]);
+
+  const displayGreetingName = resolvedOfficialName || storedName;
+
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -109,7 +120,24 @@ export default function ExamGate({
     setStudentName("");
   };
 
-  // SSR-Safe WebRTC mDNS Extraction with guaranteed socket cleanup
+  const handleHardReset = () => {
+    try {
+      if (typeof sessionStorage !== "undefined") sessionStorage.clear();
+      if (typeof localStorage !== "undefined") {
+        localStorage.removeItem("math_mayan_teacher");
+        localStorage.removeItem("exam_active_view");
+        localStorage.removeItem("activeExamSession");
+        localStorage.removeItem("exam_student_name");
+      }
+    } catch (err) {
+      console.warn("Could not clear storage:", err);
+    }
+    if (typeof window !== "undefined") {
+      window.location.href = window.location.pathname;
+    }
+  };
+
+  // SSR-Safe WebRTC mDNS Extraction with socket cleanup
   const extractMdns = async () => {
     if (typeof window === "undefined" || !window.RTCPeerConnection) {
       return "unsupported";
@@ -152,7 +180,6 @@ export default function ExamGate({
           .then((o) => pc.setLocalDescription(o))
           .catch(() => finish("blocked"));
 
-        // Hard timeout to prevent hanging the event loop
         setTimeout(() => finish("timeout"), 500);
       } catch (_) {
         finish("error");
@@ -173,16 +200,26 @@ export default function ExamGate({
       normalized === "mr castro" ||
       normalized === "césar castro" ||
       normalized === "cesar castro";
+
     const testerGranted = showCodeField && accessCode === "00000" && isMrCastro;
+
+    // Match against official JSON roster if not a tester
+    let finalStudentName = trimmed;
+    if (!testerGranted) {
+      const rosterMatch = matchStudentToRoster(trimmed, selectedSection);
+      if (rosterMatch?.matched && rosterMatch.officialName) {
+        finalStudentName = rosterMatch.officialName;
+      }
+    }
 
     setIsTesterMode(testerGranted);
     if (testerGranted) {
       setBypassNotice("Welcome Mr. Castro");
     }
 
-    // Cache Name for Returning Visits
+    // Cache verified name for returning visits
     try {
-      localStorage.setItem("exam_student_name", trimmed);
+      localStorage.setItem("exam_student_name", finalStudentName);
     } catch (_) {}
 
     // Request Fullscreen
@@ -212,12 +249,12 @@ export default function ExamGate({
 
     if (typeof onExamStart === "function") {
       onExamStart({
-        studentName: trimmed,
+        studentName: finalStudentName,
         section: selectedSection,
         isTester: testerGranted,
         deviceUuid: currentUuid,
         mdnsCandidate,
-        code: accessCode,
+        code: testerGranted ? accessCode : "",
       });
     }
   };
@@ -243,14 +280,14 @@ export default function ExamGate({
           textDim: "#ffff00",
           accent: "#00ffff",
         };
-      default: // Standard
+      default:
         return {
           bg: "#f8fafc",
           card: "#ffffff",
           border: "#e2e8f0",
           text: "#0f172a",
           textDim: "#64748b",
-          accent: "#2563eb", // Vibrant blue
+          accent: "#2563eb",
         };
     }
   };
@@ -290,7 +327,7 @@ export default function ExamGate({
                 marginTop: "4px",
               }}
             >
-              Candidate: {studentName}{" "}
+              Candidate: {resolvedOfficialName || studentName}{" "}
               {isTesterMode && (
                 <span style={{ color: current.accent }}>[TESTER]</span>
               )}
@@ -385,7 +422,7 @@ export default function ExamGate({
           fontSize: "0.85rem",
         }}
       >
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           <button
             type="button"
             onClick={() => setTheme("standard")}
@@ -428,10 +465,31 @@ export default function ExamGate({
           >
             High Contrast
           </button>
+
+          <button
+            type="button"
+            onClick={handleHardReset}
+            style={{
+              background: "transparent",
+              border: `1px solid ${current.border}`,
+              color: current.textDim,
+              padding: "4px 8px",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontSize: "0.75rem",
+            }}
+            title="Clear cached session and reset view"
+          >
+            Reset Session
+          </button>
         </div>
 
         <a
-          href={typeof window !== "undefined" ? window.location.origin : "https://mrcastro.vercel.app"}
+          href={
+            typeof window !== "undefined"
+              ? window.location.origin
+              : "https://mrcastro.vercel.app"
+          }
           target="_blank"
           rel="noopener noreferrer"
           style={{
@@ -440,7 +498,7 @@ export default function ExamGate({
             fontWeight: "bold",
           }}
         >
-          Open Teacher Dashboard
+          Teacher Dashboard
         </a>
       </div>
 
@@ -538,12 +596,12 @@ export default function ExamGate({
                   userSelect: "none",
                 }}
               >
-                {storedName
-                  ? `Welcome back, ${storedName}!`
+                {displayGreetingName
+                  ? `Welcome back, ${displayGreetingName}!`
                   : "Write your full name:"}
               </label>
 
-              {storedName && (
+              {displayGreetingName && (
                 <button
                   type="button"
                   onClick={handleResetUser}
