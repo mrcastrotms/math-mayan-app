@@ -1,46 +1,45 @@
 // src/app/api/consumeBypass/route.js
-import admin from "firebase-admin";
+import { getApps, initializeApp, cert } from "firebase-admin/app";
+import { getFirestore, Timestamp } from "firebase-admin/firestore";
 
-if (!admin.apps || admin.apps.length === 0) {
-  admin.initializeApp({
-    credential: admin.credential.cert(
-      JSON.parse(process.env.FIREBASE_ADMIN_SDK || "{}"),
-    ),
-  });
+export const dynamic = "force-dynamic";
+
+function getDb() {
+  if (!getApps().length) {
+    const raw = process.env.FIREBASE_ADMIN_SDK;
+    if (!raw) throw new Error("FIREBASE_ADMIN_SDK is not set");
+    initializeApp({ credential: cert(JSON.parse(raw)) });
+  }
+  return getFirestore();
 }
-const db = admin.firestore();
 
 export async function POST(req) {
   try {
+    const db = getDb();
     const body = await req.json();
     const { token, name, section } = body || {};
-    if (!token)
-      return new Response(JSON.stringify({ error: "Missing token" }), {
-        status: 400,
-      });
+
+    if (!token) {
+      return Response.json({ error: "Missing token" }, { status: 400 });
+    }
 
     const docRef = db.collection("bypassTokens").doc(token);
     const doc = await docRef.get();
-    if (!doc.exists)
-      return new Response(JSON.stringify({ error: "Token not found" }), {
-        status: 404,
-      });
 
-    const data = doc.data();
-    if (data.used)
-      return new Response(JSON.stringify({ error: "Token already used" }), {
-        status: 410,
-      });
-    if (data.expiresAt.toMillis() < Date.now()) {
-      return new Response(JSON.stringify({ error: "Token expired" }), {
-        status: 410,
-      });
+    if (!doc.exists) {
+      return Response.json({ error: "Token not found" }, { status: 404 });
     }
 
-    await docRef.update({
-      used: true,
-      usedAt: admin.firestore.Timestamp.now(),
-    });
+    const data = doc.data();
+
+    if (data.used) {
+      return Response.json({ error: "Token already used" }, { status: 410 });
+    }
+    if (data.expiresAt.toMillis() < Date.now()) {
+      return Response.json({ error: "Token expired" }, { status: 410 });
+    }
+
+    await docRef.update({ used: true, usedAt: Timestamp.now() });
 
     await db.collection("bypassLogs").add({
       action: "consume",
@@ -49,21 +48,19 @@ export async function POST(req) {
       section: section || data.requestedSection || null,
       ip: req.headers.get("x-forwarded-for") || null,
       userAgent: req.headers.get("user-agent") || null,
-      createdAt: admin.firestore.Timestamp.now(),
+      createdAt: Timestamp.now(),
     });
 
-    return new Response(
-      JSON.stringify({
+    return Response.json(
+      {
         ok: true,
         name: name || data.requestedName || null,
         section: section || data.requestedSection || null,
-      }),
+      },
       { status: 200 },
     );
   } catch (err) {
     console.error("consumeBypass POST error", err);
-    return new Response(JSON.stringify({ error: "Server error" }), {
-      status: 500,
-    });
+    return Response.json({ error: "Server error" }, { status: 500 });
   }
 }

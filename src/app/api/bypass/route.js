@@ -1,37 +1,35 @@
 // src/app/api/bypass/route.js
-import admin from "firebase-admin";
+import { getApps, initializeApp, cert } from "firebase-admin/app";
+import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import crypto from "crypto";
 
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(
-      JSON.parse(process.env.FIREBASE_ADMIN_SDK || "{}"),
-    ),
-  });
+export const dynamic = "force-dynamic";
+
+function getDb() {
+  if (!getApps().length) {
+    const raw = process.env.FIREBASE_ADMIN_SDK;
+    if (!raw) throw new Error("FIREBASE_ADMIN_SDK is not set");
+    initializeApp({ credential: cert(JSON.parse(raw)) });
+  }
+  return getFirestore();
 }
-const db = admin.firestore();
 
 export async function POST(req) {
   try {
+    const db = getDb();
     const body = await req.json();
     const { secret, requestedSection, requestedName } = body || {};
 
-    if (!secret)
-      return new Response(JSON.stringify({ error: "Missing secret" }), {
-        status: 400,
-      });
-
+    if (!secret) {
+      return Response.json({ error: "Missing secret" }, { status: 400 });
+    }
     if (secret !== process.env.BYPASS_SECRET) {
-      return new Response(JSON.stringify({ error: "Invalid secret" }), {
-        status: 403,
-      });
+      return Response.json({ error: "Invalid secret" }, { status: 403 });
     }
 
     const token = crypto.randomBytes(24).toString("hex");
-    const now = admin.firestore.Timestamp.now();
-    const expiresAt = admin.firestore.Timestamp.fromMillis(
-      Date.now() + 5 * 60 * 1000,
-    ); // 5 minutes
+    const now = Timestamp.now();
+    const expiresAt = Timestamp.fromMillis(Date.now() + 5 * 60 * 1000); // 5 min
 
     await db
       .collection("bypassTokens")
@@ -53,14 +51,12 @@ export async function POST(req) {
       createdAt: now,
     });
 
-    return new Response(
-      JSON.stringify({ token, expiresAt: expiresAt.toMillis() }),
+    return Response.json(
+      { token, expiresAt: expiresAt.toMillis() },
       { status: 200 },
     );
   } catch (err) {
     console.error("bypass POST error", err);
-    return new Response(JSON.stringify({ error: "Server error" }), {
-      status: 500,
-    });
+    return Response.json({ error: "Server error" }, { status: 500 });
   }
 }
