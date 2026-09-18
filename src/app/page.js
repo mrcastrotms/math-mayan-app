@@ -44,20 +44,33 @@ export default function ExamApp() {
     stateRef.current = state;
   }, [state]);
 
-  // Fullscreen guard during live exam
+  // Fullscreen and Tab Visibility Guard during live exam
   useEffect(() => {
-    if (!mounted || view !== "exam" || state?.isDevMode) return;
+    if (!mounted || view !== "exam") return;
 
-    const enforceFullscreen = () => {
-      if (!document.fullscreenElement) {
-        stateRef.current?.setIsLocked?.(true);
+    // Only bypass lock if the user entered via the secret tester PIN
+    if (state?.isTesterMode) return;
+
+    const enforceLock = () => {
+      if (!document.fullscreenElement || document.hidden) {
+        // Log demerit once upon breach and lock the screen
+        if (!stateRef.current?.isLocked) {
+          stateRef.current?.setIsLocked?.(true);
+          stateRef.current?.handleAddDemerit?.();
+        }
       }
     };
 
-    document.addEventListener("fullscreenchange", enforceFullscreen);
-    return () =>
-      document.removeEventListener("fullscreenchange", enforceFullscreen);
-  }, [mounted, view, state?.isDevMode]);
+    document.addEventListener("fullscreenchange", enforceLock);
+    document.addEventListener("webkitfullscreenchange", enforceLock);
+    document.addEventListener("visibilitychange", enforceLock);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", enforceLock);
+      document.removeEventListener("webkitfullscreenchange", enforceLock);
+      document.removeEventListener("visibilitychange", enforceLock);
+    };
+  }, [mounted, view, state?.isTesterMode]);
 
   const commandHandlers = useMemo(
     () => ({
@@ -163,9 +176,15 @@ export default function ExamApp() {
       state?.setIsAdminMode?.(true);
     }
 
-    // Default assessment duration to 45 minutes
+    // Set duration, reset time, and start the timer interval
+    if (typeof state?.setExamDuration === "function") {
+      state.setExamDuration(45 * 60);
+    }
     if (typeof state?.setTimeLeft === "function") {
       state.setTimeLeft(45 * 60);
+    }
+    if (typeof state?.setExamStarted === "function") {
+      state.setExamStarted(true);
     }
 
     await handleStudentJoin({
@@ -201,6 +220,7 @@ export default function ExamApp() {
       <StudentLockOverlay
         isLocked={state?.isLocked}
         studentName={state?.student?.name}
+        onUnlock={() => stateRef.current?.setIsLocked?.(false)}
       />
 
       {view === "start" ? (
