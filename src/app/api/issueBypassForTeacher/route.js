@@ -1,46 +1,45 @@
 // src/app/api/issueBypassForTeacher/route.js
-import admin from "firebase-admin";
+import { getApps, initializeApp, cert } from "firebase-admin/app";
+import { getFirestore, Timestamp } from "firebase-admin/firestore";
+import { getAuth } from "firebase-admin/auth";
 import crypto from "crypto";
 
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(
-      JSON.parse(process.env.FIREBASE_ADMIN_SDK || "{}"),
-    ),
-  });
+export const dynamic = "force-dynamic";
+
+function initAdmin() {
+  if (!getApps().length) {
+    const raw = process.env.FIREBASE_ADMIN_SDK;
+    if (!raw) throw new Error("FIREBASE_ADMIN_SDK is not set");
+    initializeApp({ credential: cert(JSON.parse(raw)) });
+  }
 }
-const db = admin.firestore();
 
 export async function POST(req) {
   try {
+    initAdmin();
+    const db = getFirestore();
     const body = await req.json();
-    const idToken = req.headers.get("authorization")?.replace("Bearer ", "");
-    if (!idToken)
-      return new Response(JSON.stringify({ error: "Missing id token" }), {
-        status: 401,
-      });
 
-    const decoded = await admin
-      .auth()
+    const idToken = req.headers.get("authorization")?.replace("Bearer ", "");
+    if (!idToken) {
+      return Response.json({ error: "Missing id token" }, { status: 401 });
+    }
+
+    const decoded = await getAuth()
       .verifyIdToken(idToken)
       .catch(() => null);
-    if (!decoded)
-      return new Response(JSON.stringify({ error: "Invalid id token" }), {
-        status: 401,
-      });
+    if (!decoded) {
+      return Response.json({ error: "Invalid id token" }, { status: 401 });
+    }
 
     const teacherDoc = await db.collection("teachers").doc(decoded.uid).get();
-    if (!teacherDoc.exists)
-      return new Response(JSON.stringify({ error: "Not a teacher" }), {
-        status: 403,
-      });
+    if (!teacherDoc.exists) {
+      return Response.json({ error: "Not a teacher" }, { status: 403 });
+    }
 
-    // Issue bypass token for teacher
     const token = crypto.randomBytes(24).toString("hex");
-    const now = admin.firestore.Timestamp.now();
-    const expiresAt = admin.firestore.Timestamp.fromMillis(
-      Date.now() + 5 * 60 * 1000,
-    );
+    const now = Timestamp.now();
+    const expiresAt = Timestamp.fromMillis(Date.now() + 5 * 60 * 1000);
 
     await db
       .collection("bypassTokens")
@@ -64,14 +63,12 @@ export async function POST(req) {
       createdAt: now,
     });
 
-    return new Response(
-      JSON.stringify({ token, expiresAt: expiresAt.toMillis() }),
+    return Response.json(
+      { token, expiresAt: expiresAt.toMillis() },
       { status: 200 },
     );
   } catch (err) {
     console.error("issueBypassForTeacher error", err);
-    return new Response(JSON.stringify({ error: "Server error" }), {
-      status: 500,
-    });
+    return Response.json({ error: "Server error" }, { status: 500 });
   }
 }
