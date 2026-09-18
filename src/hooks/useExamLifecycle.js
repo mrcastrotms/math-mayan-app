@@ -1,11 +1,11 @@
 // src/hooks/useExamLifecycle.js
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { computeEnhancedScore } from "../utils/scoringUtils";
 import {
   exitFullscreenSafely,
   persistExamCompletion,
+  processSessionCodeVerification,
 } from "../utils/examSessionUtils";
-import { processSessionCodeVerification } from "../utils/sessionVerification";
 
 export function useExamLifecycle({
   isTeacher,
@@ -21,7 +21,7 @@ export function useExamLifecycle({
   navigation,
   hintsUsed,
 }) {
-  const [examStarted, setExamStarted] = useState(() => isBypassActive);
+  const [examStarted, setExamStarted] = useState(() => Boolean(isBypassActive));
   const [examFinished, setExamFinished] = useState(false);
   const [examDuration, setExamDuration] = useState(() =>
     isBypassActive ? 60 : defaultDuration,
@@ -31,6 +31,14 @@ export function useExamLifecycle({
   const [isValidatingCode, setIsValidatingCode] = useState(false);
   const [loginTime] = useState(() => new Date().toLocaleTimeString());
   const [startTime, setStartTime] = useState(null);
+
+  // Synchronize bypass state upon client-side hydration in Next.js
+  useEffect(() => {
+    if (isBypassActive) {
+      setExamStarted(true);
+      setExamDuration(60);
+    }
+  }, [isBypassActive]);
 
   const handleFinishExam = async () => {
     setExamFinished(true);
