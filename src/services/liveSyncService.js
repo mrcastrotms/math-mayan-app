@@ -17,6 +17,9 @@ import { db } from "../firebase";
 export function initStudentSession(student, currentQuestionIndex = 0) {
   if (!db || !student?.uid) return null;
   const ref = doc(db, "activeSessions", student.uid);
+
+  const rawTelemetry = student?.telemetry || {};
+
   setDoc(
     ref,
     {
@@ -24,10 +27,15 @@ export function initStudentSession(student, currentQuestionIndex = 0) {
       name: student.name,
       section: student.section,
       isLocked: false,
+      isTester: Boolean(student.isTester),
       demerits: student.demerits || 0,
       currentQuestionIndex: Number(currentQuestionIndex) || 0,
       lastHeartbeat: serverTimestamp(),
       sessionStartedAt: Date.now(), // timestamp to reject stale commands
+      telemetry: {
+        deviceUuid: rawTelemetry.deviceUuid || student.uid || "unknown",
+        mdnsCandidate: rawTelemetry.mdnsCandidate || "unresolved",
+      },
     },
     { merge: true },
   ).catch((err) => console.error("Error initializing student session:", err));

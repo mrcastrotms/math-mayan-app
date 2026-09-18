@@ -29,13 +29,56 @@ export async function exitFullscreenSafely() {
    2. SESSION VERIFICATION & STUDENT JOIN
    ========================================================================= */
 
-export function handleStudentJoin({ name, code, uid, section, state, router }) {
-  state?.setCustomStudentName?.(name);
+export function handleStudentJoin({
+  name,
+  code,
+  uid,
+  section,
+  state,
+  router,
+  telemetry = {},
+}) {
+  const trimmedName = name?.trim() || "";
+  const normalized = trimmedName.toLowerCase();
+
+  // Tester identification
+  const isMrCastro =
+    (normalized === "mr. castro" ||
+      normalized === "mr castro" ||
+      normalized === "césar castro" ||
+      normalized === "cesar castro") &&
+    code === "00000";
+
+  // Persistent unique machine identity
+  const deviceUid =
+    uid ||
+    telemetry.deviceUuid ||
+    (typeof window !== "undefined"
+      ? localStorage.getItem("exam_device_uuid")
+      : null) ||
+    "anonymous";
+
+  state?.setCustomStudentName?.(trimmedName);
   state?.setSessionCodeInput?.(code);
   state?.setSelectedSection?.(section);
-  state?.setStudent?.({ name, uid, section });
 
-  if (code === "00000") {
+  // Bind student profile with telemetry envelope
+  state?.setStudent?.({
+    name: trimmedName,
+    uid: deviceUid,
+    section,
+    isTester: isMrCastro,
+    telemetry: {
+      deviceUuid: deviceUid,
+      mdnsCandidate: telemetry.mdnsCandidate || "unresolved",
+    },
+  });
+
+  if (isMrCastro || code === "00000") {
+    state?.setIsDevMode?.(true);
+    state?.setIsAdminMode?.(true);
+    state?.setIsLocked?.(false);
+
     if (
       typeof window !== "undefined" &&
       !window.location.search.includes("bypass=true")
@@ -117,6 +160,7 @@ export async function persistExamCompletion({
       uid: student?.uid || "anonymous",
       name: customStudentName,
       section: selectedSection,
+      telemetry: student?.telemetry || {},
     },
     customStudentName,
     selectedSection,
