@@ -1,6 +1,5 @@
 // src/app/page.js
 "use client";
-
 import { useEffect, useState, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
@@ -12,17 +11,12 @@ import {
   logKickedStudent,
   cleanStudentSession,
 } from "../services/liveSyncService";
-import { handleStudentJoin } from "../utils/studentSessionManager";
+import { handleStudentJoin } from "../utils/joinHandler";
 import ExamAppRouter from "../components/ExamAppRouter";
 import StudentLockOverlay from "../components/StudentLockOverlay";
 
 const DevAdminPanel = dynamic(() => import("../components/DevAdminPanel"), {
   ssr: false,
-});
-
-const ExamGate = dynamic(() => import("../components/ExamGate"), {
-  ssr: false,
-  loading: () => <div className="min-h-screen bg-slate-900" />,
 });
 
 export default function ExamApp() {
@@ -38,39 +32,11 @@ export default function ExamApp() {
     setMounted(true);
   }, []);
 
-  // Keep state ref fresh to prevent handler closures from going stale
+  // Keep state ref fresh to prevent handler closures from getting stale
   const stateRef = useRef(state);
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
-
-  // Fullscreen and Tab Visibility Guard during live exam
-  useEffect(() => {
-    if (!mounted || view !== "exam") return;
-
-    // Only bypass lock if the user entered via the secret tester PIN
-    if (state?.isTesterMode) return;
-
-    const enforceLock = () => {
-      if (!document.fullscreenElement || document.hidden) {
-        // Log demerit once upon breach and lock the screen
-        if (!stateRef.current?.isLocked) {
-          stateRef.current?.setIsLocked?.(true);
-          stateRef.current?.handleAddDemerit?.();
-        }
-      }
-    };
-
-    document.addEventListener("fullscreenchange", enforceLock);
-    document.addEventListener("webkitfullscreenchange", enforceLock);
-    document.addEventListener("visibilitychange", enforceLock);
-
-    return () => {
-      document.removeEventListener("fullscreenchange", enforceLock);
-      document.removeEventListener("webkitfullscreenchange", enforceLock);
-      document.removeEventListener("visibilitychange", enforceLock);
-    };
-  }, [mounted, view, state?.isTesterMode]);
 
   const commandHandlers = useMemo(
     () => ({
@@ -162,47 +128,6 @@ export default function ExamApp() {
     }
   }, [view, state]);
 
-  // Handle initialization from ExamGate
-  const handleGateStart = async ({
-    studentName,
-    section,
-    isTester,
-    deviceUuid,
-    mdnsCandidate,
-    code,
-  }) => {
-    if (isTester) {
-      state?.setIsDevMode?.(true);
-      state?.setIsAdminMode?.(true);
-    }
-
-    // Set duration, reset time, and start the timer interval
-    if (typeof state?.setExamDuration === "function") {
-      state.setExamDuration(45 * 60);
-    }
-    if (typeof state?.setTimeLeft === "function") {
-      state.setTimeLeft(45 * 60);
-    }
-    if (typeof state?.setExamStarted === "function") {
-      state.setExamStarted(true);
-    }
-
-    await handleStudentJoin({
-      name: studentName,
-      code: code || "00000",
-      uid: deviceUuid,
-      section,
-      state,
-      router,
-      telemetry: {
-        deviceUuid,
-        mdnsCandidate,
-      },
-    });
-
-    navigateTo("exam");
-  };
-
   if (!mounted) {
     return <div className="min-h-screen bg-slate-900" />;
   }
@@ -220,29 +145,19 @@ export default function ExamApp() {
       <StudentLockOverlay
         isLocked={state?.isLocked}
         studentName={state?.student?.name}
-        onUnlock={() => stateRef.current?.setIsLocked?.(false)}
       />
-
-      {view === "start" ? (
-        <ExamGate
-          availableSections={displaySections}
-          isLoading={isLoading}
-          onExamStart={handleGateStart}
-        />
-      ) : (
-        <ExamAppRouter
-          state={state}
-          view={view}
-          navigateTo={navigateTo}
-          displaySections={displaySections}
-          isLoading={isLoading}
-          scannedReportId={scannedReportId}
-          adminPanel={adminPanel}
-          onJoin={(name, code, uid, section) =>
-            handleStudentJoin({ name, code, uid, section, state, router })
-          }
-        />
-      )}
+      <ExamAppRouter
+        state={state}
+        view={view}
+        navigateTo={navigateTo}
+        displaySections={displaySections}
+        isLoading={isLoading}
+        scannedReportId={scannedReportId}
+        adminPanel={adminPanel}
+        onJoin={(name, code, uid, section) =>
+          handleStudentJoin({ name, code, uid, section, state, router })
+        }
+      />
     </>
   );
 }

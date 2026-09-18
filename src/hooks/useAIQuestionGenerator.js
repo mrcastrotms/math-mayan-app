@@ -1,6 +1,6 @@
 // src/hooks/useAIQuestionGenerator.js
 import { useState } from "react";
-import { saveGeneratedQuestion } from "../services/questionService";
+import { saveGeneratedQuestion } from "../services/cloudQuestionService";
 
 export function useAIQuestionGenerator() {
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);

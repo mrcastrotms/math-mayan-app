@@ -7,6 +7,7 @@ import ActiveExamContainer from "./ActiveExamContainer";
 const ParentReportView = dynamic(() => import("./ParentReportView"));
 const TeacherDashboard = dynamic(() => import("./TeacherDashboard"));
 const FinishedScreen = dynamic(() => import("./FinishedScreen"));
+const LockedScreen = dynamic(() => import("./LockedScreen"));
 
 export default function ExamAppRouter({
   state,
@@ -22,8 +23,7 @@ export default function ExamAppRouter({
     return <ParentReportView reportId={scannedReportId} />;
   }
 
-  // Only route to TeacherDashboard if explicitly on dashboard view or admin mode outside of exam
-  if (view === "dashboard" || (state?.isAdminMode && view !== "exam")) {
+  if (view === "dashboard" || state?.isAdminMode) {
     return (
       <TeacherDashboard
         setIsAdminMode={(val) => {
@@ -38,8 +38,19 @@ export default function ExamAppRouter({
     );
   }
 
-  // Keep ActiveExamContainer mounted even if locked so student answers are never lost
-  if (state?.examStarted || view === "exam") {
+  if (state?.isLocked) {
+    return (
+      <LockedScreen
+        overrideCode={state?.overrideCode || ""}
+        setOverrideCode={state?.setOverrideCode || (() => {})}
+        handleUnlock={state?.handleUnlock || (() => {})}
+      >
+        {adminPanel}
+      </LockedScreen>
+    );
+  }
+
+  if (state?.examStarted) {
     return <ActiveExamContainer state={state} adminPanel={adminPanel} />;
   }
 

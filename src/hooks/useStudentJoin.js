@@ -1,75 +1,16 @@
 // src/hooks/useStudentJoin.js
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { auth, db } from "../firebase";
 import { signInAnonymously } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { handleMasterBypass } from "../utils/bypassUtils";
-import { matchStudentToRoster } from "../utils/rosterUtils";
 
 export function useStudentJoin({ availableSections, onJoinSuccess }) {
-  const [selectedSection, setSelectedSection] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("exam_student_section") || "";
-    }
-    return "";
-  });
-
-  const [name, setName] = useState(() => {
-    if (typeof window !== "undefined") {
-      const savedName = localStorage.getItem("exam_student_name") || "";
-      const savedSection = localStorage.getItem("exam_student_section") || "";
-      if (savedName && savedSection) {
-        const match = matchStudentToRoster(savedName, savedSection);
-        if (match?.matched) {
-          return match.officialName;
-        }
-      }
-      return savedName;
-    }
-    return "";
-  });
-
-  const [examCode, setExamCode] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("exam_code") || "";
-    }
-    return "";
-  });
+  const [name, setName] = useState("");
+  const [examCode, setExamCode] = useState("");
+  const [selectedSection, setSelectedSection] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      if (name) localStorage.setItem("exam_student_name", name);
-      else localStorage.removeItem("exam_student_name");
-    }
-  }, [name]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      if (selectedSection)
-        localStorage.setItem("exam_student_section", selectedSection);
-      else localStorage.removeItem("exam_student_section");
-    }
-  }, [selectedSection]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      if (examCode) localStorage.setItem("exam_code", examCode);
-      else localStorage.removeItem("exam_code");
-    }
-  }, [examCode]);
-
-  const clearSavedIdentity = () => {
-    setName("");
-    setSelectedSection("");
-    setExamCode("");
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("exam_student_name");
-      localStorage.removeItem("exam_student_section");
-      localStorage.removeItem("exam_code");
-    }
-  };
 
   const handleStart = async (e, overrideName) => {
     e?.preventDefault?.();
@@ -103,6 +44,7 @@ export function useStudentJoin({ availableSections, onJoinSuccess }) {
       const userCredential = await signInAnonymously(auth);
       const uid = userCredential.user.uid;
 
+      // 1. Session record in the exam subcollection
       await setDoc(doc(db, "exams", cleanCode, "students", uid), {
         studentName: resolvedName,
         section: selectedSection,
@@ -110,6 +52,7 @@ export function useStudentJoin({ availableSections, onJoinSuccess }) {
         uid,
       });
 
+      // 2. Real-time active presence record for the live jail monitor
       await setDoc(doc(db, "activeSessions", uid), {
         uid,
         name: resolvedName,
@@ -140,6 +83,5 @@ export function useStudentJoin({ availableSections, onJoinSuccess }) {
     error,
     setError,
     handleStart,
-    clearSavedIdentity,
   };
 }

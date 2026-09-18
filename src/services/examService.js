@@ -1,4 +1,3 @@
-// src/services/examService.js
 import {
   collection,
   addDoc,
@@ -25,35 +24,27 @@ export async function saveExamResult(
 ) {
   if (!student) return;
   try {
-    const rawTelemetry = student?.telemetry || {};
-
     await addDoc(collection(db, "exam_results"), {
-      // Safely pull typed name, fallback to "Unknown" if missing
+      // Safely pull the typed name, fallback to "Unknown" if missing
       studentName:
         customStudentName?.trim() || student.name || "Unknown Student",
 
-      // Fallbacks to ensure Firestore doesn't crash on undefined values
+      // Provide string fallbacks so Firestore doesn't crash on 'undefined'
       googleAccountName: student.displayName || "Anonymous",
       studentEmail: student.email || "No Email (Anonymous)",
       uid: student.uid || "anonymous",
 
-      section: selectedSection || "Unknown",
-      sessionCode: sessionCodeInput || "00000",
-      activityType: activeActivityType || "Standard",
-      isTestRun: Boolean(isTestRun),
-      score: finalScore ?? 0,
-      demerits: demerits ?? 0,
-      questionsAttempted: questionsAttempted ?? 0,
-      answers: studentAnswers || {},
+      section: selectedSection,
+      sessionCode: sessionCodeInput,
+      activityType: activeActivityType,
+      isTestRun,
+      score: finalScore,
+      demerits,
+      questionsAttempted,
+      answers: studentAnswers,
       loginTime: loginTime || null,
       startTime: startTime || null,
       timestamp: serverTimestamp(),
-
-      // Telemetry & Hardware envelope
-      telemetry: {
-        deviceUuid: rawTelemetry.deviceUuid || student.uid || "anonymous",
-        mdnsCandidate: rawTelemetry.mdnsCandidate || "unresolved",
-      },
     });
   } catch (e) {
     console.error("Failed to save exam result:", e);
