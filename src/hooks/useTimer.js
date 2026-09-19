@@ -11,13 +11,6 @@ export function useTimer(
   const [timeLeft, setTimeLeft] = useState(examDuration);
   const [secondsOnCurrentQuestion, setSecondsOnCurrentQuestion] = useState(0);
 
-  // Sync timeLeft when examDuration is retrieved asynchronously from the session (e.g. 600s Quiz)
-  useEffect(() => {
-    if (examDuration && !examStarted) {
-      setTimeLeft(examDuration);
-    }
-  }, [examDuration, examStarted]);
-
   const submitExamRef = useRef(handleFinishExam);
   useEffect(() => {
     submitExamRef.current = handleFinishExam;
@@ -59,7 +52,7 @@ export function useTimer(
   };
 
   return {
-    timeLeft,
+    timeLeft: examStarted ? timeLeft : examDuration,
     setTimeLeft,
     secondsOnCurrentQuestion,
     resetQuestionTimer,
