@@ -51,14 +51,6 @@ export async function executeRestoreRecord(id) {
  * Invalids QR code and public report link.
  */
 export async function executeHardDeleteRecord(id) {
-  if (
-    !window.confirm(
-      "PERMANENT DELETE: This will delete the document completely. The QR code and report link will no longer work. Proceed?",
-    )
-  ) {
-    return false;
-  }
-
   try {
     await deleteDoc(doc(db, "exam_results", id));
     return true;
