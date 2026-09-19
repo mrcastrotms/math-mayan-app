@@ -1,15 +1,15 @@
-// src/components/exam/ActiveExamScreen.jsx
 "use client";
 
 import { useState } from "react";
-import TapeDiagramManipulative from "../manipulatives/TapeDiagramManipulative";
 import ConfirmSubmitModal from "../ui/ConfirmSubmitModal";
+import TapeDiagramManipulative from "../manipulatives/TapeDiagramManipulative";
 
 export default function ActiveExamScreen({ state, navigateTo, adminPanel }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [localShowBehaviorMenu, setLocalShowBehaviorMenu] = useState(false);
 
-  const question = state?.currentQ ||
+  const question =
+    state?.currentQ ||
     state?.getCurrentQuestion?.() || { question: "Loading question..." };
   const currentIndex = state?.currentQuestionIndex || 0;
   const currentInput = state?.currentInput || "";
@@ -67,7 +67,6 @@ export default function ActiveExamScreen({ state, navigateTo, adminPanel }) {
 
   return (
     <div className="relative flex h-screen flex-col overflow-hidden bg-slate-50">
-      {/* Compact Header */}
       <header className="flex h-14 shrink-0 items-center justify-between border-b bg-white px-4 shadow-sm">
         <div>
           <h1 className="text-lg font-bold leading-tight text-slate-800">
@@ -107,11 +106,8 @@ export default function ActiveExamScreen({ state, navigateTo, adminPanel }) {
         </button>
       </header>
 
-      {/* Main Workspace */}
       <main className="mx-auto flex w-full max-w-5xl flex-1 gap-4 overflow-hidden p-4">
-        {/* Left Side: Question Content */}
         <div className="relative flex flex-1 flex-col overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          {/* Behavior Menu Popup */}
           {showBehaviorMenu && (
             <div className="absolute right-4 top-4 z-20 flex gap-2 rounded-lg border border-red-200 bg-white p-2 shadow-md">
               <button
@@ -129,15 +125,15 @@ export default function ActiveExamScreen({ state, navigateTo, adminPanel }) {
             className="question-text select-none text-2xl font-medium text-slate-800"
             onDoubleClick={handleQuestionDoubleClick}
             dangerouslySetInnerHTML={{ __html: question.question }}
-            {question?.type === "tape-diagram" && (
-  <div className="mt-4">
-    <TapeDiagramManipulative question={question} state={state} />
-  </div>
-)}
           />
+
+          {question?.type === "tape-diagram" && (
+            <div className="mt-4">
+              <TapeDiagramManipulative question={question} state={state} />
+            </div>
+          )}
         </div>
 
-        {/* Right Side: Keypad & Input */}
         <div className="flex w-72 shrink-0 flex-col gap-3">
           <div className="shrink-0 rounded-xl border border-slate-200 bg-white p-3 text-center shadow-sm">
             <div className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-400">
