@@ -10,6 +10,7 @@ export function useExamLock({
   isTeacher,
   CORRECT_PIN,
   student,
+  onLockBreach,
 }) {
   const [isLocked, setIsLocked] = useState(false);
   const [overrideCode, setOverrideCode] = useState("");
@@ -18,7 +19,12 @@ export function useExamLock({
   const triggerLock = useCallback(
     (reason = "left_tab") => {
       if (!examStarted || examFinished || isTeacher) return;
-      setIsLocked(true);
+      setIsLocked((prev) => {
+        if (!prev) {
+          onLockBreach?.();
+        }
+        return true;
+      });
 
       if (studentUid && db) {
         updateDoc(doc(db, "activeSessions", studentUid), {
@@ -27,7 +33,7 @@ export function useExamLock({
         }).catch(() => {});
       }
     },
-    [examStarted, examFinished, isTeacher, studentUid],
+    [examStarted, examFinished, isTeacher, studentUid, onLockBreach],
   );
 
   // Tab switch, blur, and fullscreen detection

@@ -71,14 +71,13 @@ export default function StartScreen({
       return;
     }
 
-    // Set normalized natural name before triggering join
     joinState.setName(match.officialName);
     joinState.handleStart(e, match.officialName);
   };
 
   return (
     <div
-      className={`min-h-screen flex flex-col items-center justify-center p-4 relative transition-colors duration-200 ${bgClass}`}
+      className={`min-h-screen w-full flex flex-col items-center justify-center p-4 relative transition-colors duration-200 ${bgClass}`}
     >
       <PinModal
         isOpen={showTeacherModal}

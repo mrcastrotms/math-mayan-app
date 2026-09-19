@@ -1,5 +1,5 @@
 // src/hooks/useExamLifecycle.js
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { computeEnhancedScore } from "../utils/scoringUtils";
 import {
   exitFullscreenSafely,
@@ -7,7 +7,8 @@ import {
   processSessionCodeVerification,
 } from "../utils/examSessionUtils";
 
-export function useExamLifecycle({
+export function useExamLifecycle(
+{
   isTeacher,
   isBypassMode,
   isBypassActive,
@@ -40,7 +41,12 @@ export function useExamLifecycle({
     }
   }, [isBypassActive]);
 
+  const isSubmittingRef = useRef(false);
+
   const handleFinishExam = async () => {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    setExamStarted(false);
     setExamFinished(true);
     if (!isTeacher) await exitFullscreenSafely();
     if (isBypassMode) return;
@@ -105,6 +111,7 @@ export function useExamLifecycle({
     onTimerReset?.(examDuration);
     setExamFinished(false);
     setExamStarted(false);
+    isSubmittingRef.current = false;
   };
 
   return {

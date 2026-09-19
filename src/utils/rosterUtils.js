@@ -85,13 +85,16 @@ function calculateMatchScore(inputNorm, candidateNorm) {
 
   if (inputTokens.length === 0 || candidateTokens.length === 0) return 0;
 
-  let matches = 0;
+  let totalScore = 0;
   inputTokens.forEach((inTok) => {
-    const found = candidateTokens.some((canTok) => tokenMatches(inTok, canTok));
-    if (found) matches++;
+    if (candidateTokens.includes(inTok)) {
+      totalScore += 1.0; // Perfect match
+    } else if (candidateTokens.some((canTok) => tokenMatches(inTok, canTok))) {
+      totalScore += 0.8; // Fuzzy / typo match
+    }
   });
 
-  return matches / inputTokens.length;
+  return totalScore / inputTokens.length;
 }
 
 export function matchStudentToRoster(inputName, section) {

@@ -124,8 +124,7 @@ export default function ExamKeypad({
             </p>
             <form onSubmit={handlePinSubmit}>
               <input
-                type="password"
-                inputMode="numeric"
+                type="text" inputMode="numeric" autoComplete="one-time-code" data-lpignore="true" style={{ WebkitTextSecurity: "disc" }}
                 maxLength={4}
                 autoFocus
                 placeholder="Enter 4-digit PIN"

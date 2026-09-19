@@ -1,5 +1,5 @@
-// src/app/page.js
 "use client";
+
 import { useEffect, useState, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
@@ -7,16 +7,23 @@ import { useExamState } from "../hooks/useExamState";
 import { useViewPersistence } from "../hooks/useViewPersistence";
 import { useCachedSections } from "../hooks/useCachedSections";
 import { useLiveClassroomSync } from "../hooks/useLiveClassroomSync";
+import { useExamBypass } from "../hooks/useExamBypass";
 import {
   logKickedStudent,
   cleanStudentSession,
 } from "../services/liveSyncService";
-import { handleStudentJoin } from "../utils/joinHandler";
+import { handleStudentJoin } from "../utils/studentSessionManager";
 import ExamAppRouter from "../components/ExamAppRouter";
 import StudentLockOverlay from "../components/StudentLockOverlay";
+import PinModal from "../components/PinModal";
 
 const DevAdminPanel = dynamic(() => import("../components/DevAdminPanel"), {
   ssr: false,
+});
+
+const ExamGate = dynamic(() => import("../components/ExamGate"), {
+  ssr: false,
+  loading: () => <div className="min-h-screen bg-slate-900" />,
 });
 
 export default function ExamApp() {
@@ -27,16 +34,45 @@ export default function ExamApp() {
     state?.availableSections,
   );
   const [mounted, setMounted] = useState(false);
+  const [isTeacherPinOpen, setIsTeacherPinOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Keep state ref fresh to prevent handler closures from getting stale
   const stateRef = useRef(state);
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
+
+  useEffect(() => {
+    if (!mounted || view !== "exam") return;
+
+    if (state?.isTesterMode) return;
+
+    const enforceLock = () => {
+      if (!document.fullscreenElement || document.hidden) {
+        if (!stateRef.current?.isLocked) {
+          stateRef.current?.setIsLocked?.(true);
+          if (typeof stateRef.current?.handleAddDemerit === "function") {
+            stateRef.current.handleAddDemerit();
+          } else if (typeof stateRef.current?.setDemerits === "function") {
+            stateRef.current.setDemerits((prev) => (prev || 0) + 1);
+          }
+        }
+      }
+    };
+
+    document.addEventListener("fullscreenchange", enforceLock);
+    document.addEventListener("webkitfullscreenchange", enforceLock);
+    document.addEventListener("visibilitychange", enforceLock);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", enforceLock);
+      document.removeEventListener("webkitfullscreenchange", enforceLock);
+      document.removeEventListener("visibilitychange", enforceLock);
+    };
+  }, [mounted, view, state?.isTesterMode]);
 
   const commandHandlers = useMemo(
     () => ({
@@ -128,6 +164,66 @@ export default function ExamApp() {
     }
   }, [view, state]);
 
+  const handleGateStart = async ({
+    studentName,
+    section,
+    isTester,
+    deviceUuid,
+    mdnsCandidate,
+    code,
+  }) => {
+    // Prevent tester intake from gaining admin mode
+    state?.setIsAdminMode?.(false);
+
+    if (isTester) {
+      state?.setIsDevMode?.(true);
+      state?.setIsTesterMode?.(true);
+    } else {
+      state?.setIsDevMode?.(false);
+      state?.setIsTesterMode?.(false);
+    }
+
+    if (typeof state?.setExamDuration === "function") {
+      state.setExamDuration(45 * 60);
+    }
+    if (typeof state?.setTimeLeft === "function") {
+      state.setTimeLeft(45 * 60);
+    }
+    if (typeof state?.setExamStarted === "function") {
+      state.setExamStarted(true);
+    }
+
+    await handleStudentJoin({
+      name: studentName,
+      code: code || "00000",
+      uid: deviceUuid,
+      section,
+      state,
+      router,
+      telemetry: {
+        deviceUuid,
+        mdnsCandidate,
+      },
+    });
+
+    navigateTo("exam");
+  };
+
+  // Wire bypass for automated tests & local development
+  const bypassRanRef = useRef(false);
+  useExamBypass((name, code, uid, section) => {
+    if (bypassRanRef.current) return;
+    bypassRanRef.current = true;
+
+    handleGateStart({
+      studentName: name,
+      section: section,
+      isTester: true,
+      deviceUuid: uid,
+      code: code,
+    });
+  });
+
   if (!mounted) {
     return <div className="min-h-screen bg-slate-900" />;
   }
@@ -145,18 +241,46 @@ export default function ExamApp() {
       <StudentLockOverlay
         isLocked={state?.isLocked}
         studentName={state?.student?.name}
+        timeLeft={state?.timeLeft}
+        onUnlock={() => stateRef.current?.setIsLocked?.(false)}
       />
-      <ExamAppRouter
-        state={state}
-        view={view}
-        navigateTo={navigateTo}
-        displaySections={displaySections}
-        isLoading={isLoading}
-        scannedReportId={scannedReportId}
-        adminPanel={adminPanel}
-        onJoin={(name, code, uid, section) =>
-          handleStudentJoin({ name, code, uid, section, state, router })
-        }
+
+      {view === "start" && !state?.examStarted && !state?.isBypassActive ? (
+        <ExamGate
+          availableSections={displaySections}
+          isLoading={isLoading}
+          onExamStart={handleGateStart}
+          onOpenDashboard={() => setIsTeacherPinOpen(true)}
+        />
+      ) : (
+        <ExamAppRouter
+          state={state}
+          view={view}
+          navigateTo={navigateTo}
+          displaySections={displaySections}
+          isLoading={isLoading}
+          scannedReportId={scannedReportId}
+          adminPanel={adminPanel}
+          onJoin={(name, code, uid, section) =>
+            handleStudentJoin({ name, code, uid, section, state, router })
+          }
+        />
+      )}
+
+      <PinModal
+        isOpen={isTeacherPinOpen}
+        onClose={() => setIsTeacherPinOpen(false)}
+        title="Teacher Verification"
+        description="Enter the 4-digit PIN to access the dashboard"
+        placeholder="••••"
+        onSubmit={(pin) => {
+          if (pin === "0801") {
+            state?.setIsAdminMode?.(true);
+            navigateTo("dashboard");
+          } else {
+            alert("Unauthorized: Invalid Teacher PIN.");
+          }
+        }}
       />
     </>
   );

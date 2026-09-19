@@ -1,9 +1,14 @@
 @import "tailwindcss";
+
+html,
+body {
+  min-height: 100%;
+}
+
 /* ==========================================================================
    Single-Page Batch Print Engine (Letter Size)
    ========================================================================== */
 @media print {
-  /* 1. Reset standard layout traps that break multi-page pagination */
   html,
   body {
     margin: 0 !important;
@@ -12,19 +17,17 @@
     min-height: 100% !important;
     overflow: visible !important;
     background: #ffffff !important;
+    color: #0f172a !important;
   }
 
-  /* 2. Neutralize parent scroll containers */
   div {
     overflow: visible !important;
   }
 
-  /* 3. Hide all standard UI */
   body * {
     visibility: hidden;
   }
 
-  /* 4. Position the batch container statically in normal document flow */
   #batch-print-container,
   #batch-print-container * {
     visibility: visible;
@@ -32,19 +35,19 @@
 
   #batch-print-container {
     display: block !important;
-    position: static !important; /* Prevents 1-page viewport clipping */
+    position: static !important;
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
   }
 
-  /* 5. Target standard Letter dimensions */
   @page {
     size: letter portrait;
     margin: 0.4in;
+    margin-top: 0.4in;
+    margin-bottom: 0.4in;
   }
 
-  /* 6. Enforce hard page breaks after every student */
   .report-page {
     display: flex !important;
     flex-direction: column !important;
@@ -53,18 +56,12 @@
     break-after: page !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
-    height: 10.1in !important; /* Exactly Letter height (11in) minus margins (0.8in) */
+    height: 10.1in !important;
     max-height: 10.1in !important;
     min-height: 10.1in !important;
     box-sizing: border-box !important;
     border: none !important;
     background-color: #ffffff !important;
     color: #0f172a !important;
-  }
-
-  /* Suppress browser auto headers & footers (URL, dates) */
-  @page {
-    margin-top: 0.4in;
-    margin-bottom: 0.4in;
   }
 }

@@ -23,7 +23,7 @@ export default function ExamAppRouter({
     return <ParentReportView reportId={scannedReportId} />;
   }
 
-  if (view === "dashboard" || state?.isAdminMode) {
+  if (view === "dashboard") {
     return (
       <TeacherDashboard
         setIsAdminMode={(val) => {
@@ -38,21 +38,9 @@ export default function ExamAppRouter({
     );
   }
 
-  if (state?.isLocked) {
-    return (
-      <LockedScreen
-        overrideCode={state?.overrideCode || ""}
-        setOverrideCode={state?.setOverrideCode || (() => {})}
-        handleUnlock={state?.handleUnlock || (() => {})}
-      >
-        {adminPanel}
-      </LockedScreen>
-    );
-  }
+  /* Locked screen handled globally by StudentLockOverlay */
 
-  if (state?.examStarted) {
-    return <ActiveExamContainer state={state} adminPanel={adminPanel} />;
-  }
+  
 
   if (state?.examFinished) {
     return (
@@ -71,6 +59,12 @@ export default function ExamAppRouter({
       </FinishedScreen>
     );
   }
+
+  if (state?.examStarted || state?.isBypassActive || view === "exam") {
+    return <ActiveExamContainer state={state} adminPanel={adminPanel} />;
+  }
+
+  
 
   return (
     <StartScreen

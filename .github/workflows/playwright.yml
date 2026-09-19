@@ -1,9 +1,21 @@
 name: Playwright Tests
+
 on:
   push:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+
+env:
+  NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: mayan-school-exams.firebaseapp.com
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID: mayan-school-exams
+  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: mayan-school-exams.firebasestorage.app
+  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "487993138099"
+  NEXT_PUBLIC_FIREBASE_APP_ID: "1:487993138099:web:a85fbc042fb0cced0ac9c6"
+  NEXT_PUBLIC_ENABLE_BYPASS: true # 👈 ensures tests can bypass exam gate
+  FIREBASE_ADMIN_SDK: ${{ secrets.FIREBASE_ADMIN_SDK }}
+
 jobs:
   test:
     timeout-minutes: 10
@@ -14,11 +26,11 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: "npm"
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Cache Playwright Browsers
         uses: actions/cache@v4
@@ -32,7 +44,7 @@ jobs:
       - name: Install Playwright Browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps
-      # ---> YOU ARE ONLY ADDING THIS BLOCK <---
+
       - name: Cache Next.js build
         uses: actions/cache@v4
         with:
@@ -40,27 +52,17 @@ jobs:
           key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx') }}
           restore-keys: |
             ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
-      # ----------------------------------------
+
       - name: Build Next.js App
         run: npm run build
-        env:
-          NEXT_PUBLIC_FIREBASE_API_KEY: "AIzaSyMockKeyForTestingPurposesOnly12345"
-          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "mayan-math-app.firebaseapp.com"
-          NEXT_PUBLIC_FIREBASE_PROJECT_ID: "project-487993138099"
-          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: "mayan-math-app.appspot.com"
-          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "1234567890"
-          NEXT_PUBLIC_FIREBASE_APP_ID: "1:1234567890:web:abcdef"
+
+      - name: Write Firebase Admin SDK to file
+        run: echo "${FIREBASE_ADMIN_SDK}" > serviceAccount.json # 👈 makes SDK available
 
       - name: Run Playwright tests
         run: npx playwright test
         env:
           PORT: 3000
-          NEXT_PUBLIC_FIREBASE_API_KEY: "AIzaSyMockKeyForTestingPurposesOnly12345"
-          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "mayan-math-app.firebaseapp.com"
-          NEXT_PUBLIC_FIREBASE_PROJECT_ID: "project-487993138099"
-          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: "mayan-math-app.appspot.com"
-          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "1234567890"
-          NEXT_PUBLIC_FIREBASE_APP_ID: "1:1234567890:web:abcdef"
 
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}

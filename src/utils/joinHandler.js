@@ -6,11 +6,17 @@ export function handleStudentJoin({ name, code, uid, section, state, router }) {
   state?.setStudent?.({ name, uid, section });
 
   if (code === "00000") {
-    if (
+    const allowed =
       typeof window !== "undefined" &&
-      !window.location.search.includes("bypass=true")
-    ) {
-      router.push("/?bypass=true");
+      (window.location.hostname === "localhost" ||
+        process.env.NEXT_PUBLIC_ENABLE_BYPASS === "true");
+
+    if (allowed) {
+      // Immediately start the exam and set query param without blocking the transition
+      state?.setExamStarted?.(true);
+      if (!window.location.search.includes("bypass=true")) {
+        router.replace("/?bypass=true");
+      }
     } else {
       state?.setExamStarted?.(true);
     }
