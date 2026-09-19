@@ -62,6 +62,7 @@ export default function ExamGate({
           : "dev-" + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
         localStorage.setItem("exam_device_uuid", uuid);
       }
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDeviceMeta((prev) => ({ ...prev, uuid }));
     } catch (_) {}
   }, []);
