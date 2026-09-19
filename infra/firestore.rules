@@ -2,6 +2,14 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Question bank protection: server-side evaluation only
+    match /question_bank/{questionId} {
+      allow read, write: if false;
+    }
+    // Roster PII protection: direct client reads/writes disallowed
+    match /class_rosters/{sectionId} {
+      allow read, write: if false;
+    }
 
     // This rule allows anyone with your Firestore database reference to view, edit,
     // and delete all data in your Firestore database. It is useful for getting

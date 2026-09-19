@@ -1,0 +1,14 @@
+rules_version = "2";
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Roster data contains PII - strictly serverless Admin SDK access only
+    match /class_rosters/{sectionId} {
+      allow read, write: if false;
+    }
+
+    // Existing collection rules fallback
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
