@@ -1,5 +1,6 @@
 "use client";
 import Scratchpad from "../Scratchpad";
+import ExamKeypad from "../ExamKeypad";
 import AiHintModal from "../AiHintModal";
 
 import { useState } from "react";
@@ -141,62 +142,27 @@ export default function ActiveExamScreen({ state, navigateTo, adminPanel }) {
         </div>
 
         <div className="flex w-72 shrink-0 flex-col gap-3">
-          <div className="shrink-0 rounded-xl border border-slate-200 bg-white p-3 text-center shadow-sm">
-            <div className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-400">
-              Answer
-            </div>
-            <div className="flex h-12 items-center justify-center overflow-hidden rounded-lg bg-slate-50 text-4xl font-bold text-slate-900">
-              {currentInput || (
-                <span className="opacity-50 text-slate-300">_</span>
-              )}
-            </div>
+        <div className="shrink-0 rounded-xl border border-slate-200 bg-white p-3 text-center shadow-sm">
+          <div className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-400">
+            Answer
           </div>
-
-          <div className="grid flex-1 grid-cols-3 gap-2">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-              <button
-                key={num}
-                onClick={() => state?.handlePadClick?.(num.toString())}
-                className="touch-manipulation rounded-lg border border-slate-200 bg-white text-xl font-bold text-slate-700 shadow-sm hover:bg-slate-50 active:bg-slate-200"
-              >
-                {num}
-              </button>
-            ))}
-            <button
-              onClick={() => state?.handleClear?.()}
-              className="touch-manipulation rounded-lg border border-red-100 bg-red-50 text-lg font-bold text-red-600 shadow-sm hover:bg-red-100 active:bg-red-200"
-            >
-              C
-            </button>
-            <button
-              onClick={() => state?.handlePadClick?.("0")}
-              className="touch-manipulation rounded-lg border border-slate-200 bg-white text-xl font-bold text-slate-700 shadow-sm hover:bg-slate-50 active:bg-slate-200"
-            >
-              0
-            </button>
-            <button
-              onClick={() => state?.handleBackspace?.()}
-              className="touch-manipulation rounded-lg bg-slate-200 text-lg font-bold text-slate-700 shadow-sm hover:bg-slate-300 active:bg-slate-400"
-            >
-              DEL
-            </button>
-          </div>
-
-          <div className="flex shrink-0 flex-col gap-2">
-            <button
-              onClick={() => state?.handleSubmitQuestion?.()}
-              className="touch-manipulation w-full rounded-lg bg-blue-600 py-3 text-lg font-bold text-white shadow-sm hover:bg-blue-700 active:bg-blue-800"
-            >
-              Submit
-            </button>
-            <button
-              onClick={() => state?.handlePassQuestion?.()}
-              className="touch-manipulation w-full rounded-lg bg-slate-100 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-200 active:bg-slate-300"
-            >
-              Skip
-            </button>
+          <div className="flex h-12 items-center justify-center overflow-hidden rounded-lg bg-slate-50 text-4xl font-bold text-slate-900">
+            {currentInput || (
+              <span className="opacity-50 text-slate-300">_</span>
+            )}
           </div>
         </div>
+
+        <ExamKeypad 
+          handlePadClick={(val) => state?.handlePadClick?.(val)}
+          handleBackspace={() => state?.handleBackspace?.()}
+          handleClear={() => state?.handleClear?.()}
+          handlePassQuestion={() => state?.handlePassQuestion?.()}
+          handleSubmitQuestion={() => state?.handleSubmitQuestion?.()}
+          handleFinishExam={() => setIsModalOpen(true)}
+          timeLeft={timeLeft}
+        />
+      </div>
       </main>
 
       <ConfirmSubmitModal

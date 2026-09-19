@@ -9,7 +9,7 @@ export default function FinishedScreen({
   selectedSection,
   finalScore,
   isSaving,
-  handleTryAgain,
+  handleReturnHome,
   studentAnswers = [],
   demerits = 0,
   children,
@@ -21,7 +21,7 @@ export default function FinishedScreen({
         selectedSection={selectedSection}
         finalScore={finalScore}
         isSaving={isSaving}
-        handleTryAgain={handleTryAgain}
+        handleReturnHome={handleReturnHome}
         demerits={demerits}
       />
 
