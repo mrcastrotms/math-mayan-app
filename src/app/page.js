@@ -8,6 +8,7 @@ import { useViewPersistence } from "../hooks/useViewPersistence";
 import { useCachedSections } from "../hooks/useCachedSections";
 import { useLiveClassroomSync } from "../hooks/useLiveClassroomSync";
 import { useExamBypass } from "../hooks/useExamBypass";
+import { useGhostKeyBypass } from "../hooks/useGhostKeyBypass"; // 👈 Import the new hook
 import {
   logKickedStudent,
   cleanStudentSession,
@@ -223,6 +224,9 @@ export default function ExamApp() {
       code: code,
     });
   });
+
+  // 👈 Execute the Ghost Key Bypass check
+  useGhostKeyBypass(state);
 
   if (!mounted) {
     return <div className="min-h-screen bg-slate-900" />;
