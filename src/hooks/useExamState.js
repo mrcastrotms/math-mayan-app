@@ -67,6 +67,7 @@ export function useExamState() {
       isTeacher,
       CORRECT_PIN,
       student: form.student,
+      onLockBreach: navigation.handleAddDemerit,
     });
 
   const timer = useTimer(

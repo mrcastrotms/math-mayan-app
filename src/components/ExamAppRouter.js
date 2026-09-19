@@ -38,19 +38,9 @@ export default function ExamAppRouter({
     );
   }
 
-  if (state?.isLocked) {
-    return (
-      <LockedScreen
-        overrideCode={state?.overrideCode || ""}
-        setOverrideCode={state?.setOverrideCode || (() => {})}
-        handleUnlock={state?.handleUnlock || (() => {})}
-      >
-        {adminPanel}
-      </LockedScreen>
-    );
-  }
+  /* Locked screen handled globally by StudentLockOverlay */
 
-  if (state?.examStarted) {
+  if (state?.examStarted || state?.isBypassActive || view === "exam") {
     return <ActiveExamContainer state={state} adminPanel={adminPanel} />;
   }
 

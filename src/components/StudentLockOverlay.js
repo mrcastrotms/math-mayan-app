@@ -1,4 +1,3 @@
-// src/components/StudentLockOverlay.js
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -45,8 +44,9 @@ export default function StudentLockOverlay({
     const cleanPin = pinInput.trim();
     if (
       cleanPin === "0801" ||
-      cleanPin === TEACHER_PIN ||
-      cleanPin === "00000"
+      cleanPin === "2026" ||
+      cleanPin === "00000" ||
+      cleanPin === TEACHER_PIN
     ) {
       setPinError(false);
       setPinInput("");
