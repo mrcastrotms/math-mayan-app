@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useExamState } from "../hooks/useExamState";
 import { useViewPersistence } from "../hooks/useViewPersistence";
 import { useCachedSections } from "../hooks/useCachedSections";
+import { useExamBypass } from "../hooks/useExamBypass";
 import { useLiveClassroomSync } from "../hooks/useLiveClassroomSync";
 import {
   logKickedStudent,
@@ -165,7 +166,6 @@ export default function ExamApp() {
   }, [view, state]);
 
   // Handle initialization from ExamGate
-  // Handle initialization from ExamGate
   const handleGateStart = async ({
     studentName,
     section,
@@ -174,7 +174,7 @@ export default function ExamApp() {
     mdnsCandidate,
     code,
   }) => {
-    // Ensure student sessions never have admin mode active
+    // Explicitly lock down admin mode for all student/tester intake
     state?.setIsAdminMode?.(false);
 
     if (isTester) {
@@ -185,7 +185,6 @@ export default function ExamApp() {
       state?.setIsTesterMode?.(false);
     }
 
-    // Set duration, reset time, and start the timer interval
     if (typeof state?.setExamDuration === "function") {
       state.setExamDuration(45 * 60);
     }
@@ -211,6 +210,20 @@ export default function ExamApp() {
 
     navigateTo("exam");
   };
+
+  const bypassRanRef = useRef(false);
+  useExamBypass((name, code, uid, section) => {
+    if (bypassRanRef.current) return;
+    bypassRanRef.current = true;
+
+    handleGateStart({
+      studentName: name,
+      section: section,
+      isTester: true,
+      deviceUuid: uid,
+      code: code,
+    });
+  });
 
   const adminPanel = (
     <DevAdminPanel
