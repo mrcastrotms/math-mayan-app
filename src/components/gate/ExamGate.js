@@ -123,12 +123,12 @@ export default function ExamGate({
     try {
       result = await validateAndResolve();
     } catch {
-      setError("Roster validation is unavailable. Please try again.");
+      alert("Roster validation is unavailable. Please try again.");
       return;
     }
     if (!result) return;
     if (!result.isValid) {
-      setError("Name not recognized on class roster. Check your spelling.");
+      alert("Name not recognized on class roster. Check your spelling.");
       return;
     }
 
