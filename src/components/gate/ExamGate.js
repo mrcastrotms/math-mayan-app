@@ -37,6 +37,10 @@ export default function ExamGate({
   const lastTapRef = useRef(0);
   const current = THEMES[theme] || THEMES.standard;
 
+  const selectedSection = sections.includes(selectedSectionState)
+    ? selectedSectionState
+    : sections[0] || "4A";
+
   const { rosterOptions, resolvedOfficialName, validateAndResolve } = useGateValidation({
     studentName,
     storedName,
@@ -46,10 +50,6 @@ export default function ExamGate({
   });
 
   const displayGreetingName = resolvedOfficialName || storedName;
-
-  const selectedSection = sections.includes(selectedSectionState)
-    ? selectedSectionState
-    : sections[0] || "4A";
 
   useEffect(() => {
     if (typeof window === "undefined") return;
