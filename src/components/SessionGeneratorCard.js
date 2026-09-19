@@ -14,10 +14,8 @@ export default function SessionGeneratorCard({
   return (
     <div className="bg-slate-800 p-8 rounded-2xl flex-1 shadow-2xl border border-slate-700 flex flex-col justify-between">
       <div>
-        <h2 className="text-2xl font-bold mb-2">Start a Session</h2>
-        <p className="text-slate-400 mb-4 text-sm">
-          Select activity type, section, and generate a secure code.
-        </p>
+        <h2 className="text-2xl font-bold mb-2">Session</h2>
+        <p className="text-slate-400 mb-4 text-sm">Generate a secure code</p>
       </div>
 
       {generatedCode ? (
@@ -56,7 +54,7 @@ export default function SessionGeneratorCard({
         <div className="flex flex-col gap-4 my-4">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-              1. Select Activity Type:
+              Activity
             </label>
             <select
               value={selectedActivityType}
@@ -73,7 +71,7 @@ export default function SessionGeneratorCard({
 
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-              2. Select Class Section:
+              Class Section
             </label>
             <div className="flex flex-wrap gap-2">
               {availableSections.map((sec) => (
@@ -105,7 +103,7 @@ export default function SessionGeneratorCard({
                   : "bg-slate-700 text-slate-500 cursor-not-allowed"
             }`}
           >
-            {isGenerating ? "Connecting..." : "Generate Code"}
+            {isGenerating ? "Connecting" : "Generate"}
           </button>
         </div>
       )}

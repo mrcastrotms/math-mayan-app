@@ -71,7 +71,7 @@ export default function TeacherGradebookView({
                     : "text-slate-500 hover:text-slate-700"
                 }`}
               >
-                Active Roster
+                Active
               </button>
               <button
                 type="button"
@@ -82,7 +82,7 @@ export default function TeacherGradebookView({
                     : "text-slate-500 hover:text-slate-700"
                 }`}
               >
-                <span>Hidden Archive</span>
+                <span>Hidden</span>
                 {hiddenCount > 0 && (
                   <span className="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full font-black">
                     {hiddenCount}
@@ -101,14 +101,14 @@ export default function TeacherGradebookView({
             >
               {isPreparingPrint
                 ? "Preparing PDF..."
-                : `Print All ${viewMode === "hidden" ? "Hidden" : ""} (${printableSubmissions.length})`}
+                : `Print ${viewMode === "hidden" ? "Hidden" : ""} (${printableSubmissions.length})`}
             </button>
             <button
               type="button"
               onClick={onBack}
               className={`${STYLES.darkBtn} cursor-pointer`}
             >
-              Back to Dashboard
+              Dashboard
             </button>
           </div>
         </div>
@@ -116,7 +116,7 @@ export default function TeacherGradebookView({
         {/* Section Filters & Bulk Actions */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8 flex justify-between items-center flex-wrap gap-4">
           <div className="flex items-center gap-4 flex-wrap">
-            <span className="font-bold text-slate-600">Filter by Section:</span>
+            <span className="font-bold text-slate-600">Filter</span>
             <div className="flex gap-2 flex-wrap">
               <button
                 type="button"

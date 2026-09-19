@@ -112,7 +112,7 @@ export default function TeacherDashboard({
         onClick={() => setIsAdminMode(false)}
         className="text-slate-400 hover:text-white underline text-lg font-bold cursor-pointer"
       >
-        Test Student Version -&gt;
+        Student Version
       </button>
 
       <TeacherSectionModals

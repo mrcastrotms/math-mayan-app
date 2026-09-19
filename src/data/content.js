@@ -20,7 +20,7 @@ export const appText = {
     verifyingBtn: "Verifying...",
     loginPrompt: "Log in with your Google Account",
     googleBtn: "",
-    backToAdmin: "Back to Teacher Dashboard",
+    backToAdmin: "Teacher Dashboard",
     wrongSection:
       "SECURITY CHECK: This code is for a different class section. Please refresh and select the correct section, or raise your hand.",
   },

@@ -1,14 +1,14 @@
 export const START_SCREEN_COPY = {
   title: "mrcastro.vercel.app",
   subtitle: "Select your section and enter your details",
-  sectionLabel: "Select your class section:",
+  sectionLabel: "",
   nameLabel: "Full Name:",
   namePlaceholder: "Full Name",
   codeLabel: "Code:",
   codePlaceholder: "CODE",
   submitLoading: "Connecting...",
   submitIdle: "Start",
-  teacherButton: "Open Teacher Dashboard",
+  teacherButton: "Teacher Dashboard",
 };
 
 export const THEME_CONFIG = {
