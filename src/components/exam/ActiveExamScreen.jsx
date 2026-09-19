@@ -50,11 +50,19 @@ export default function ActiveExamScreen({ state, navigateTo, adminPanel }) {
         {/* Left Side: Question Content */}
         <div className="flex-1 rounded-xl bg-white p-6 shadow-sm border border-slate-200 flex flex-col overflow-y-auto">
           <h2
-            className="text-2xl font-medium text-slate-800"
+            data-testid="question-text"
+            className="question-text text-2xl font-medium text-slate-800 select-none"
+            onDoubleClick={() => {
+              // The secret "Ninja Control" to add a demerit via double-click
+              if (typeof state?.handleAddDemerit === "function") {
+                state.handleAddDemerit();
+              } else if (typeof state?.setDemerits === "function") {
+                state.setDemerits((prev) => (prev || 0) + 1);
+              }
+            }}
             dangerouslySetInnerHTML={{ __html: question.question }}
           />
         </div>
-
         {/* Right Side: Keypad & Input (Touch optimized) --- */}
         <div className="w-72 shrink-0 flex flex-col gap-3">
           {/* Answer Display */}
