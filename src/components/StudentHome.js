@@ -24,7 +24,7 @@ export default function StudentHome({ studentName, section, onSelectMode }) {
           </button>
 
           <button
-            onClick={() => onSelectMode("exam")}
+            onClick={() => onSelectMode("exam")} data-testid="start-exam-button"
             className="p-4 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 rounded-lg font-medium text-blue-700 dark:text-blue-300 transition-all text-left flex items-center justify-between"
           >
             <div>
