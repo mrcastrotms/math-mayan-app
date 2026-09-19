@@ -33,6 +33,9 @@ export default function TeacherGradebookView({
   const [isPurging, setIsPurging] = useState(false);
   const [rosterDirectory, setRosterDirectory] = useState({});
 
+  const [selectedActivity, setSelectedActivity] = useState("All");
+  const [selectedDate, setSelectedDate] = useState("");
+
   useEffect(() => {
     async function loadDirectory() {
       try {
@@ -61,8 +64,10 @@ export default function TeacherGradebookView({
       gradebookFilter,
       gradebookData || [],
       rosterDirectory,
+      selectedActivity,
+      selectedDate,
     );
-  }, [viewMode, gradebookFilter, gradebookData]);
+  }, [viewMode, gradebookFilter, gradebookData, rosterDirectory, selectedActivity, selectedDate]);
 
   const printableSubmissions = useMemo(() => {
     return displayData.filter(
@@ -74,9 +79,23 @@ export default function TeacherGradebookView({
     return (gradebookData || []).filter(
       (s) =>
         (s.isDeleted || s.deleted) &&
-        (gradebookFilter === "All" || s.section === gradebookFilter),
+        (gradebookFilter === "All" || (s.section && s.section.toLowerCase() === gradebookFilter.toLowerCase())),
     ).length;
   }, [gradebookData, gradebookFilter]);
+
+  const availableActivities = useMemo(() => {
+    const defaults = ["Classwork", "Quiz", "Assessment", "Test", "Exam", "Assessment / Exam"];
+    const activities = new Set(defaults);
+    (gradebookData || []).forEach((r) => {
+      const act = r.activityType || r.activity;
+      if (act && act !== "—" && typeof act === "string") {
+        activities.add(act.trim());
+      }
+    });
+    const list = Array.from(activities);
+    if (!list.includes("Other")) list.push("Other");
+    return list;
+  }, [gradebookData]);
 
   const handleToggleSelect = (recordId) => {
     if (!recordId) return;
@@ -134,6 +153,39 @@ export default function TeacherGradebookView({
           onBulkHardDelete={onBulkHardDelete}
           printableSubmissions={printableSubmissions}
         />
+
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8 flex justify-between items-center flex-wrap gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <span className="font-bold text-slate-600">Date & Activity Filter</span>
+            
+            <select 
+              value={selectedActivity} 
+              onChange={(e) => setSelectedActivity(e.target.value)}
+              className="bg-slate-100 text-slate-700 font-bold px-4 py-2 rounded-lg text-sm border-0 cursor-pointer"
+            >
+              <option value="All">All Activities</option>
+              {availableActivities.map((act) => (
+                <option key={act} value={act}>{act}</option>
+              ))}
+            </select>
+
+            <input 
+              type="date" 
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="bg-slate-100 text-slate-700 font-bold px-4 py-2 rounded-lg text-sm border-0 cursor-pointer"
+            />
+          </div>
+          {selectedDate && (
+            <button
+              type="button"
+              onClick={() => setSelectedDate("")}
+              className="text-xs font-bold text-blue-600 hover:underline cursor-pointer"
+            >
+              Clear Date Filter
+            </button>
+          )}
+        </div>
 
         <GradebookTable
           records={displayData}
