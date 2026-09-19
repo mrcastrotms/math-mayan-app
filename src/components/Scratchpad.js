@@ -14,13 +14,16 @@ export default function Scratchpad() {
   }, []);
 
   const startDrawing = (e) => {
+    e.preventDefault();
     e.stopPropagation();
+    e.currentTarget.setPointerCapture?.(e.pointerId);
     setIsDrawing(true);
-    draw(e);
+    draw(e, true);
   };
 
   const stopDrawing = (e) => {
-    if (e) e.stopPropagation();
+    e?.preventDefault();
+    e?.stopPropagation();
     setIsDrawing(false);
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -28,14 +31,15 @@ export default function Scratchpad() {
     ctx.beginPath();
   };
 
-  const draw = (e) => {
-    if (!isDrawing) return;
+  const draw = (e, force = false) => {
+    if (!isDrawing && !force) return;
+    e.preventDefault();
     e.stopPropagation();
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     const rect = canvas.getBoundingClientRect();
-    const clientX = e.clientX || e.touches?.[0]?.clientX;
-    const clientY = e.clientY || e.touches?.[0]?.clientY;
+    const clientX = e.clientX;
+    const clientY = e.clientY;
     if (clientX === undefined || clientY === undefined) return;
 
     const x = clientX - rect.left;
@@ -92,13 +96,13 @@ export default function Scratchpad() {
         ref={canvasRef}
         width={700}
         height={160}
-        onMouseDown={startDrawing}
-        onMouseUp={stopDrawing}
-        onMouseMove={draw}
-        onTouchStart={startDrawing}
-        onTouchEnd={stopDrawing}
-        onTouchMove={draw}
-        className="w-full h-40 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-lg cursor-crosshair bg-zinc-50 dark:bg-zinc-950 touch-none"
+        onPointerDown={startDrawing}
+        onPointerUp={stopDrawing}
+        onPointerCancel={stopDrawing}
+        onPointerLeave={stopDrawing}
+        onPointerMove={draw}
+        aria-label="Scratchpad drawing area"
+        className="w-full h-40 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-lg cursor-crosshair bg-zinc-50 dark:bg-zinc-950 touch-none select-none"
       />
     </div>
   );

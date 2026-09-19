@@ -8,6 +8,8 @@ export default function ScoreSummaryCard({
   isSaving,
   handleReturnHome,
   demerits = 0,
+  merits = 0,
+  behaviorEvents = [],
 }) {
   const handleEmailReport = () => {
     const studentName = student?.name || "Your student";
@@ -16,6 +18,7 @@ export default function ScoreSummaryCard({
     let bodyText = `Hello!\n\n${studentName} just finished their Math Assessment for Section ${selectedSection}.\n\n`;
     bodyText += `Final Score: ${finalScore}%\n`;
     if (demerits > 0) bodyText += `Demerits: ${demerits} (-${demerits * 5}%)\n`;
+    if (merits > 0) bodyText += `Merits: ${merits}\n`;
     bodyText += `\nMr. Castro has the full detailed report saved in the Gradebook.\n\n- The Mayan School Math App`;
 
     const body = encodeURIComponent(bodyText);
@@ -34,7 +37,36 @@ export default function ScoreSummaryCard({
           <p>Student: {student?.name || "Anonymous"}</p>
           <p>Section: {selectedSection}</p>
         </div>
+
       </div>
+
+      <div className="mb-8 grid grid-cols-2 gap-3 text-left print:hidden">
+        <div className="rounded-xl border border-red-100 bg-red-50 p-3 text-red-800">
+          <p className="text-xs font-bold uppercase tracking-wide">Demerits</p>
+          <p className="text-2xl font-black">{demerits}</p>
+        </div>
+        <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-emerald-800">
+          <p className="text-xs font-bold uppercase tracking-wide">Merits</p>
+          <p className="text-2xl font-black">{merits}</p>
+        </div>
+      </div>
+      {behaviorEvents.length > 0 && (
+        <div className="mb-8 text-left print:hidden">
+          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+            Behavior record
+          </p>
+          <ul className="space-y-1 text-sm text-slate-600">
+            {behaviorEvents.map((event) => (
+              <li key={event.id}>
+                <span className={event.type === "merit" ? "font-bold text-emerald-700" : "font-bold text-red-700"}>
+                  {event.type === "merit" ? "Merit" : "Demerit"}:
+                </span>{" "}
+                {event.reason}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <h1 className="text-4xl font-black text-slate-800 mb-2 print:hidden">
         Exam Complete!

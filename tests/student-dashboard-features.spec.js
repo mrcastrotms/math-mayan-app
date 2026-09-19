@@ -1,12 +1,11 @@
 import { test, expect } from "@playwright/test";
 
-test.describe("Student Dashboard, Scratchpad, AI Hint, and PIN Finish Flow", () => {
-  test("should render student landing, open AI hint modal, and test scratchpad workspace", async ({ page }) => {
-    // Navigate to local dev server
-    await page.goto("http://localhost:3000");
+test.describe("Student entry UI", () => {
+  test("renders section, name, and session-code controls", async ({ page }) => {
+    await page.goto("/");
 
-    // Check if StudentHome or Gate is present and interact
-    // (Simulating mock session or direct dashboard inspection)
-    console.log("Running Playwright verification on active exam interface elements...");
+    await expect(page.getByText("Select your section")).toBeVisible();
+    await expect(page.locator("input[type='text']")).toBeVisible();
+    await expect(page.getByRole("button", { name: "START" })).toBeVisible();
   });
 });

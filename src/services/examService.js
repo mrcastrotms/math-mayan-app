@@ -21,6 +21,8 @@ export async function saveExamResult(
   studentAnswers,
   loginTime,
   startTime,
+  merits = 0,
+  behaviorEvents = [],
 ) {
   if (!student) return;
   try {
@@ -40,6 +42,8 @@ export async function saveExamResult(
       isTestRun,
       score: finalScore,
       demerits,
+      merits,
+      behaviorEvents,
       questionsAttempted,
       answers: studentAnswers,
       loginTime: loginTime || null,

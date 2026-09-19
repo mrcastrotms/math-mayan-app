@@ -17,9 +17,23 @@ export function useExamNavigation(questions = [], appText, student) {
 
   const [currentInput, setCurrentInput] = useState("");
   const [demerits, setDemerits] = useState(0);
+  const [merits, setMerits] = useState(0);
+  const [behaviorEvents, setBehaviorEvents] = useState([]);
+  const addBehaviorEvent = useCallback((type, reason) => {
+    const event = {
+      id: `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      type,
+      reason,
+      timestamp: new Date().toISOString(),
+    };
+    setBehaviorEvents((prev) => [...prev, event]);
+    if (type === "merit") setMerits((prev) => prev + 1);
+    else setDemerits((prev) => prev + 1);
+  }, []);
   const handleAddDemerit = useCallback(
-    () => setDemerits((prev) => (prev || 0) + 1),
-    [],
+    (reason = "Does not follow directions") =>
+      addBehaviorEvent("demerit", reason),
+    [addBehaviorEvent],
   );
 
   const currentQ = questions[currentQuestionIndex] || null;
@@ -74,6 +88,8 @@ export function useExamNavigation(questions = [], appText, student) {
     setCurrentQuestionIndex(0);
     setCurrentInput("");
     setDemerits(0);
+    setMerits(0);
+    setBehaviorEvents([]);
     setSkipsUsed(0);
     clearStorage();
   };
@@ -92,6 +108,10 @@ export function useExamNavigation(questions = [], appText, student) {
     studentAnswers,
     demerits,
     setDemerits,
+    merits,
+    setMerits,
+    behaviorEvents,
+    addBehaviorEvent,
     handleAddDemerit,
     showEndExamButton,
     resetExamFlow,

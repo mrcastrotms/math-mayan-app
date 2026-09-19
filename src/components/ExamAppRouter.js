@@ -57,6 +57,8 @@ export default function ExamAppRouter({
         }}
         studentAnswers={state?.studentAnswers}
         demerits={state?.demerits || 0}
+        merits={state?.merits || 0}
+        behaviorEvents={state?.behaviorEvents || []}
       >
         {adminPanel}
       </FinishedScreen>

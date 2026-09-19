@@ -63,6 +63,8 @@ export function useExamLifecycle({
       loginTime,
       startTime,
       hintsUsed,
+      merits: navigation.merits,
+      behaviorEvents: navigation.behaviorEvents,
     });
     setIsSaving(false);
   };

@@ -33,6 +33,8 @@ export async function persistExamCompletion({
   loginTime,
   startTime,
   hintsUsed,
+  merits = 0,
+  behaviorEvents = [],
 }) {
   const score = computeEnhancedScore(
     navigation.studentAnswers,
@@ -57,7 +59,8 @@ export async function persistExamCompletion({
     navigation.studentAnswers,
     loginTime,
     startTime || new Date().toLocaleTimeString(),
-    hintsUsed,
+    merits,
+    behaviorEvents,
   );
 }
 
