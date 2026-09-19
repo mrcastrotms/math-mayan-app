@@ -1,4 +1,3 @@
-// src/components/GradebookTable.js
 import STYLES from "../styles/gradebookStyles.json";
 import {
   formatSafeScore,
@@ -14,6 +13,8 @@ export default function GradebookTable({
   onRestoreRecord,
   onHardDelete,
   viewMode = "active",
+  selectedIds = new Set(),
+  onToggleSelect,
 }) {
   if (isLoading) {
     return (
@@ -68,6 +69,8 @@ export default function GradebookTable({
                 record.score !== null &&
                 record.score !== undefined;
 
+              const isSelected = record.id && selectedIds.has(record.id);
+
               const safeScore = hasAttempt
                 ? formatSafeScore(record.score)
                 : null;
@@ -87,27 +90,41 @@ export default function GradebookTable({
               return (
                 <tr
                   key={record.id || `${record.section}-${index}`}
-                  className={`border-b border-slate-100 transition-colors ${
-                    hasAttempt
-                      ? "hover:bg-slate-50"
-                      : "bg-slate-50/40 text-slate-400"
+                  onDoubleClick={() => {
+                    if (record.id) {
+                      onToggleSelect?.(record.id);
+                    }
+                  }}
+                  className={`border-b border-slate-100 transition-colors select-none cursor-pointer ${
+                    isSelected
+                      ? "bg-red-50/90 border-l-4 border-l-red-500"
+                      : hasAttempt
+                        ? "hover:bg-slate-50"
+                        : "bg-slate-50/40 text-slate-400 hover:bg-slate-100/50"
                   }`}
                 >
                   <td className="p-5 font-bold text-slate-800 text-lg">
-                    <span className="text-slate-400 font-medium mr-2">
-                      {index + 1}.
-                    </span>
-                    <span
-                      className={
-                        hasAttempt
-                          ? "text-slate-800"
-                          : "text-slate-600 font-semibold"
-                      }
-                    >
-                      {displayName}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-400 font-medium">
+                        {index + 1}.
+                      </span>
+                      <span
+                        className={
+                          hasAttempt
+                            ? "text-slate-800"
+                            : "text-slate-600 font-semibold"
+                        }
+                      >
+                        {displayName}
+                      </span>
+                      {isSelected && (
+                        <span className="rounded bg-red-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                          Selected
+                        </span>
+                      )}
+                    </div>
                     {hasDifferentTypedName && (
-                      <span className="block text-xs font-normal text-slate-400 italic">
+                      <span className="block text-xs font-normal text-slate-400 italic mt-0.5">
                         Typed: "{record.rawTypedName}"
                       </span>
                     )}
@@ -139,14 +156,20 @@ export default function GradebookTable({
                       <>
                         <button
                           type="button"
-                          onClick={() => onViewReport(record)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onViewReport(record);
+                          }}
                           className={STYLES.reportBtn}
                         >
                           Report
                         </button>
                         <button
                           type="button"
-                          onClick={() => onRestoreRecord(record.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRestoreRecord(record.id);
+                          }}
                           className="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg font-bold text-xs transition cursor-pointer"
                           title="Restore record to active roster"
                         >
@@ -154,7 +177,10 @@ export default function GradebookTable({
                         </button>
                         <button
                           type="button"
-                          onClick={() => onHardDelete(record.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onHardDelete(record.id);
+                          }}
                           className="px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg font-bold text-xs transition cursor-pointer"
                           title="Permanently remove from database (breaks QR code)"
                         >
@@ -165,14 +191,20 @@ export default function GradebookTable({
                       <>
                         <button
                           type="button"
-                          onClick={() => onViewReport(record)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onViewReport(record);
+                          }}
                           className={STYLES.reportBtn}
                         >
                           Report
                         </button>
                         <button
                           type="button"
-                          onClick={() => onSoftDelete(record.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSoftDelete(record.id);
+                          }}
                           className="px-3 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg font-bold text-xs transition cursor-pointer"
                           title="Hide from UI while preserving QR code and report URL"
                         >
@@ -180,7 +212,10 @@ export default function GradebookTable({
                         </button>
                         <button
                           type="button"
-                          onClick={() => onHardDelete(record.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onHardDelete(record.id);
+                          }}
                           className="px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg font-bold text-xs transition cursor-pointer"
                           title="Permanently remove from database (breaks QR code)"
                         >
