@@ -124,7 +124,7 @@ export default function StudentLockOverlay({
         onDoubleClick={performUnlock}
         className="text-2xl sm:text-3xl font-black text-white mb-2 tracking-tight cursor-default"
       >
-        Exam Paused — {studentName || "Student"}
+        {studentName || "Student"}
       </h2>
 
       <p className="text-slate-300 max-w-md text-sm sm:text-base leading-relaxed mb-4">
@@ -147,7 +147,7 @@ export default function StudentLockOverlay({
             autoComplete="one-time-code"
             data-lpignore="true"
             placeholder={
-              isDevOrPreview ? "Teacher PIN (or click Unlock)" : "Teacher PIN"
+              isDevOrPreview ? "Teacher PIN (or click Unlock)" : "PIN"
             }
             value={pinInput}
             onChange={(e) => {
