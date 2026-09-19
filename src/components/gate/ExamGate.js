@@ -22,9 +22,13 @@ export default function ExamGate({
 }) {
   const sections = availableSections.length > 0 ? availableSections : DEFAULT_SECTIONS;
 
-  const [studentName, setStudentName] = useState("");
-  const [storedName, setStoredName] = useState("");
-  const [selectedSection, setSelectedSection] = useState(sections[0] || "4A");
+  const [studentName, setStudentName] = useState(() => (
+    typeof window !== "undefined" ? localStorage.getItem("exam_student_name") || "" : ""
+  ));
+  const [storedName, setStoredName] = useState(() => (
+    typeof window !== "undefined" ? localStorage.getItem("exam_student_name") || "" : ""
+  ));
+  const [selectedSectionState, setSelectedSection] = useState(sections[0] || "4A");
   const [theme, setTheme] = useState("standard");
   const [showCodeField, setShowCodeField] = useState(false);
   const [accessCode, setAccessCode] = useState("");
@@ -61,20 +65,14 @@ export default function ExamGate({
 
   const displayGreetingName = resolvedOfficialName || storedName;
 
-  useEffect(() => {
-    if (sections.length > 0 && !sections.includes(selectedSection)) {
-      setSelectedSection(sections[0]);
-    }
-  }, [sections, selectedSection]);
+  const selectedSection = sections.includes(selectedSectionState)
+    ? selectedSectionState
+    : sections[0] || "4A";
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
       const cached = localStorage.getItem("exam_student_name");
-      if (cached) {
-        setStoredName(cached);
-        setStudentName(cached);
-      }
       let uuid = localStorage.getItem("exam_device_uuid");
       if (!uuid) {
         uuid = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
