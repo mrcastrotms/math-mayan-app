@@ -40,9 +40,7 @@ export default function ExamAppRouter({
 
   /* Locked screen handled globally by StudentLockOverlay */
 
-  if (state?.examStarted || state?.isBypassActive || view === "exam") {
-    return <ActiveExamContainer state={state} adminPanel={adminPanel} />;
-  }
+  
 
   if (state?.examFinished) {
     return (
@@ -61,6 +59,12 @@ export default function ExamAppRouter({
       </FinishedScreen>
     );
   }
+
+  if (state?.examStarted || state?.isBypassActive || view === "exam") {
+    return <ActiveExamContainer state={state} adminPanel={adminPanel} />;
+  }
+
+  
 
   return (
     <StartScreen
