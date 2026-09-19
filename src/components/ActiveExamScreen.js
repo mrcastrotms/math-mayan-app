@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import PinModal from "./PinModal";
 import ExamKeypad from "./ExamKeypad";
 import BehaviorModal from "./BehaviorModal";
@@ -24,10 +24,41 @@ export default function ActiveExamScreen({
   handleFinishExam,
   children,
 }) {
+
+  const [isFullscreen, setIsFullscreen] = useState(true);
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement || document.webkitFullscreenElement));
+    };
+    handleFsChange();
+    document.addEventListener("fullscreenchange", handleFsChange);
+    document.addEventListener("webkitfullscreenchange", handleFsChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFsChange);
+      document.removeEventListener("webkitfullscreenchange", handleFsChange);
+    };
+  }, []);
+
+  const requestFullscreenFailsafe = async () => {
+    try {
+      const docEl = document.documentElement;
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        if (docEl.requestFullscreen) {
+          await docEl.requestFullscreen();
+        } else if (docEl.webkitRequestFullscreen) {
+          await docEl.webkitRequestFullscreen();
+        }
+      }
+    } catch (err) {
+      console.warn("Fullscreen gesture error:", err);
+    }
+  };
+
   const timerHook = useTimerOverride(timeLeft, handleNinjaOneMinute);
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col justify-between p-6 select-none relative">
+    <div className="min-h-screen bg-slate-100 flex flex-col justify-between p-6 select-none relative" onDoubleClick={requestFullscreenFailsafe}>
       <PinModal
         isOpen={timerHook.showTimerModal}
         onClose={() => timerHook.setShowTimerModal(false)}

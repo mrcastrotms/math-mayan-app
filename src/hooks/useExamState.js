@@ -67,6 +67,7 @@ export function useExamState() {
       isTeacher,
       CORRECT_PIN,
       student: form.student,
+      onLockBreach: navigation.handleAddDemerit,
     });
 
   const timer = useTimer(
@@ -104,8 +105,14 @@ export function useExamState() {
     isDevMode,
     SHOW_END_BUTTON_AFTER,
     EXAM_DURATION: lifecycle.examDuration,
-    handleNinjaDoubleTime: () => timer.setTimeLeft((prev) => prev * 2),
-    handleNinjaOneMinute: () => timer.setTimeLeft(60),
+    handleNinjaDoubleTime: () => {
+      setIsLocked(false);
+      timer.setTimeLeft((prev) => prev * 2);
+    },
+    handleNinjaOneMinute: () => {
+      setIsLocked(false);
+      timer.setTimeLeft(60);
+    },
     calculateFinalScore: () =>
       computeEnhancedScore(
         navigation.studentAnswers,
