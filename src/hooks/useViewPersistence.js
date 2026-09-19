@@ -1,25 +1,24 @@
 // src/hooks/useViewPersistence.js
-import { useState, useEffect } from "react";
+import { useState, useSyncExternalStore } from "react";
 
 export function useViewPersistence(initialFallback = "start") {
-  const [view, setView] = useState(initialFallback);
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-    const params = new URLSearchParams(window.location.search);
-    const savedView =
-      params.get("view") ||
-      sessionStorage.getItem("exam_active_view") ||
-      initialFallback;
-
-    if (savedView !== initialFallback) {
-      setView(savedView);
-    }
-  }, [initialFallback]);
+  const persistedView = useSyncExternalStore(
+    () => () => {},
+    () => {
+      const params = new URLSearchParams(window.location.search);
+      return (
+        params.get("view") ||
+        sessionStorage.getItem("exam_active_view") ||
+        initialFallback
+      );
+    },
+    () => initialFallback,
+  );
+  const [requestedView, setRequestedView] = useState(null);
+  const view = requestedView || persistedView;
 
   const navigateTo = (viewName) => {
-    setView(viewName);
+    setRequestedView(viewName);
     if (typeof window !== "undefined") {
       sessionStorage.setItem("exam_active_view", viewName);
       const url = new URL(window.location.href);
@@ -32,5 +31,5 @@ export function useViewPersistence(initialFallback = "start") {
     }
   };
 
-  return { view, navigateTo, isMounted };
+  return { view, navigateTo, isMounted: true };
 }

@@ -1,0 +1,90 @@
+name: Cascading Release Train
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+      - test
+      - develop
+      - main
+
+# Cancel in-progress soaking if a new commit is pushed to the same branch
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-promote:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Quality Checks (Lint & Build)
+        run: |
+          npm run lint -- --quiet
+          npm run build
+
+      - name: Run End-to-End Tests
+        run: |
+          npx playwright install --with-deps chromium
+          npx playwright test --project=chromium
+
+      - name: Route Matrix & Soak Timers
+        id: router
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          if [[ "$BRANCH" == feature/* ]]; then
+            echo "TARGET=test" >> $GITHUB_ENV
+            echo "SOAK=240" >> $GITHUB_ENV # 4 minutes
+          elif [[ "$BRANCH" == "test" ]]; then
+            echo "TARGET=develop" >> $GITHUB_ENV
+            echo "SOAK=120" >> $GITHUB_ENV # 2 minutes
+          elif [[ "$BRANCH" == "develop" ]]; then
+            echo "TARGET=main" >> $GITHUB_ENV
+            echo "SOAK=300" >> $GITHUB_ENV # 5 minutes
+          elif [[ "$BRANCH" == "main" ]]; then
+            echo "TARGET=prod" >> $GITHUB_ENV
+            echo "SOAK=600" >> $GITHUB_ENV # 10 minutes
+          else
+            echo "TARGET=none" >> $GITHUB_ENV
+          fi
+
+      - name: Soak Period
+        if: env.TARGET != 'none'
+        run: |
+          echo "Tests passed perfectly. Soaking for ${{ env.SOAK }} seconds before promoting to ${{ env.TARGET }}..."
+          sleep ${{ env.SOAK }}
+
+      - name: Auto-Promote (Create PR & Merge)
+        if: env.TARGET != 'none'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CURRENT_BRANCH="${GITHUB_REF#refs/heads/}"
+          
+          # Create the Pull Request
+          PR_URL=$(gh pr create \
+            --base ${{ env.TARGET }} \
+            --head $CURRENT_BRANCH \
+            --title "Auto-Promote: $CURRENT_BRANCH to ${{ env.TARGET }}" \
+            --body "Tests passed. Soak completed. Automated promotion.")
+          
+          echo "Generated PR: $PR_URL"
+          
+          # Auto-merge the Pull Request
+          gh pr merge $PR_URL --merge --admin

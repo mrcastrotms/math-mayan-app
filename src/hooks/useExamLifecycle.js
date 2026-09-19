@@ -32,14 +32,6 @@ export function useExamLifecycle({
   const [loginTime] = useState(() => new Date().toLocaleTimeString());
   const [startTime, setStartTime] = useState(null);
 
-  // Synchronize bypass state upon client-side hydration in Next.js
-  useEffect(() => {
-    if (isBypassActive) {
-      setExamStarted(true);
-      setExamDuration(60);
-    }
-  }, [isBypassActive]);
-
   const isSubmittingRef = useRef(false);
 
   const handleFinishExam = async () => {
