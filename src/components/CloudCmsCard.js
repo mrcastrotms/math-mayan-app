@@ -24,19 +24,16 @@ export default function CloudCmsCard({ appText, setAppText }) {
     <div className="bg-slate-800 p-8 rounded-2xl w-full max-w-4xl shadow-2xl border border-slate-700 mb-8">
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h2 className="text-2xl font-bold text-yellow-400">
-            In-Place Cloud CMS (App Copy Editor)
-          </h2>
+          <h2 className="text-2xl font-bold text-yellow-400">App Editor</h2>
           <p className="text-slate-400 text-sm">
-            Edit your app copy live in-place and save directly to Firebase
-            Firestore.
+            Edit your app copy and save directly to Firebase
           </p>
         </div>
         <button
           onClick={() => setIsEditingCopy(!isEditingCopy)}
           className="bg-yellow-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-yellow-700 transition shadow-lg active:scale-95 whitespace-nowrap"
         >
-          {isEditingCopy ? "Close Editor" : "Edit Copy In-Place"}
+          {isEditingCopy ? "Close Editor" : "Edit Copy"}
         </button>
       </div>
 

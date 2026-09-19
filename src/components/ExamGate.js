@@ -503,7 +503,7 @@ export default function ExamGate({
             fontSize: "inherit",
           }}
         >
-          Teacher Dashboard
+          Welcome
         </button>
       </div>
 
@@ -532,7 +532,7 @@ export default function ExamGate({
           <h2
             style={{ fontSize: "1.35rem", fontWeight: 800, marginTop: "4px" }}
           >
-            Select your section and enter your details
+            Select your section
           </h2>
         </div>
 
@@ -603,7 +603,7 @@ export default function ExamGate({
               >
                 {displayGreetingName
                   ? `Welcome back, ${displayGreetingName}!`
-                  : "Write your full name:"}
+                  : "Full name:"}
               </label>
 
               {displayGreetingName && (
@@ -631,7 +631,7 @@ export default function ExamGate({
               list="roster-suggestions"
               autoComplete="off"
               onChange={(e) => setStudentName(e.target.value)}
-              placeholder="e.g., Student Name"
+              placeholder=""
               style={{
                 width: "100%",
                 padding: "12px",
