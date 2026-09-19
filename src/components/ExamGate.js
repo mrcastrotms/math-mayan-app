@@ -632,12 +632,6 @@ export default function ExamGate({
               autoComplete="off"
               onChange={(e) => setStudentName(e.target.value)}
               placeholder="e.g., Student Name"
-            />
-            <datalist id="roster-suggestions">
-              {rosterOptions.map((name) => (
-                <option key={name} value={name} />
-              ))}
-            </datalist
               style={{
                 width: "100%",
                 padding: "12px",
@@ -650,6 +644,11 @@ export default function ExamGate({
                 boxSizing: "border-box",
               }}
             />
+            <datalist id="roster-suggestions">
+              {(rosterOptions || []).map((name) => (
+                <option key={name} value={name} />
+              ))}
+            </datalist>
           </div>
 
           {/* Hidden Code Input (Reveals only after double-tap) */}
