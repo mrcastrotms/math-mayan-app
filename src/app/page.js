@@ -1,4 +1,3 @@
-// src/app/page.js
 "use client";
 
 import { useEffect, useState, useMemo, useRef } from "react";
@@ -7,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { useExamState } from "../hooks/useExamState";
 import { useViewPersistence } from "../hooks/useViewPersistence";
 import { useCachedSections } from "../hooks/useCachedSections";
-import { useExamBypass } from "../hooks/useExamBypass";
 import { useLiveClassroomSync } from "../hooks/useLiveClassroomSync";
+import { useExamBypass } from "../hooks/useExamBypass";
 import {
   logKickedStudent,
   cleanStudentSession,
@@ -41,22 +40,18 @@ export default function ExamApp() {
     setMounted(true);
   }, []);
 
-  // Keep state ref fresh to prevent handler closures from going stale
   const stateRef = useRef(state);
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
 
-  // Fullscreen and Tab Visibility Guard during live exam
   useEffect(() => {
     if (!mounted || view !== "exam") return;
 
-    // Only bypass lock if the user entered via the secret tester PIN
     if (state?.isTesterMode) return;
 
     const enforceLock = () => {
       if (!document.fullscreenElement || document.hidden) {
-        // Log demerit once upon breach and lock the screen
         if (!stateRef.current?.isLocked) {
           stateRef.current?.setIsLocked?.(true);
           stateRef.current?.handleAddDemerit?.();
@@ -165,7 +160,6 @@ export default function ExamApp() {
     }
   }, [view, state]);
 
-  // Handle initialization from ExamGate
   const handleGateStart = async ({
     studentName,
     section,
@@ -174,7 +168,7 @@ export default function ExamApp() {
     mdnsCandidate,
     code,
   }) => {
-    // Keep admin mode strictly false for all student/tester intake
+    // Prevent tester intake from gaining admin mode
     state?.setIsAdminMode?.(false);
 
     if (isTester) {
@@ -211,6 +205,7 @@ export default function ExamApp() {
     navigateTo("exam");
   };
 
+  // Wire bypass for automated tests & local development
   const bypassRanRef = useRef(false);
   useExamBypass((name, code, uid, section) => {
     if (bypassRanRef.current) return;
@@ -225,6 +220,10 @@ export default function ExamApp() {
     });
   });
 
+  if (!mounted) {
+    return <div className="min-h-screen bg-slate-900" />;
+  }
+
   const adminPanel = (
     <DevAdminPanel
       isDevMode={state?.isDevMode || false}
@@ -238,10 +237,11 @@ export default function ExamApp() {
       <StudentLockOverlay
         isLocked={state?.isLocked}
         studentName={state?.student?.name}
+        timeLeft={state?.timeLeft}
         onUnlock={() => stateRef.current?.setIsLocked?.(false)}
       />
 
-      {view === "start" ? (
+      {view === "start" && !state?.examStarted && !state?.isBypassActive ? (
         <ExamGate
           availableSections={displaySections}
           isLoading={isLoading}
