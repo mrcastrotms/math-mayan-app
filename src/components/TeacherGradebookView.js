@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import STYLES from "../styles/gradebookStyles.json";
 import { useBatchPrint } from "../hooks/useBatchPrint";
 import {
@@ -50,13 +50,18 @@ export default function TeacherGradebookView({
     loadDirectory();
   }, []);
 
-  const { isPreparingPrint, triggerBatchPrint, currentOrigin } = useBatchPrint(800);
+  const { isPreparingPrint, triggerBatchPrint, currentOrigin } =
+    useBatchPrint(800);
 
   const displayData = useMemo(() => {
     if (viewMode === "hidden") {
       return getHiddenSubmissions(gradebookFilter, gradebookData || []);
     }
-    return mergeRosterWithSubmissions(gradebookFilter, gradebookData || [], rosterDirectory);
+    return mergeRosterWithSubmissions(
+      gradebookFilter,
+      gradebookData || [],
+      rosterDirectory,
+    );
   }, [viewMode, gradebookFilter, gradebookData]);
 
   const printableSubmissions = useMemo(() => {
