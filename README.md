@@ -18,11 +18,11 @@ An adaptive, real-time assessment platform and live classroom orchestration engi
 
 ## ⚡ Key Highlights
 
-* **Real-Time Student Sync:** Live multi-client session management and status tracking via Firebase Firestore snapshots.
-* **Classroom Lock & Jail System:** Built-in kiosk-style lock controls, focus detection, and teacher-administered PIN unlock mechanisms (`2026`).
-* **Adaptive Question Engine:** Real-time routing, dynamic difficulty filtering, input sanitization, and multiple-choice answer mapping.
-* **Instant Gradebook & Report Suite:** Automated scoring calculations, attempt tracking, print-ready PDF/sheet generators, and parent reports.
-* **Automated CI/CD Pipeline:** End-to-end browser test automation via Playwright with native Next.js build-cache in GitHub Actions.
+- **Real-Time Student Sync:** Live multi-client session management and status tracking via Firebase Firestore snapshots.
+- **Classroom Lock & Jail System:** Built-in kiosk-style lock controls, focus detection, and teacher-administered PIN unlock mechanisms (`2026`).
+- **Adaptive Question Engine:** Real-time routing, dynamic difficulty filtering, input sanitization, and multiple-choice answer mapping.
+- **Instant Gradebook & Report Suite:** Automated scoring calculations, attempt tracking, print-ready PDF/sheet generators, and parent reports.
+- **Automated CI/CD Pipeline:** End-to-end browser test automation via Playwright with native Next.js build-cache in GitHub Actions.
 
 ---
 
@@ -53,13 +53,13 @@ graph TD
 
 ## 🛠 Tech Stack
 
-| Domain | Technology |
-| :--- | :--- |
-| **Framework** | Next.js (App Router, React 19 / 18) |
-| **Styling** | Modular CSS & Tailwind CSS |
+| Domain          | Technology                                                |
+| :-------------- | :-------------------------------------------------------- |
+| **Framework**   | Next.js (App Router, React 19 / 18)                       |
+| **Styling**     | Modular CSS & Tailwind CSS                                |
 | **Data & Auth** | Firebase Firestore (Realtime DB), Firebase Authentication |
-| **Testing** | Playwright E2E Suite, GitHub Actions CI Pipeline |
-| **Hosting** | Vercel Serverless Platform |
+| **Testing**     | Playwright E2E Suite, GitHub Actions CI Pipeline          |
+| **Hosting**     | Vercel Serverless Platform                                |
 
 ---
 
@@ -67,8 +67,8 @@ graph TD
 
 ### Prerequisites
 
-* Node.js 18+ 
-* npm or pnpm
+- Node.js 18+
+- npm or pnpm
 
 ### 1. Clone & Install
 
