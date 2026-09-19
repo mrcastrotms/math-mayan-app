@@ -1,5 +1,4 @@
-// src/components/ExamAppRouter.js
-import React from "react";
+import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import StartScreen from "./StartScreen";
 import StudentHome from "./StudentHome";
@@ -11,25 +10,42 @@ const FinishedScreen = dynamic(() => import("./FinishedScreen"));
 const LockedScreen = dynamic(() => import("./LockedScreen"));
 
 export default function ExamAppRouter({
-  state,
-  view,
-  navigateTo,
-  displaySections,
-  isLoading,
-  scannedReportId,
-  onJoin,
-  adminPanel,
+  state, view, navigateTo, displaySections, isLoading, scannedReportId, onJoin, adminPanel
 }) {
-  if (scannedReportId) {
-    return <ParentReportView reportId={scannedReportId} />;
-  }
+  const [isTeacherAuth, setIsTeacherAuth] = useState(false);
+
+  useEffect(() => {
+    if (view === "dashboard" && !isTeacherAuth) {
+      const auth = window.sessionStorage.getItem("teacher_authorized");
+      if (auth === "true") {
+        setIsTeacherAuth(true);
+      } else {
+        setTimeout(() => {
+          const pin = window.prompt("Enter Teacher PIN (0801):");
+          if (pin === "0801") {
+            window.sessionStorage.setItem("teacher_authorized", "true");
+            setIsTeacherAuth(true);
+          } else {
+            navigateTo("start");
+          }
+        }, 100);
+      }
+    }
+  }, [view, isTeacherAuth, navigateTo]);
+
+  if (scannedReportId) return <ParentReportView reportId={scannedReportId} />;
 
   if (view === "dashboard") {
+    if (!isTeacherAuth) return null;
     return (
       <TeacherDashboard
         setIsAdminMode={(val) => {
           state?.setIsAdminMode?.(val);
-          if (!val) navigateTo("start");
+          if (!val) {
+            window.sessionStorage.removeItem("teacher_authorized");
+            setIsTeacherAuth(false);
+            navigateTo("start");
+          }
         }}
         availableSections={state?.availableSections || []}
         setAvailableSections={state?.setAvailableSections || (() => {})}
@@ -44,9 +60,7 @@ export default function ExamAppRouter({
       <FinishedScreen
         student={state?.student}
         selectedSection={state?.selectedSection || state?.student?.section}
-        finalScore={
-          state?.calculateFinalScore ? state.calculateFinalScore() : 70
-        }
+        finalScore={state?.calculateFinalScore ? state.calculateFinalScore() : 70}
         isSaving={state?.isSaving}
         handleReturnHome={() => {
           state?.setExamFinished?.(false);
@@ -74,22 +88,14 @@ export default function ExamAppRouter({
             state?.setTimeLeft?.(45 * 60);
             state?.setExamStarted?.(true);
             navigateTo("exam");
-          } else if (mode === "classwork") {
-            navigateTo("classwork");
-          }
+          } else if (mode === "classwork") navigateTo("classwork");
         }}
       />
     );
   }
 
   if (state?.examStarted || state?.isBypassActive || view === "exam") {
-    return (
-      <ActiveExamScreen
-        state={state}
-        adminPanel={adminPanel}
-        navigateTo={navigateTo}
-      />
-    );
+    return <ActiveExamScreen state={state} adminPanel={adminPanel} navigateTo={navigateTo} />;
   }
 
   return (
