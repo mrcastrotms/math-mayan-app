@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import TapeDiagramManipulative from "../manipulatives/TapeDiagramManipulative";
 import ConfirmSubmitModal from "../ui/ConfirmSubmitModal";
 
 export default function ActiveExamScreen({ state, navigateTo, adminPanel }) {
@@ -128,6 +129,11 @@ export default function ActiveExamScreen({ state, navigateTo, adminPanel }) {
             className="question-text select-none text-2xl font-medium text-slate-800"
             onDoubleClick={handleQuestionDoubleClick}
             dangerouslySetInnerHTML={{ __html: question.question }}
+            {question?.type === "tape-diagram" && (
+  <div className="mt-4">
+    <TapeDiagramManipulative question={question} state={state} />
+  </div>
+)}
           />
         </div>
 
