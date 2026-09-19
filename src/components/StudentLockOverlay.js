@@ -136,14 +136,19 @@ export default function StudentLockOverlay({
         {formatDisplayTime(graceSeconds)}
       </div>
 
-      <form onSubmit={handleTeacherUnlock} className="flex flex-col items-center gap-2 w-full max-w-xs">
+      <form
+        onSubmit={handleTeacherUnlock}
+        className="flex flex-col items-center gap-2 w-full max-w-xs"
+      >
         <div className="flex w-full gap-2">
           <input
             type="text"
             inputMode="numeric"
             autoComplete="one-time-code"
             data-lpignore="true"
-            placeholder={isDevOrPreview ? "Teacher PIN (or click Unlock)" : "Teacher PIN"}
+            placeholder={
+              isDevOrPreview ? "Teacher PIN (or click Unlock)" : "Teacher PIN"
+            }
             value={pinInput}
             onChange={(e) => {
               setPinInput(e.target.value);
