@@ -1,9 +1,28 @@
 import React from "react";
 
 export default function StudentHome({ studentName, section, onSelectMode }) {
+  const handleResetSession = () => {
+    if (typeof window !== "undefined") {
+      const resetCount = parseInt(localStorage.getItem("session_resets") || "0", 10);
+      if (resetCount >= 2) {
+        alert("Session reset limit reached. Please raise your hand so Mr. Castro can reset it for you.");
+        return;
+      }
+      localStorage.setItem("session_resets", (resetCount + 1).toString());
+      localStorage.removeItem("exam_student_name");
+      window.location.reload();
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-zinc-50 dark:bg-zinc-950">
-      <div className="max-w-xl w-full p-8 bg-white dark:bg-zinc-900 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-800 text-center">
+      <div className="max-w-xl w-full p-8 bg-white dark:bg-zinc-900 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-800 text-center relative">
+        <button
+          onClick={handleResetSession}
+          className="absolute top-4 right-4 text-xs font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/50 px-3 py-1.5 rounded-md border border-red-200 dark:border-red-900/50"
+        >
+          Reset Session
+        </button>
         <h1 className="text-3xl font-bold mb-2 text-zinc-900 dark:text-zinc-100">Welcome, {studentName}!</h1>
         <p className="text-zinc-500 dark:text-zinc-400 mb-8">Section: {section}</p>
 
