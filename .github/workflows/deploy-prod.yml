@@ -1,4 +1,4 @@
-name: Sync Main to Production
+name: Test, Soak, and Deploy to Production
 
 on:
   push:
@@ -9,13 +9,50 @@ permissions:
   contents: write
 
 jobs:
-  sync:
+  test:
+    name: Run Test Suite
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Build & E2E Tests
+        run: |
+          npm run build
+          npx playwright test
+
+  soak-and-deploy:
+    name: Soak 10m & Force Push to Production
+    needs: test
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Push to production
+
+      - name: 10-Minute Soak Window
         run: |
+          echo "All tests passed on main. Holding for 10-minute soak before production deployment..."
+          sleep 600
+          echo "Soak window elapsed. Proceeding with deployment."
+
+      - name: Force Push Main to Production
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git push origin main:production --force
