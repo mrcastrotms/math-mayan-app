@@ -11,7 +11,12 @@ export default function StudentLockOverlay({
 }) {
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState(false);
-  const [graceSeconds, setGraceSeconds] = useState(45);
+  const [graceSeconds, setGraceSeconds] = useState(() => {
+    if (typeof window === "undefined") return 45;
+    const saved = sessionStorage.getItem("exam_lock_grace");
+    const parsed = Number(saved);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 45;
+  });
 
   const isDevOrPreview =
     typeof window !== "undefined" &&
@@ -24,20 +29,7 @@ export default function StudentLockOverlay({
 
   useEffect(() => {
     if (!isLocked) {
-      setGraceSeconds(45);
-      setPinInput("");
-      setPinError(false);
       return;
-    }
-
-    // Restore countdown from sessionStorage if reloading while locked
-    if (typeof window !== "undefined") {
-      const saved = sessionStorage.getItem("exam_lock_grace");
-      if (saved && !isNaN(Number(saved)) && Number(saved) > 0) {
-        setGraceSeconds(Number(saved));
-      } else {
-        setGraceSeconds(45);
-      }
     }
 
     const timer = setInterval(() => {

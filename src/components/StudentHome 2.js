@@ -1,56 +1,13 @@
 import React from "react";
 
 export default function StudentHome({ studentName, section, onSelectMode }) {
-  const handleResetSession = () => {
-  if (typeof window !== 'undefined') {
-    const resetCount = parseInt(localStorage.getItem('session_resets') || '0', 10);
-    
-    const forceLogout = () => {
-      // 1. Save the counter before we nuke everything
-      const savedResets = localStorage.getItem('session_resets');
-      
-      // 2. Nuke all login tokens so they lose access
-      localStorage.clear();
-      sessionStorage.clear();
-      
-      // 3. Put the counter back
-      if (savedResets) localStorage.setItem('session_resets', savedResets);
-      
-      // 4. Sledgehammer reload (forces React to drop the Welcome screen)
-      window.location.href = '/';
-    };
-
-    if (resetCount >= 2) {
-      const override = prompt('Session reset limit reached. Ask Mr. Castro to enter the override PIN:');
-      if (override === '4040') {
-        forceLogout();
-      } else if (override !== null) {
-        alert('Incorrect PIN.');
-      }
-      return;
-    }
-
-    // Normal reset: increment the counter and force logout
-    localStorage.setItem('session_resets', (resetCount + 1).toString());
-    forceLogout();
-  }
-};
-
-
-
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-zinc-50 dark:bg-zinc-950">
-      <div className="max-w-2xl w-full p-10 bg-white dark:bg-zinc-900 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-800 text-center relative">
-        <button
-          onClick={handleResetSession}
-          className="absolute top-4 right-4 text-xs font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/50 px-3 py-1.5 rounded-md border border-red-200 dark:border-red-900/50"
-        >
-          Reset Session
-        </button>
+      <div className="max-w-xl w-full p-8 bg-white dark:bg-zinc-900 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-800 text-center">
         <h1 className="text-3xl font-bold mb-2 text-zinc-900 dark:text-zinc-100">Welcome, {studentName}!</h1>
         <p className="text-zinc-500 dark:text-zinc-400 mb-8">Section: {section}</p>
 
-        <div className="mb-8 text-left">
+        <div className="mb-6 text-left">
           <h2 className="text-lg font-semibold mb-4 text-zinc-800 dark:text-zinc-200">What do you want to do today?</h2>
         </div>
 
@@ -67,7 +24,7 @@ export default function StudentHome({ studentName, section, onSelectMode }) {
           </button>
 
           <button
-            onClick={() => onSelectMode("exam")} data-testid="start-exam-button"
+            onClick={() => onSelectMode("exam")}
             className="p-4 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 rounded-lg font-medium text-blue-700 dark:text-blue-300 transition-all text-left flex items-center justify-between"
           >
             <div>

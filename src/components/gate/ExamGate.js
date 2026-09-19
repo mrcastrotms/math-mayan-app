@@ -22,9 +22,13 @@ export default function ExamGate({
 }) {
   const sections = availableSections.length > 0 ? availableSections : DEFAULT_SECTIONS;
 
-  const [studentName, setStudentName] = useState("");
-  const [storedName, setStoredName] = useState("");
-  const [selectedSection, setSelectedSection] = useState(sections[0] || "4A");
+  const [studentName, setStudentName] = useState(() => (
+    typeof window !== "undefined" ? localStorage.getItem("exam_student_name") || "" : ""
+  ));
+  const [storedName, setStoredName] = useState(() => (
+    typeof window !== "undefined" ? localStorage.getItem("exam_student_name") || "" : ""
+  ));
+  const [selectedSectionState, setSelectedSection] = useState(sections[0] || "4A");
   const [theme, setTheme] = useState("standard");
   const [showCodeField, setShowCodeField] = useState(false);
   const [accessCode, setAccessCode] = useState("");
@@ -32,6 +36,10 @@ export default function ExamGate({
 
   const lastTapRef = useRef(0);
   const current = THEMES[theme] || THEMES.standard;
+
+  const selectedSection = sections.includes(selectedSectionState)
+    ? selectedSectionState
+    : sections[0] || "4A";
 
   const { rosterOptions, resolvedOfficialName, validateAndResolve } = useGateValidation({
     studentName,
@@ -44,19 +52,9 @@ export default function ExamGate({
   const displayGreetingName = resolvedOfficialName || storedName;
 
   useEffect(() => {
-    if (sections.length > 0 && !sections.includes(selectedSection)) {
-      setSelectedSection(sections[0]);
-    }
-  }, [sections, selectedSection]);
-
-  useEffect(() => {
     if (typeof window === "undefined") return;
     try {
       const cached = localStorage.getItem("exam_student_name");
-      if (cached) {
-        setStoredName(cached);
-        setStudentName(cached);
-      }
       let uuid = localStorage.getItem("exam_device_uuid");
       if (!uuid) {
         uuid = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
@@ -64,6 +62,7 @@ export default function ExamGate({
           : "dev-" + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
         localStorage.setItem("exam_device_uuid", uuid);
       }
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDeviceMeta((prev) => ({ ...prev, uuid }));
     } catch (_) {}
   }, []);

@@ -13,7 +13,7 @@ export default function ConfirmSubmitModal({ isOpen, onClose, onConfirm }) {
         <div className="space-y-3">
           <h3 className="text-xl font-bold text-slate-900">Submit Exam?</h3>
           <p className="text-slate-600">
-            Are you sure you want to finish and submit your exam? You won't be
+            Are you sure you want to finish and submit your exam? You won&apos;t be
             able to change your answers after this.
           </p>
         </div>
