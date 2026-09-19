@@ -1,11 +1,14 @@
-import rosterData from "../../data/classRoster.json";
 import {
   normalizeString,
   formatToNaturalName,
   calculateMatchScore,
 } from "./matching";
 
-export function mergeRosterWithSubmissions(sectionFilter, submissions = []) {
+export function mergeRosterWithSubmissions(
+  sectionFilter,
+  submissions = [],
+  rosterDirectory = {},
+) {
   const activeSubmissions = (submissions || []).filter(
     (s) => !s.isDeleted && !s.deleted,
   );
@@ -13,17 +16,17 @@ export function mergeRosterWithSubmissions(sectionFilter, submissions = []) {
   const targetSections =
     sectionFilter && sectionFilter !== "All"
       ? [sectionFilter]
-      : Object.keys(rosterData);
+      : Object.keys(rosterDirectory);
 
   const mergedRows = [];
   const matchedSubmissionIds = new Set();
 
   targetSections.forEach((section) => {
-    const rawSectionList = rosterData[section] || [];
-
+    const rawSectionList = rosterDirectory[section] || [];
     rawSectionList.forEach((rawEntry) => {
-      const naturalOfficial = formatToNaturalName(rawEntry);
-      const normOfficial = normalizeString(`${rawEntry} ${naturalOfficial}`);
+      const naturalOfficial = typeof rawEntry === "string" ? formatToNaturalName(rawEntry) : (rawEntry.displayName || formatToNaturalName(rawEntry.rawName));
+      const rawRosterString = typeof rawEntry === "string" ? rawEntry : (rawEntry.rawName || rawEntry.displayName);
+      const normOfficial = normalizeString(`${rawRosterString} ${naturalOfficial}`);
 
       let bestSub = null;
       let highestScore = 0;
@@ -37,7 +40,6 @@ export function mergeRosterWithSubmissions(sectionFilter, submissions = []) {
         if (!normSub) return;
 
         const score = calculateMatchScore(normSub, normOfficial);
-
         if (score >= 0.5 && score > highestScore) {
           highestScore = score;
           bestSub = sub;
@@ -49,7 +51,7 @@ export function mergeRosterWithSubmissions(sectionFilter, submissions = []) {
         mergedRows.push({
           ...bestSub,
           officialName: naturalOfficial,
-          rawRosterName: rawEntry,
+          rawRosterName: rawRosterString,
           rawTypedName: bestSub.studentName || bestSub.name,
           section,
           status: "SUBMITTED",
@@ -58,7 +60,7 @@ export function mergeRosterWithSubmissions(sectionFilter, submissions = []) {
         mergedRows.push({
           id: `no-attempt-${section}-${normalizeString(naturalOfficial).replace(/\s+/g, "-")}`,
           officialName: naturalOfficial,
-          rawRosterName: rawEntry,
+          rawRosterName: rawRosterString,
           studentName: naturalOfficial,
           rawTypedName: null,
           section,
@@ -97,7 +99,6 @@ export function getHiddenSubmissions(sectionFilter, submissions = []) {
   const hiddenOnly = (submissions || []).filter(
     (s) => s.isDeleted || s.deleted,
   );
-
   return hiddenOnly
     .filter((s) => sectionFilter === "All" || s.section === sectionFilter)
     .map((sub) => ({
