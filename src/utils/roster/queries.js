@@ -1,14 +1,13 @@
-import rosterData from "../../data/classRoster.json";
 import {
   normalizeString,
   formatToNaturalName,
   calculateMatchScore,
 } from "./matching";
 
-export function matchStudentToRoster(inputName, section) {
-  if (!inputName || !section) return null;
-  const sectionRoster = rosterData[section];
-  if (!sectionRoster || !Array.isArray(sectionRoster)) return null;
+export function matchStudentToRoster(inputName, sectionRoster = []) {
+  if (!inputName || !Array.isArray(sectionRoster) || sectionRoster.length === 0) {
+    return { matched: false };
+  }
 
   const normalizedInput = normalizeString(inputName);
 
@@ -16,15 +15,19 @@ export function matchStudentToRoster(inputName, section) {
   let highestScore = 0;
   let ambiguityCount = 0;
 
-  sectionRoster.forEach((rawEntry) => {
-    const natural = formatToNaturalName(rawEntry);
-    const norm = normalizeString(`${rawEntry} ${natural}`);
+  sectionRoster.forEach((candidate) => {
+    // Supports both extensible student objects and string fallbacks
+    const rawEntry = typeof candidate === "string" ? candidate : candidate.rawName;
+    const natural = typeof candidate === "object" && candidate.displayName
+      ? candidate.displayName
+      : formatToNaturalName(rawEntry);
 
+    const norm = normalizeString(`${rawEntry} ${natural}`);
     const score = calculateMatchScore(normalizedInput, norm);
 
     if (score >= 0.5 && score > highestScore) {
       highestScore = score;
-      bestMatch = rawEntry;
+      bestMatch = { rawEntry, natural, candidate };
       ambiguityCount = 1;
     } else if (score >= 0.5 && score === highestScore) {
       ambiguityCount++;
@@ -34,16 +37,19 @@ export function matchStudentToRoster(inputName, section) {
   if (bestMatch && highestScore >= 0.5 && ambiguityCount === 1) {
     return {
       matched: true,
-      officialName: formatToNaturalName(bestMatch),
-      rawRosterName: bestMatch,
-      section,
+      officialName: bestMatch.natural,
+      rawRosterName: bestMatch.rawEntry,
+      studentData: typeof bestMatch.candidate === "object" ? bestMatch.candidate : null,
     };
   }
 
   return { matched: false };
 }
 
-export function getSectionStudents(section) {
-  const list = rosterData[section] || [];
-  return list.map(formatToNaturalName);
+export function getSectionStudents(sectionRoster = []) {
+  if (!Array.isArray(sectionRoster)) return [];
+  return sectionRoster.map((item) => {
+    if (typeof item === "string") return formatToNaturalName(item);
+    return item.displayName || formatToNaturalName(item.rawName);
+  });
 }

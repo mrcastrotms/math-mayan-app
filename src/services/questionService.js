@@ -1,27 +1,22 @@
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "../firebase";
-import { examQuestions as defaultQuestions } from "../data/questionBank";
-
-export async function fetchLiveQuestions() {
+export async function fetchExamQuestions(tier) {
   try {
-    const docRef = doc(db, "settings", "question_bank");
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists() && docSnap.data().questions) {
-      return docSnap.data().questions;
-    }
-  } catch (e) {
-    console.warn("Using local question bank fallback:", e);
+    const url = tier ? `/api/questions?tier=${tier}` : "/api/questions";
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Failed to fetch questions from server");
+    const data = await res.json();
+    return data.questions || [];
+  } catch (err) {
+    console.error("[QuestionService] Error loading questions:", err);
+    return [];
   }
-  return defaultQuestions;
 }
 
-export async function syncQuestionsToFirebase() {
-  try {
-    const docRef = doc(db, "settings", "question_bank");
-    await setDoc(docRef, { questions: defaultQuestions }, { merge: true });
-    alert("Question bank successfully synced to Firebase Cloud!");
-  } catch (e) {
-    console.error("Failed to sync question bank:", e);
-    alert("Sync failed. Check permissions.");
-  }
+export async function fetchLiveQuestions(tier) {
+  return fetchExamQuestions(tier);
+}
+
+export async function syncQuestionsToFirebase(questions) {
+  // Questions are now seeded and managed server-side via Firestore & /api/questions
+  console.warn("syncQuestionsToFirebase is deprecated. Questions are managed in Firestore.");
+  return true;
 }

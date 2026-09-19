@@ -1,59 +1,40 @@
-// src/app/api/generate-questions/route.js
 import { NextResponse } from "next/server";
+import { GoogleGenAI } from "@google/genai";
 
-export async function POST(req) {
+export const dynamic = "force-dynamic";
+
+export async function POST(request) {
   try {
-    const {
-      gradeLevel = "4th Grade",
-      topic = "Multi-digit Multiplication",
-      count = 5,
-      tier = "standard",
-    } = await req.json();
-
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
-        { error: "Missing GEMINI_API_KEY" },
-        { status: 500 },
+        { error: "GEMINI_API_KEY environment variable is not configured." },
+        { status: 500 }
       );
     }
 
-    const prompt = `
-Generate ${count} math assessment questions for ${gradeLevel} students on the topic of "${topic}".
-Tier/Difficulty: ${tier}.
+    const body = await request.json();
+    const { prompt, tier = "classwork", difficulty = "medium" } = body;
 
-Respond ONLY with a valid JSON array matching this exact schema:
-[
-  {
-    "question": "Clear problem prompt without ambiguity",
-    "answer": "Exact numerical or text answer",
-    "tier": "${tier}",
-    "topic": "${topic}",
-    "options": ["optional multiple choice distractor 1", "distractor 2", "etc"]
-  }
-]
-No markdown formatting, no commentary, just the JSON string.
-`;
+    const ai = new GoogleGenAI({ apiKey });
+    
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: `Generate 5 math problems for 4th and 5th grade students covering place value, rounding, or multi-digit operations. Topic/Prompt: ${prompt || "General math practice"}. Tier: ${tier}, Difficulty: ${difficulty}. Return valid JSON array of objects with keys: id, tier, difficulty, question, instruction, correctAnswer, observation.`,
+      config: {
+        responseMimeType: "application/json",
+      }
+    });
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { response_mime_type: "application/json" },
-        }),
-      },
-    );
+    const text = response.text();
+    const questions = JSON.parse(text);
 
-    const data = await response.json();
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    const questions = JSON.parse(rawText || "[]");
-
-    return NextResponse.json({ success: true, questions });
+    return NextResponse.json({ questions });
   } catch (error) {
-    console.error("Gemini question generation error:", error);
-    return NextResponse.json({ error: "Generation failed" }, { status: 500 });
+    console.error("[API/GENERATE] Error generating questions:", error);
+    return NextResponse.json(
+      { error: "Failed to generate questions via Gemini AI." },
+      { status: 500 }
+    );
   }
 }

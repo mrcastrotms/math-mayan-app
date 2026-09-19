@@ -31,6 +31,24 @@ export default function TeacherGradebookView({
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [isPurgeModalOpen, setIsPurgeModalOpen] = useState(false);
   const [isPurging, setIsPurging] = useState(false);
+  const [rosterDirectory, setRosterDirectory] = useState({});
+
+  useEffect(() => {
+    async function loadDirectory() {
+      try {
+        const res = await fetch("/api/roster", {
+          headers: { "x-teacher-pin": "0801" },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setRosterDirectory(data);
+        }
+      } catch (err) {
+        console.error("Failed to load roster directory:", err);
+      }
+    }
+    loadDirectory();
+  }, []);
 
   const { isPreparingPrint, triggerBatchPrint, currentOrigin } = useBatchPrint(800);
 
@@ -38,7 +56,7 @@ export default function TeacherGradebookView({
     if (viewMode === "hidden") {
       return getHiddenSubmissions(gradebookFilter, gradebookData || []);
     }
-    return mergeRosterWithSubmissions(gradebookFilter, gradebookData || []);
+    return mergeRosterWithSubmissions(gradebookFilter, gradebookData || [], rosterDirectory);
   }, [viewMode, gradebookFilter, gradebookData]);
 
   const printableSubmissions = useMemo(() => {
