@@ -174,7 +174,7 @@ export default function ExamApp() {
     mdnsCandidate,
     code,
   }) => {
-    // Explicitly lock down admin mode for all student/tester intake
+    // Keep admin mode strictly false for all student/tester intake
     state?.setIsAdminMode?.(false);
 
     if (isTester) {

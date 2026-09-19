@@ -1,3 +1,4 @@
+// src/hooks/useExamBypass.js
 "use client";
 import { useEffect } from "react";
 
@@ -5,9 +6,9 @@ export function useExamBypass(onJoinSuccess) {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // only allow bypass on localhost or when explicitly enabled via env
     const allowed =
       window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1" ||
       process.env.NEXT_PUBLIC_ENABLE_BYPASS === "true";
     if (!allowed) return;
 
