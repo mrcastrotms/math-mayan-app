@@ -1,4 +1,3 @@
-// src/components/TeacherGradebookView.js
 import React, { useState, useMemo } from "react";
 import STYLES from "../styles/gradebookStyles.json";
 import { useBatchPrint } from "../hooks/useBatchPrint";
@@ -8,6 +7,7 @@ import {
 } from "../utils/rosterUtils";
 import GradebookTable from "./GradebookTable";
 import StudentReportPrintSheet from "./StudentReportPrintSheet";
+import PurgeConfirmModal from "./ui/PurgeConfirmModal";
 
 export default function TeacherGradebookView({
   gradebookData,
@@ -23,11 +23,14 @@ export default function TeacherGradebookView({
   onHardDelete,
   onViewReport,
 }) {
-  const [viewMode, setViewMode] = useState("active"); // "active" | "hidden"
+  const [viewMode, setViewMode] = useState("active");
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [isPurgeModalOpen, setIsPurgeModalOpen] = useState(false);
+  const [isPurging, setIsPurging] = useState(false);
+
   const { isPreparingPrint, triggerBatchPrint, currentOrigin } =
     useBatchPrint(800);
 
-  // Compute records based on selected view mode
   const displayData = useMemo(() => {
     if (viewMode === "hidden") {
       return getHiddenSubmissions(gradebookFilter, gradebookData || []);
@@ -35,14 +38,12 @@ export default function TeacherGradebookView({
     return mergeRosterWithSubmissions(gradebookFilter, gradebookData || []);
   }, [viewMode, gradebookFilter, gradebookData]);
 
-  // Printable set: only records that represent completed submissions
   const printableSubmissions = useMemo(() => {
     return displayData.filter(
       (record) => record.status !== "NO_ATTEMPT" && record.score !== null,
     );
   }, [displayData]);
 
-  // Total hidden records matching current filter
   const hiddenCount = useMemo(() => {
     return (gradebookData || []).filter(
       (s) =>
@@ -51,16 +52,50 @@ export default function TeacherGradebookView({
     ).length;
   }, [gradebookData, gradebookFilter]);
 
+  const handleToggleSelect = (recordId) => {
+    if (!recordId) return;
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(recordId)) {
+        next.delete(recordId);
+      } else {
+        next.add(recordId);
+      }
+      return next;
+    });
+  };
+
+  const handleClearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  const handleExecutePurge = async () => {
+    if (selectedIds.size === 0) return;
+
+    setIsPurging(true);
+    try {
+      const targetRecords = displayData.filter((r) => selectedIds.has(r.id));
+      if (typeof onBulkHardDelete === "function") {
+        await onBulkHardDelete(targetRecords);
+      } else if (typeof onHardDelete === "function") {
+        await Promise.all(targetRecords.map((r) => onHardDelete(r.id)));
+      }
+      setSelectedIds(new Set());
+      setIsPurgeModalOpen(false);
+    } catch (err) {
+      console.error("[PURGE] Batch deletion failed:", err);
+    } finally {
+      setIsPurging(false);
+    }
+  };
+
   return (
     <div className={`${STYLES.container} relative`}>
-      {/* Interactive UI - Suppressed during print */}
       <div className={`${STYLES.innerWrapper} print:hidden`}>
-        {/* Header Controls */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
           <div className="flex items-center gap-4 flex-wrap">
             <h1 className={STYLES.title}>Gradebook</h1>
 
-            {/* Active vs. Hidden Switcher */}
             <div className="flex bg-slate-200 p-1 rounded-xl">
               <button
                 type="button"
@@ -113,7 +148,6 @@ export default function TeacherGradebookView({
           </div>
         </div>
 
-        {/* Section Filters & Bulk Actions */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8 flex justify-between items-center flex-wrap gap-4">
           <div className="flex items-center gap-4 flex-wrap">
             <span className="font-bold text-slate-600">Filter</span>
@@ -147,6 +181,28 @@ export default function TeacherGradebookView({
           </div>
 
           <div className="flex items-center gap-2">
+            {selectedIds.size > 0 && (
+              <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-1.5 mr-2">
+                <span className="text-xs font-bold text-red-700">
+                  {selectedIds.size} Selected
+                </span>
+                <button
+                  type="button"
+                  onClick={handleClearSelection}
+                  className="text-xs text-slate-600 hover:text-slate-900 underline font-semibold cursor-pointer"
+                >
+                  Clear
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsPurgeModalOpen(true)}
+                  className="bg-red-600 text-white hover:bg-red-700 px-3 py-1 rounded-lg text-xs font-bold transition shadow-sm cursor-pointer"
+                >
+                  Purge Selected
+                </button>
+              </div>
+            )}
+
             {viewMode === "active" ? (
               <>
                 <button
@@ -188,7 +244,6 @@ export default function TeacherGradebookView({
           </div>
         </div>
 
-        {/* Modular Table */}
         <GradebookTable
           records={displayData}
           isLoading={isLoadingGradebook}
@@ -197,10 +252,11 @@ export default function TeacherGradebookView({
           onRestoreRecord={onRestoreRecord}
           onHardDelete={onHardDelete}
           viewMode={viewMode}
+          selectedIds={selectedIds}
+          onToggleSelect={handleToggleSelect}
         />
       </div>
 
-      {/* Printable Sheet Container - Renders only when printing */}
       {isPreparingPrint && (
         <div
           id="batch-print-container"
@@ -240,6 +296,14 @@ export default function TeacherGradebookView({
           ))}
         </div>
       )}
+
+      <PurgeConfirmModal
+        isOpen={isPurgeModalOpen}
+        count={selectedIds.size}
+        isProcessing={isPurging}
+        onClose={() => setIsPurgeModalOpen(false)}
+        onConfirm={handleExecutePurge}
+      />
     </div>
   );
 }
