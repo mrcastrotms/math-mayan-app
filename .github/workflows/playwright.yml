@@ -13,6 +13,8 @@ env:
   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: mayan-school-exams.firebasestorage.app
   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "487993138099"
   NEXT_PUBLIC_FIREBASE_APP_ID: "1:487993138099:web:a85fbc042fb0cced0ac9c6"
+  NEXT_PUBLIC_ENABLE_BYPASS: true # 👈 ensures tests can bypass exam gate
+  FIREBASE_ADMIN_SDK: ${{ secrets.FIREBASE_ADMIN_SDK }}
 
 jobs:
   test:
@@ -28,7 +30,7 @@ jobs:
           cache: "npm"
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Cache Playwright Browsers
         uses: actions/cache@v4
@@ -53,6 +55,9 @@ jobs:
 
       - name: Build Next.js App
         run: npm run build
+
+      - name: Write Firebase Admin SDK to file
+        run: echo "${FIREBASE_ADMIN_SDK}" > serviceAccount.json # 👈 makes SDK available
 
       - name: Run Playwright tests
         run: npx playwright test
