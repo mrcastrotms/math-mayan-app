@@ -24,12 +24,13 @@ export default function ActiveExamScreen({
   handleFinishExam,
   children,
 }) {
-
   const [isFullscreen, setIsFullscreen] = useState(true);
 
   useEffect(() => {
     const handleFsChange = () => {
-      setIsFullscreen(Boolean(document.fullscreenElement || document.webkitFullscreenElement));
+      setIsFullscreen(
+        Boolean(document.fullscreenElement || document.webkitFullscreenElement),
+      );
     };
     handleFsChange();
     document.addEventListener("fullscreenchange", handleFsChange);
@@ -58,7 +59,10 @@ export default function ActiveExamScreen({
   const timerHook = useTimerOverride(timeLeft, handleNinjaOneMinute);
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col justify-between p-6 select-none relative" onDoubleClick={requestFullscreenFailsafe}>
+    <div
+      className="min-h-screen bg-slate-100 flex flex-col justify-between p-6 select-none relative"
+      onDoubleClick={requestFullscreenFailsafe}
+    >
       <PinModal
         isOpen={timerHook.showTimerModal}
         onClose={() => timerHook.setShowTimerModal(false)}

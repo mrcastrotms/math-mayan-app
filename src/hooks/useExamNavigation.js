@@ -17,7 +17,10 @@ export function useExamNavigation(questions = [], appText, student) {
 
   const [currentInput, setCurrentInput] = useState("");
   const [demerits, setDemerits] = useState(0);
-  const handleAddDemerit = useCallback(() => setDemerits((prev) => (prev || 0) + 1), []);
+  const handleAddDemerit = useCallback(
+    () => setDemerits((prev) => (prev || 0) + 1),
+    [],
+  );
 
   const currentQ = questions[currentQuestionIndex] || null;
   const questionsAttempted = currentQuestionIndex;

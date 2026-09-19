@@ -7,8 +7,7 @@ import {
   processSessionCodeVerification,
 } from "../utils/examSessionUtils";
 
-export function useExamLifecycle(
-{
+export function useExamLifecycle({
   isTeacher,
   isBypassMode,
   isBypassActive,
