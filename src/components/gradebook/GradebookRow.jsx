@@ -69,7 +69,7 @@ export default function GradebookRow({
         </div>
         {hasDifferentTypedName && (
           <span className="block text-xs font-normal text-slate-400 italic mt-0.5">
-            Typed: "{record.rawTypedName}"
+            Typed: &quot;{record.rawTypedName}&quot;
           </span>
         )}
       </td>

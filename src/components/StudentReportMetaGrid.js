@@ -24,7 +24,7 @@ export default function StudentReportMetaGrid({ report }) {
           <span className="block text-xs font-medium text-slate-400 mt-0.5">
             Written on test:{" "}
             <span className="text-slate-600 font-semibold">
-              "{writtenName}"
+              &quot;{writtenName}&quot;
             </span>
           </span>
         )}
