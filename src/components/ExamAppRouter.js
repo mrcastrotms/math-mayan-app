@@ -23,7 +23,7 @@ export default function ExamAppRouter({
     return <ParentReportView reportId={scannedReportId} />;
   }
 
-  if (view === "dashboard" || state?.isAdminMode) {
+  if (view === "dashboard") {
     return (
       <TeacherDashboard
         setIsAdminMode={(val) => {
