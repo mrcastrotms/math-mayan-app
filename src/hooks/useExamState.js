@@ -1,3 +1,4 @@
+import { useState } from "react";
 // src/hooks/useExamState.js
 import { useTimer } from "./useTimer";
 import { useExamNavigation } from "./useExamNavigation";
@@ -77,6 +78,49 @@ export function useExamState() {
     lifecycle.examDuration,
     lifecycle.handleFinishExam,
   );
+
+  
+  const [streak, setStreak] = useState(0);
+  const [adaptiveNotes, setAdaptiveNotes] = useState({});
+
+  async function handleAdaptiveAnswer(isCorrect, currentQuestionId) {
+    let newStreak = streak;
+    if (isCorrect) {
+      newStreak = streak + 1;
+      setStreak(newStreak);
+      if (newStreak >= 3) {
+        try {
+          const res = await fetch("/api/generate-questions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tier: "assessment", difficulty: "hard", prompt: "Advanced multi-digit extension challenge" })
+          });
+          const data = await res.json();
+          if (data.questions && data.questions.length > 0) {
+            setAdaptiveNotes(prev => ({ ...prev, [currentQuestionId]: "**Generated Hard – Good Challenge!**" }));
+          }
+        } catch (err) {
+          console.error("Adaptive fetch error:", err);
+        }
+        setStreak(0);
+      }
+    } else {
+      setStreak(0);
+      try {
+        const res = await fetch("/api/generate-questions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tier: "classwork", difficulty: "easy", prompt: "Scaffolded foundational practice" })
+        });
+        const data = await res.json();
+        if (data.questions && data.questions.length > 0) {
+          setAdaptiveNotes(prev => ({ ...prev, [currentQuestionId]: "**Generated Easy – Scaffold / Support**" }));
+        }
+      } catch (err) {
+        console.error("Adaptive fetch error:", err);
+      }
+    }
+  }
 
   return {
     ...form,
