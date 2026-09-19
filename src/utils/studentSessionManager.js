@@ -39,16 +39,6 @@ export function handleStudentJoin({
   telemetry = {},
 }) {
   const trimmedName = name?.trim() || "";
-  const normalized = trimmedName.toLowerCase();
-
-  // Tester identification
-  const isMrCastro =
-    (normalized === "mr. castro" ||
-      normalized === "mr castro" ||
-      normalized === "césar castro" ||
-      normalized === "cesar castro") &&
-    code === "00000";
-
   // Persistent unique machine identity
   const deviceUid =
     uid ||
@@ -67,29 +57,14 @@ export function handleStudentJoin({
     name: trimmedName,
     uid: deviceUid,
     section,
-    isTester: isMrCastro,
+    isTester: false,
     telemetry: {
       deviceUuid: deviceUid,
       mdnsCandidate: telemetry.mdnsCandidate || "unresolved",
     },
   });
 
-  if (isMrCastro || code === "00000") {
-    state?.setIsDevMode?.(true);
-    state?.setIsAdminMode?.(false);
-    state?.setIsLocked?.(false);
-
-    if (
-      typeof window !== "undefined" &&
-      !window.location.search.includes("bypass=true")
-    ) {
-      router.push("/?bypass=true");
-    } else {
-      state?.setExamStarted?.(true);
-    }
-  } else {
-    state?.handleVerifyAndStart?.(code, section);
-  }
+  state?.handleVerifyAndStart?.(code, section);
 }
 
 export async function processSessionCodeVerification({

@@ -10,14 +10,11 @@ import { useStudentSessionForm } from "./useStudentSessionForm";
 import { filterActiveQuestions } from "../utils/questionFilterUtils";
 import { computeEnhancedScore } from "../utils/scoringUtils";
 
-const CORRECT_PIN = "2026";
 const DEFAULT_DURATION = 2400;
 
 export function useExamState() {
   const isDevMode = process.env.NODE_ENV === "development";
-  const isBypassActive =
-    typeof window !== "undefined" &&
-    window.location.search.includes("bypass=true");
+  const isBypassActive = false;
 
   const form = useStudentSessionForm();
   const {
@@ -66,7 +63,6 @@ export function useExamState() {
       examStarted: lifecycle.examStarted,
       examFinished: lifecycle.examFinished,
       isTeacher,
-      CORRECT_PIN,
       student: form.student,
       onLockBreach: navigation.handleAddDemerit,
     });

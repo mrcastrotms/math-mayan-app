@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { matchStudentToRoster, getSectionStudents } from "../../../utils/rosterUtils";
+import { useMemo } from "react";
 
 export function useGateValidation({
   studentName,
@@ -10,76 +9,23 @@ export function useGateValidation({
   accessCode,
   showCodeField,
 }) {
-  const [sectionRoster, setSectionRoster] = useState([]);
-  const [isLoadingRoster, setIsLoadingRoster] = useState(false);
+  const rosterOptions = useMemo(() => [], []);
+  const resolvedOfficialName = storedName || "";
 
-  useEffect(() => {
-    if (!selectedSection) return;
-    let isCancelled = false;
-
-    async function loadRoster() {
-      setIsLoadingRoster(true);
-      try {
-        const res = await fetch(`/api/roster?section=${selectedSection}`);
-        if (!res.ok) throw new Error("Roster fetch failed");
-        const data = await res.json();
-        if (!isCancelled) {
-          setSectionRoster(data.students || []);
-        }
-      } catch (err) {
-        console.error("Failed to load section roster:", err);
-      } finally {
-        if (!isCancelled) setIsLoadingRoster(false);
-      }
-    }
-
-    loadRoster();
-    return () => {
-      isCancelled = true;
-    };
-  }, [selectedSection]);
-
-  const isMrCastro = (name) => {
-    const normalized = (name || "").trim().toLowerCase();
-    return (
-      normalized === "mr. castro" ||
-      normalized === "mr castro" ||
-      normalized === "césar castro" ||
-      normalized === "cesar castro"
-    );
-  };
-
-  const rosterOptions = useMemo(() => {
-    return getSectionStudents(sectionRoster);
-  }, [sectionRoster]);
-
-  const resolvedOfficialName = useMemo(() => {
-    const target = studentName || storedName;
-    if (!target || sectionRoster.length === 0) return "";
-    const match = matchStudentToRoster(target, sectionRoster);
-    return match?.matched ? match.officialName : "";
-  }, [studentName, storedName, sectionRoster]);
-
-  const validateAndResolve = () => {
+  const validateAndResolve = async () => {
     const trimmed = (studentName || "").trim();
     if (!trimmed) return null;
-
-    const isTester = Boolean(
-      showCodeField && accessCode === "00000" && isMrCastro(trimmed),
-    );
-
-    let finalStudentName = trimmed;
-    if (!isTester && sectionRoster.length > 0) {
-      const match = matchStudentToRoster(trimmed, sectionRoster);
-      if (match?.matched && match.officialName) {
-        finalStudentName = match.officialName;
-      }
-    }
-
+    const response = await fetch("/api/roster", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ section: selectedSection, name: trimmed }),
+    });
+    if (!response.ok) throw new Error("Roster validation failed");
+    const result = await response.json();
     return {
-      isValid: true,
-      finalStudentName,
-      isTester,
+      isValid: Boolean(result.matched),
+      finalStudentName: result.officialName || trimmed,
+      isTester: false,
     };
   };
 
@@ -87,6 +33,5 @@ export function useGateValidation({
     rosterOptions,
     resolvedOfficialName,
     validateAndResolve,
-    isLoadingRoster,
   };
 }

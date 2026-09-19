@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
+import { enforceRateLimit } from "../../../lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request) {
   try {
-    const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    if (!enforceRateLimit(request, "generate-questions", 10)) {
+      return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+    }
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
         { error: "GEMINI_API_KEY environment variable is not configured." },
@@ -15,6 +19,14 @@ export async function POST(request) {
 
     const body = await request.json();
     const { prompt, tier = "classwork", difficulty = "medium" } = body;
+    if (
+      typeof prompt !== "string" ||
+      prompt.length > 500 ||
+      !["classwork", "assessment", "review"].includes(tier) ||
+      !["easy", "medium", "hard"].includes(difficulty)
+    ) {
+      return NextResponse.json({ error: "Invalid generation request." }, { status: 400 });
+    }
 
     const ai = new GoogleGenAI({ apiKey });
     

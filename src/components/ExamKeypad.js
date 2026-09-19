@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { verifyTeacherPin } from "../utils/teacherAuth";
 
 export default function ExamKeypad({
   handlePadClick,
@@ -14,7 +15,6 @@ export default function ExamKeypad({
   const [enteredPin, setEnteredPin] = useState("");
   const [pinError, setPinError] = useState(false);
 
-  // Less than or equal to 15 minutes (900 seconds) allows direct finish
   const isTimeAllowed = timeLeft <= 900;
 
   const onFinishClick = () => {
@@ -27,9 +27,9 @@ export default function ExamKeypad({
     }
   };
 
-  const handlePinSubmit = (e) => {
+  const handlePinSubmit = async (e) => {
     e.preventDefault();
-    if (enteredPin === "0801") {
+    if (await verifyTeacherPin(enteredPin)) {
       setShowPinPrompt(false);
       setEnteredPin("");
       setPinError(false);
@@ -47,7 +47,7 @@ export default function ExamKeypad({
           <button
             key={item}
             type="button"
-            onClick={() => handlePadClick(item)}
+            onClick={() => handlePadClick?.(item)}
             className="bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xl py-3 rounded-xl hover:bg-slate-100 transition active:scale-95 shadow-sm"
           >
             {item}
@@ -58,7 +58,7 @@ export default function ExamKeypad({
           onClick={handleBackspace}
           className="bg-amber-50 border border-amber-200 text-amber-700 font-bold text-lg py-3 rounded-xl hover:bg-amber-100 transition active:scale-95 shadow-sm"
         >
-          ⌫
+          Del
         </button>
       </div>
 
@@ -73,14 +73,14 @@ export default function ExamKeypad({
         </button>
       </div>
 
-      {/* Pass & Submit (Emerald Green) */}
+      {/* AI Hint & Submit Answer */}
       <div className="flex gap-3 justify-center mb-4">
         <button
           type="button"
           onClick={handlePassQuestion}
-          className="px-6 py-3 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition"
+          className="px-6 py-3 bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold rounded-xl hover:bg-indigo-100 transition active:scale-95 shadow-sm"
         >
-          Pass
+          AI Hint
         </button>
         <button
           type="button"
@@ -91,18 +91,17 @@ export default function ExamKeypad({
         </button>
       </div>
 
-      {/* Finish Exam Button (T-15min or PIN 0801) */}
+      {/* Finish Exam Early Button */}
       <div className="flex justify-center border-t border-slate-100 pt-4">
         <button
           type="button"
           onClick={onFinishClick}
-          className={`px-5 py-2.5 rounded-xl font-bold text-sm transition shadow-sm flex items-center gap-2 ${
+          className={"px-5 py-2.5 rounded-xl font-bold text-sm transition shadow-sm flex items-center gap-2 " + (
             isTimeAllowed
               ? "bg-red-600 hover:bg-red-700 text-white shadow-red-200"
               : "bg-slate-100 text-slate-400 border border-slate-200 hover:bg-slate-200 hover:text-slate-600"
-          }`}
+          )}
         >
-          {!isTimeAllowed && <span>🔒</span>}
           Finish Exam Early
           {!isTimeAllowed && (
             <span className="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">
@@ -112,7 +111,7 @@ export default function ExamKeypad({
         </button>
       </div>
 
-      {/* Teacher Override Modal for 0801 */}
+      {/* Teacher Override Modal */}
       {showPinPrompt && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-slate-200">
@@ -137,11 +136,11 @@ export default function ExamKeypad({
                   setEnteredPin(e.target.value);
                   setPinError(false);
                 }}
-                className={`w-full text-center text-2xl tracking-widest py-2 px-3 border rounded-xl mb-2 outline-none font-mono ${
+                className={"w-full text-center text-2xl tracking-widest py-2 px-3 border rounded-xl mb-2 outline-none font-mono " + (
                   pinError
                     ? "border-red-500 bg-red-50 text-red-700"
                     : "border-slate-300 focus:border-blue-500"
-                }`}
+                )}
               />
               {pinError && (
                 <p className="text-red-500 text-xs text-center font-bold mb-3">

@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-
-const TEACHER_PIN = "0801196604650";
+import { verifyTeacherPin } from "../utils/teacherAuth";
 
 export default function StudentLockOverlay({
   isLocked,
@@ -12,15 +11,6 @@ export default function StudentLockOverlay({
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState(false);
   const [graceSeconds, setGraceSeconds] = useState(45);
-
-  const isDevOrPreview =
-    typeof window !== "undefined" &&
-    (window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1" ||
-      process.env.NEXT_PUBLIC_VERCEL_ENV === "preview" ||
-      window.location.hostname.includes("-git-") ||
-      window.location.hostname.includes("-projects.vercel.app") ||
-      window.location.search.includes("bypass=true"));
 
   useEffect(() => {
     if (!isLocked) {
@@ -74,22 +64,11 @@ export default function StudentLockOverlay({
     onUnlock?.();
   };
 
-  const handleTeacherUnlock = (e) => {
+  const handleTeacherUnlock = async (e) => {
     e.preventDefault();
     const cleanPin = pinInput.trim();
 
-    // 1-click bypass on preview/dev when PIN is left empty
-    if (isDevOrPreview && cleanPin === "") {
-      performUnlock();
-      return;
-    }
-
-    if (
-      cleanPin === "0801" ||
-      cleanPin === "2026" ||
-      cleanPin === "00000" ||
-      cleanPin === TEACHER_PIN
-    ) {
+    if (await verifyTeacherPin(cleanPin)) {
       performUnlock();
     } else {
       setPinError(true);
@@ -124,7 +103,7 @@ export default function StudentLockOverlay({
         onDoubleClick={performUnlock}
         className="text-2xl sm:text-3xl font-black text-white mb-2 tracking-tight cursor-default"
       >
-        Exam Paused — {studentName || "Student"}
+        {studentName || "Student"}
       </h2>
 
       <p className="text-slate-300 max-w-md text-sm sm:text-base leading-relaxed mb-4">
@@ -147,7 +126,7 @@ export default function StudentLockOverlay({
             autoComplete="one-time-code"
             data-lpignore="true"
             placeholder={
-              isDevOrPreview ? "Teacher PIN (or click Unlock)" : "Teacher PIN"
+              "Teacher PIN"
             }
             value={pinInput}
             onChange={(e) => {

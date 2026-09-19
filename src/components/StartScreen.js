@@ -9,6 +9,7 @@ import { START_SCREEN_COPY } from "../utils/themeStyles";
 import ThemeToggle from "./ThemeToggle";
 import PinModal from "./PinModal";
 import StudentJoinCard from "./StudentJoinCard";
+import { verifyTeacherPin } from "../utils/teacherAuth";
 
 export default function StartScreen({
   setIsAdminMode,
@@ -30,9 +31,9 @@ export default function StartScreen({
 
   const joinState = useStudentJoin({ availableSections, onJoinSuccess });
 
-  const handleTeacherSubmit = (code) => {
+  const handleTeacherSubmit = async (code) => {
     const cleanPin = (code || "").trim();
-    if (cleanPin === "0801196604650") {
+    if (await verifyTeacherPin(cleanPin)) {
       setIsAdminMode(true);
     } else if (cleanPin) {
       joinState.setError("Access Denied: Invalid Teacher Code.");

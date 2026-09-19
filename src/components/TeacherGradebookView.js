@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import STYLES from "../styles/gradebookStyles.json";
 import { useBatchPrint } from "../hooks/useBatchPrint";
 import {
@@ -36,9 +36,7 @@ export default function TeacherGradebookView({
   useEffect(() => {
     async function loadDirectory() {
       try {
-        const res = await fetch("/api/roster", {
-          headers: { "x-teacher-pin": "0801" },
-        });
+        const res = await fetch("/api/roster");
         if (res.ok) {
           const data = await res.json();
           setRosterDirectory(data);

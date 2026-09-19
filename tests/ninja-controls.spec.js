@@ -2,7 +2,11 @@ const { test, expect } = require("@playwright/test");
 
 test.describe("Teacher Ninja Controls", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/?bypass=true", { waitUntil: "domcontentloaded" });
+    await page.goto("/?bypass=true");
+    const examBtn = page.locator('[data-testid="start-exam-button"], button:has-text("Timed Exam")').first();
+    await examBtn.waitFor({ state: "visible", timeout: 10000 });
+    await examBtn.click();
+    await page.locator('.question-text, [data-testid="question-text"]').first().waitFor({ state: "visible", timeout: 10000 });
   });
 
   test("should increase demerits when question text is double-clicked", async ({

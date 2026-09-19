@@ -1,6 +1,7 @@
 // src/app/api/consumeBypass/route.js
 import { getApps, initializeApp, cert } from "firebase-admin/app";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
+import { requireTeacherIdToken } from "../../../lib/teacherAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,10 @@ function getDb() {
 export async function POST(req) {
   try {
     const db = getDb();
+    const decoded = await requireTeacherIdToken(req);
+    if (!decoded) {
+      return Response.json({ error: "Unauthorized teacher session" }, { status: 401 });
+    }
     const body = await req.json();
     const { token, name, section } = body || {};
 
@@ -32,14 +37,24 @@ export async function POST(req) {
 
     const data = doc.data();
 
-    if (data.used) {
-      return Response.json({ error: "Token already used" }, { status: 410 });
-    }
     if (data.expiresAt.toMillis() < Date.now()) {
       return Response.json({ error: "Token expired" }, { status: 410 });
     }
 
-    await docRef.update({ used: true, usedAt: Timestamp.now() });
+    if (data.issuedBy && data.issuedBy !== decoded.uid) {
+      return Response.json({ error: "Token is not assigned to this teacher" }, { status: 403 });
+    }
+
+    const consumed = await db.runTransaction(async (transaction) => {
+      const current = await transaction.get(docRef);
+      const currentData = current.data();
+      if (!current.exists || currentData.used) return false;
+      transaction.update(docRef, { used: true, usedAt: Timestamp.now(), consumedBy: decoded.uid });
+      return true;
+    });
+    if (!consumed) {
+      return Response.json({ error: "Token already used" }, { status: 410 });
+    }
 
     await db.collection("bypassLogs").add({
       action: "consume",
