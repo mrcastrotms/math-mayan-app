@@ -6,7 +6,7 @@ export default function ScoreSummaryCard({
   selectedSection,
   finalScore,
   isSaving,
-  handleTryAgain,
+  handleReturnHome,
   demerits = 0,
 }) {
   const handleEmailReport = () => {
@@ -65,7 +65,7 @@ export default function ScoreSummaryCard({
         </p>
       ) : (
         <p className="text-green-500 font-bold text-lg mb-8 print:hidden">
-          ✓ Saved to Gradebook
+          Saved to Gradebook
         </p>
       )}
 
@@ -75,7 +75,7 @@ export default function ScoreSummaryCard({
           onClick={() => window.print()}
           className="w-full bg-indigo-600 text-white font-bold text-lg py-4 rounded-xl hover:bg-indigo-700 transition shadow-lg active:scale-95"
         >
-          📄 Print / Save PDF
+          Print / Save PDF
         </button>
 
         <button
@@ -83,12 +83,12 @@ export default function ScoreSummaryCard({
           onClick={handleEmailReport}
           className="w-full bg-blue-50 text-blue-600 border border-blue-100 font-bold text-lg py-4 rounded-xl hover:bg-blue-100 transition active:scale-95"
         >
-          ✉️ Email to Parents (Gmail)
+          Email to Parents (Gmail)
         </button>
 
         <button
           type="button"
-          onClick={handleTryAgain}
+          onClick={handleReturnHome}
           className="w-full md:col-span-2 bg-slate-100 text-slate-600 font-bold text-lg py-4 rounded-xl hover:bg-slate-200 transition"
         >
           Back to Start

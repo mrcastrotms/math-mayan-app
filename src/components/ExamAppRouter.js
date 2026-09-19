@@ -2,10 +2,7 @@
 import React from "react";
 import dynamic from "next/dynamic";
 import StartScreen from "./StartScreen";
-// Remove this line:
-// import ActiveExamContainer from "./ActiveExamContainer";
-
-// Add this line:
+import StudentHome from "./StudentHome";
 import ActiveExamScreen from "./exam/ActiveExamScreen";
 
 const ParentReportView = dynamic(() => import("./ParentReportView"));
@@ -42,23 +39,46 @@ export default function ExamAppRouter({
     );
   }
 
-  /* Locked screen handled globally by StudentLockOverlay */
-
   if (state?.examFinished) {
     return (
       <FinishedScreen
         student={state?.student}
-        selectedSection={state?.selectedSection}
+        selectedSection={state?.selectedSection || state?.student?.section}
         finalScore={
           state?.calculateFinalScore ? state.calculateFinalScore() : 70
         }
         isSaving={state?.isSaving}
-        handleTryAgain={state?.handleTryAgain}
+        handleReturnHome={() => {
+          state?.setExamFinished?.(false);
+          state?.setExamStarted?.(false);
+          state?.setCurrentQuestionIndex?.(0);
+          state?.setStudentAnswers?.([]);
+          navigateTo("student-home");
+        }}
         studentAnswers={state?.studentAnswers}
         demerits={state?.demerits || 0}
       >
         {adminPanel}
       </FinishedScreen>
+    );
+  }
+
+  if (view === "student-home" || (!state?.examStarted && state?.student?.name)) {
+    return (
+      <StudentHome
+        studentName={state?.student?.name || "Student"}
+        section={state?.selectedSection || state?.student?.section || "4A"}
+        onSelectMode={(mode) => {
+          if (mode === "exam") {
+            state?.setExamDuration?.(45 * 60);
+            state?.setTimeLeft?.(45 * 60);
+            state?.setExamStarted?.(true);
+            navigateTo("exam");
+          } else if (mode === "classwork") {
+            navigateTo("classwork");
+          }
+        }}
+      />
     );
   }
 
