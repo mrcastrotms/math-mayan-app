@@ -165,6 +165,7 @@ export default function ExamApp() {
   }, [view, state]);
 
   // Handle initialization from ExamGate
+  // Handle initialization from ExamGate
   const handleGateStart = async ({
     studentName,
     section,
@@ -173,9 +174,15 @@ export default function ExamApp() {
     mdnsCandidate,
     code,
   }) => {
+    // Ensure student sessions never have admin mode active
+    state?.setIsAdminMode?.(false);
+
     if (isTester) {
       state?.setIsDevMode?.(true);
-      state?.setIsAdminMode?.(true);
+      state?.setIsTesterMode?.(true);
+    } else {
+      state?.setIsDevMode?.(false);
+      state?.setIsTesterMode?.(false);
     }
 
     // Set duration, reset time, and start the timer interval
@@ -204,10 +211,6 @@ export default function ExamApp() {
 
     navigateTo("exam");
   };
-
-  if (!mounted) {
-    return <div className="min-h-screen bg-slate-900" />;
-  }
 
   const adminPanel = (
     <DevAdminPanel
