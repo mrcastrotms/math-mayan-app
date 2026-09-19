@@ -24,8 +24,6 @@ export function useGradebookData() {
 
   // Real-time Firestore stream: automatically catches student submissions the moment they finish
   useEffect(() => {
-    setIsLoadingGradebook(true);
-
     const q = query(
       collection(db, "exam_results"),
       orderBy("timestamp", "desc"),
