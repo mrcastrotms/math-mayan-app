@@ -18,7 +18,7 @@ export function useStudentSessionForm({ onJoin, verifyAndStart } = {}) {
     setErrorMsg("");
 
     if (!selectedSection) {
-      setErrorMsg("Please select your class section first.");
+      setErrorMsg("Please select your class section");
       return;
     }
     if (!customStudentName.trim()) {

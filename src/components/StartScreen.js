@@ -44,7 +44,7 @@ export default function StartScreen({
     joinState.setError("");
 
     if (!joinState.selectedSection) {
-      joinState.setError("Please select your class section first.");
+      joinState.setError("Please select your class section");
       return;
     }
 

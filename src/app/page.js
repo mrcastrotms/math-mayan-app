@@ -270,8 +270,8 @@ export default function ExamApp() {
       <PinModal
         isOpen={isTeacherPinOpen}
         onClose={() => setIsTeacherPinOpen(false)}
-        title="Teacher Verification"
-        description="Enter the 4-digit PIN to access the dashboard"
+        title="Teacher Login"
+        description=""
         placeholder="••••"
         onSubmit={(pin) => {
           if (pin === "0801") {
