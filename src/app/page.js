@@ -54,7 +54,11 @@ export default function ExamApp() {
       if (!document.fullscreenElement || document.hidden) {
         if (!stateRef.current?.isLocked) {
           stateRef.current?.setIsLocked?.(true);
-          stateRef.current?.handleAddDemerit?.();
+          if (typeof stateRef.current?.handleAddDemerit === "function") {
+            stateRef.current.handleAddDemerit();
+          } else if (typeof stateRef.current?.setDemerits === "function") {
+            stateRef.current.setDemerits((prev) => (prev || 0) + 1);
+          }
         }
       }
     };
