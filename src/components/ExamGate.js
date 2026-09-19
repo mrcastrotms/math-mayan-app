@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { matchStudentToRoster } from "../utils/rosterUtils";
+import { matchStudentToRoster, getSectionStudents } from "../utils/rosterUtils";
 
 const DEFAULT_SECTIONS = ["4A", "4B", "4C", "4D", "4E", "5B"];
 
@@ -88,6 +88,10 @@ export default function ExamGate({
   }, [examActive]);
 
   // Resolve official roster name from JSON whenever name or section changes
+  const rosterOptions = useMemo(() => {
+    return getSectionStudents(selectedSection);
+  }, [selectedSection]);
+
   const resolvedOfficialName = useMemo(() => {
     const targetName = studentName || storedName;
     if (!targetName || !selectedSection) return "";
@@ -624,8 +628,16 @@ export default function ExamGate({
               type="text"
               required
               value={studentName}
+              list="roster-suggestions"
+              autoComplete="off"
               onChange={(e) => setStudentName(e.target.value)}
               placeholder="e.g., Student Name"
+            />
+            <datalist id="roster-suggestions">
+              {rosterOptions.map((name) => (
+                <option key={name} value={name} />
+              ))}
+            </datalist
               style={{
                 width: "100%",
                 padding: "12px",
