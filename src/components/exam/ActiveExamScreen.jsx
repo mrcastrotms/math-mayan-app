@@ -1,4 +1,6 @@
 "use client";
+import Scratchpad from "../Scratchpad";
+import AiHintModal from "../AiHintModal";
 
 import { useState } from "react";
 import ConfirmSubmitModal from "../ui/ConfirmSubmitModal";
