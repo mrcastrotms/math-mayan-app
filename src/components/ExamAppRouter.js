@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import StartScreen from "./StartScreen";
@@ -15,28 +16,44 @@ export default function ExamAppRouter({
   const [isTeacherAuth, setIsTeacherAuth] = useState(false);
 
   useEffect(() => {
-    if (view === "dashboard" && !isTeacherAuth) {
-      const auth = window.sessionStorage.getItem("teacher_authorized");
-      if (auth === "true") {
-        setIsTeacherAuth(true);
-      } else {
-        setTimeout(() => {
-          const pin = window.prompt("Enter Teacher PIN (0801):");
-          if (pin === "0801") {
-            window.sessionStorage.setItem("teacher_authorized", "true");
-            setIsTeacherAuth(true);
-          } else {
-            navigateTo("start");
-          }
-        }, 100);
-      }
+    if (typeof window !== "undefined") {
+      setIsTeacherAuth(window.sessionStorage.getItem("teacher_authorized") === "true");
     }
-  }, [view, isTeacherAuth, navigateTo]);
+  }, [view]);
 
   if (scannedReportId) return <ParentReportView reportId={scannedReportId} />;
 
   if (view === "dashboard") {
-    if (!isTeacherAuth) return null;
+    if (!isTeacherAuth) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
+          <div className="bg-gray-800 p-8 rounded-xl shadow-2xl max-w-sm w-full text-center">
+            <h2 className="text-2xl font-bold mb-6">Teacher Access</h2>
+            <button 
+              onClick={() => {
+                const pin = window.prompt("Enter Teacher PIN:");
+                if (pin === "0801") {
+                  window.sessionStorage.setItem("teacher_authorized", "true");
+                  setIsTeacherAuth(true);
+                } else {
+                  alert("Incorrect PIN");
+                }
+              }}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg mb-4 transition-colors"
+            >
+              Unlock Dashboard
+            </button>
+            <button 
+              onClick={() => navigateTo("start")}
+              className="text-gray-400 hover:text-white underline"
+            >
+              Return to Home
+            </button>
+          </div>
+        </div>
+      );
+    }
+    
     return (
       <TeacherDashboard
         setIsAdminMode={(val) => {
