@@ -9,6 +9,9 @@ import TapeDiagramManipulative from "../manipulatives/TapeDiagramManipulative";
 
 export default function ActiveExamScreen({ state, navigateTo, adminPanel }) {
   const [showAiHint, setShowAiHint] = useState(false);
+  const [currentHintText, setCurrentHintText] = useState("");
+  const [isHintLoading, setIsHintLoading] = useState(false);
+  const [hintCache, setHintCache] = useState({});
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinInput, setPinInput] = useState("");
   
@@ -30,6 +33,42 @@ export default function ActiveExamScreen({ state, navigateTo, adminPanel }) {
   const formatTime =
     state?.formatTime ||
     ((s) => `${Math.floor(s / 60)}:${s % 60 < 10 ? "0" : ""}${s % 60}`);
+
+  
+  const handleOpenHint = async () => {
+    setShowAiHint(true);
+    const qKey = question?.id || question?.question || currentIndex;
+    if (hintCache[qKey]) {
+      setCurrentHintText(hintCache[qKey]);
+      return;
+    }
+    if (question?.hint) {
+      setCurrentHintText(question.hint);
+      return;
+    }
+
+    setIsHintLoading(true);
+    setCurrentHintText("");
+    try {
+      const res = await fetch("/api/hint", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: question?.question || "",
+          instruction: question?.instruction || "",
+          observation: question?.observation || "",
+        }),
+      });
+      const data = await res.json();
+      const resolved = data.hint || "Analyze the place values and work step by step.";
+      setCurrentHintText(resolved);
+      setHintCache((prev) => ({ ...prev, [qKey]: resolved }));
+    } catch (err) {
+      setCurrentHintText("Analyze the place values and work step by step.");
+    } finally {
+      setIsHintLoading(false);
+    }
+  };
 
   const handleFinalSubmit = async () => {
     setIsModalOpen(false);
@@ -157,7 +196,7 @@ export default function ActiveExamScreen({ state, navigateTo, adminPanel }) {
           handlePadClick={(val) => state?.handlePadClick?.(val)}
           handleBackspace={() => state?.handleBackspace?.()}
           handleClear={() => state?.handleClear?.()}
-          handlePassQuestion={() => state?.handlePassQuestion?.()}
+          handlePassQuestion={handleOpenHint}
           handleSubmitQuestion={() => state?.handleSubmitQuestion?.()}
           handleFinishExam={() => setIsModalOpen(true)}
           timeLeft={timeLeft}
@@ -165,6 +204,12 @@ export default function ActiveExamScreen({ state, navigateTo, adminPanel }) {
       </div>
       </main>
 
+      <AiHintModal
+        isOpen={showAiHint}
+        hintText={currentHintText}
+        isLoading={isHintLoading}
+        onClose={() => setShowAiHint(false)}
+      />
       <ConfirmSubmitModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

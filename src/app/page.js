@@ -44,9 +44,10 @@ export default function ExamApp() {
     state?.setIsAdminMode?.(false);
     state?.setIsDevMode?.(Boolean(isTester));
     state?.setIsTesterMode?.(Boolean(isTester));
-    state?.setExamDuration?.(45 * 60);
-    state?.setTimeLeft?.(45 * 60);
-    state?.setExamStarted?.(true);
+    state?.setStudent?.({ name: studentName, section, uid: deviceUuid });
+    state?.setSelectedSection?.(section);
+    state?.setExamStarted?.(false);
+    state?.setExamFinished?.(false);
 
     await handleStudentJoin({
       name: studentName,
@@ -58,7 +59,7 @@ export default function ExamApp() {
       telemetry: { deviceUuid, mdnsCandidate },
     });
 
-    navigateTo("exam");
+    navigateTo("student-home");
   };
 
   const bypassRanRef = useRef(false);
