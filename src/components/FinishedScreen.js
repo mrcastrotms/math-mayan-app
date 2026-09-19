@@ -12,6 +12,8 @@ export default function FinishedScreen({
   handleReturnHome,
   studentAnswers = [],
   demerits = 0,
+  merits = 0,
+  behaviorEvents = [],
   children,
 }) {
   return (
@@ -23,11 +25,15 @@ export default function FinishedScreen({
         isSaving={isSaving}
         handleReturnHome={handleReturnHome}
         demerits={demerits}
+        merits={merits}
+        behaviorEvents={behaviorEvents}
       />
 
       <StudentAnswersTable
         studentAnswers={studentAnswers}
         demerits={demerits}
+        merits={merits}
+        behaviorEvents={behaviorEvents}
       />
 
       <div className="print:hidden mt-8 w-full max-w-3xl">{children}</div>

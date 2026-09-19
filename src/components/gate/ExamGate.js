@@ -33,6 +33,24 @@ export default function ExamGate({
   const lastTapRef = useRef(0);
   const current = THEMES[theme] || THEMES.standard;
 
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("math_app_theme");
+      if (saved === "standard" || saved === "sepia" || saved === "contrast") {
+        setTheme(saved);
+        document.documentElement.setAttribute("data-theme", saved);
+      }
+    } catch {}
+  }, []);
+
+  const handleThemeChange = (nextTheme) => {
+    setTheme(nextTheme);
+    try {
+      localStorage.setItem("math_app_theme", nextTheme);
+      document.documentElement.setAttribute("data-theme", nextTheme);
+    } catch {}
+  };
+
   const { rosterOptions, resolvedOfficialName, validateAndResolve } = useGateValidation({
     studentName,
     storedName,
@@ -134,8 +152,8 @@ export default function ExamGate({
       <div style={{ width: "100%", maxWidth: "520px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", fontSize: "0.85rem" }}>
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           {["standard", "sepia", "contrast"].map((t) => (
-            <button key={t} type="button" onClick={() => setTheme(t)} style={{ background: theme === t ? current.border : "transparent", border: `1px solid ${current.border}`, color: current.text, padding: "4px 8px", borderRadius: "4px", cursor: "pointer", textTransform: "capitalize" }}>
-              {t}
+            <button key={t} type="button" onClick={() => handleThemeChange(t)} aria-pressed={theme === t} style={{ background: theme === t ? current.border : "transparent", border: `1px solid ${current.border}`, color: current.text, padding: "8px 10px", minHeight: "44px", borderRadius: "4px", cursor: "pointer", textTransform: "capitalize" }}>
+              {t === "standard" ? "Standard" : t === "contrast" ? "High Contrast" : "Sepia"}
             </button>
           ))}
           <button type="button" onClick={handleHardReset} style={{ background: "transparent", border: `1px solid ${current.border}`, color: current.textDim, padding: "4px 8px", borderRadius: "4px", cursor: "pointer", fontSize: "0.75rem" }} title="Clear cached session">
