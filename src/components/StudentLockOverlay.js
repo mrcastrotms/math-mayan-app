@@ -97,7 +97,7 @@ export default function StudentLockOverlay({
           <input
             placeholder="Teacher PIN"
             className="flex-1 px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-center font-mono text-base outline-none focus:border-amber-400 transition"
-            type="password"
+            type="text" inputMode="numeric" autoComplete="one-time-code" data-lpignore="true" style={{ WebkitTextSecurity: "disc" }}
             autoFocus
             value={pinInput}
             onChange={(e) => {

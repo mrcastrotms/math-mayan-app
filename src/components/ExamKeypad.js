@@ -124,7 +124,7 @@ export default function ExamKeypad({
             </p>
             <form onSubmit={handlePinSubmit}>
               <input
-                type="password"
+                type="text" inputMode="numeric" autoComplete="one-time-code" data-lpignore="true" style={{ WebkitTextSecurity: "disc" }}
                 inputMode="numeric"
                 maxLength={4}
                 autoFocus
