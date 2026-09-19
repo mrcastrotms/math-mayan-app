@@ -5,9 +5,14 @@ import { THEME_CONFIG } from "../utils/themeStyles";
 const STORAGE_KEY = "math_app_theme";
 const VALID_THEMES = ["default", "sepia", "contrast"];
 
+const subscribeClientReady = (onStoreChange) => {
+  const timer = setTimeout(onStoreChange, 0);
+  return () => clearTimeout(timer);
+};
+
 export function useAppTheme() {
   const storedTheme = useSyncExternalStore(
-    () => () => {},
+    subscribeClientReady,
     () => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);

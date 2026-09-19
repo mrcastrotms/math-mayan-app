@@ -1,9 +1,14 @@
 // src/hooks/useViewPersistence.js
 import { useState, useSyncExternalStore } from "react";
 
+const subscribeClientReady = (onStoreChange) => {
+  const timer = setTimeout(onStoreChange, 0);
+  return () => clearTimeout(timer);
+};
+
 export function useViewPersistence(initialFallback = "start") {
   const persistedView = useSyncExternalStore(
-    () => () => {},
+    subscribeClientReady,
     () => {
       const params = new URLSearchParams(window.location.search);
       return (

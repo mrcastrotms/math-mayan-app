@@ -1,0 +1,83 @@
+name: Cascading Release Train
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+      - test
+      - develop
+      - main
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-promote:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run lint, build, unit, and E2E tests
+        run: |
+          npm run lint -- --quiet
+          npm run build
+          npm run test:unit
+          npx playwright install --with-deps chromium
+          npx playwright test --project=chromium
+
+      - name: Select promotion target
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          case "$BRANCH" in
+            feature/*) TARGET=test; SOAK=240 ;;
+            test) TARGET=develop; SOAK=120 ;;
+            develop) TARGET=main; SOAK=300 ;;
+            main) TARGET=production; SOAK=600 ;;
+            *) TARGET=none; SOAK=0 ;;
+          esac
+          echo "TARGET=$TARGET" >> "$GITHUB_ENV"
+          echo "SOAK=$SOAK" >> "$GITHUB_ENV"
+
+      - name: Soak before promotion request
+        if: env.TARGET != 'none'
+        run: |
+          echo "Validation passed. Soaking for $SOAK seconds before requesting promotion to $TARGET."
+          sleep "$SOAK"
+
+      - name: Open gated promotion pull request
+        if: env.TARGET != 'none'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CURRENT_BRANCH="${GITHUB_REF#refs/heads/}"
+          OPEN_COUNT=$(gh pr list \
+            --base "$TARGET" \
+            --head "$CURRENT_BRANCH" \
+            --state open \
+            --json number \
+            --jq 'length')
+          if [[ "$OPEN_COUNT" == "0" ]]; then
+            gh pr create \
+              --base "$TARGET" \
+              --head "$CURRENT_BRANCH" \
+              --title "Promote: $CURRENT_BRANCH to $TARGET" \
+              --body "Automated promotion request. Validation and soak completed. Merge only after branch protections and required approvals pass."
+          else
+            echo "An open promotion PR already exists."
+          fi

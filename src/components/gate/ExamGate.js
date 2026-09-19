@@ -1,12 +1,16 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import SectionSelector from "./SectionSelector";
 import StudentRosterInput from "./StudentRosterInput";
 import TeacherPinGate from "./TeacherPinGate";
 import { useGateValidation } from "./hooks/useGateValidation";
 
 const DEFAULT_SECTIONS = ["4A", "4B", "4C", "4D", "4E", "5B"];
+const subscribeClientReady = (onStoreChange) => {
+  const timer = setTimeout(onStoreChange, 0);
+  return () => clearTimeout(timer);
+};
 
 const THEMES = {
   standard: { bg: "#f8fafc", card: "#ffffff", border: "#e2e8f0", text: "#0f172a", textDim: "#64748b", accent: "#2563eb" },
@@ -29,26 +33,36 @@ export default function ExamGate({
     typeof window !== "undefined" ? localStorage.getItem("exam_student_name") || "" : ""
   ));
   const [selectedSectionState, setSelectedSection] = useState(sections[0] || "4A");
-  const [theme, setTheme] = useState("standard");
+  const storedTheme = useSyncExternalStore(
+    subscribeClientReady,
+    () => {
+      const saved = localStorage.getItem("math_app_theme");
+      return ["standard", "sepia", "contrast"].includes(saved) ? saved : "standard";
+    },
+    () => "standard",
+  );
+  const [selectedTheme, setSelectedTheme] = useState(null);
+  const theme = selectedTheme || storedTheme;
   const [showCodeField, setShowCodeField] = useState(false);
   const [accessCode, setAccessCode] = useState("");
-  const [deviceMeta, setDeviceMeta] = useState({ uuid: "", mdns: "" });
+  const deviceUuid = useSyncExternalStore(
+    subscribeClientReady,
+    () => localStorage.getItem("exam_device_uuid") || "",
+    () => "",
+  );
 
   const lastTapRef = useRef(0);
   const current = THEMES[theme] || THEMES.standard;
+  const selectedSection = sections.includes(selectedSectionState)
+    ? selectedSectionState
+    : sections[0] || "4A";
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("math_app_theme");
-      if (saved === "standard" || saved === "sepia" || saved === "contrast") {
-        setTheme(saved);
-        document.documentElement.setAttribute("data-theme", saved);
-      }
-    } catch {}
-  }, []);
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
 
   const handleThemeChange = (nextTheme) => {
-    setTheme(nextTheme);
+    setSelectedTheme(nextTheme);
     try {
       localStorage.setItem("math_app_theme", nextTheme);
       document.documentElement.setAttribute("data-theme", nextTheme);
@@ -65,14 +79,9 @@ export default function ExamGate({
 
   const displayGreetingName = resolvedOfficialName || storedName;
 
-  const selectedSection = sections.includes(selectedSectionState)
-    ? selectedSectionState
-    : sections[0] || "4A";
-
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      const cached = localStorage.getItem("exam_student_name");
       let uuid = localStorage.getItem("exam_device_uuid");
       if (!uuid) {
         uuid = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
@@ -80,7 +89,6 @@ export default function ExamGate({
           : "dev-" + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
         localStorage.setItem("exam_device_uuid", uuid);
       }
-      setDeviceMeta((prev) => ({ ...prev, uuid }));
     } catch (_) {}
   }, []);
 
@@ -131,7 +139,7 @@ export default function ExamGate({
       }
     } catch (_) {}
 
-    const currentUuid = deviceMeta.uuid || (typeof localStorage !== "undefined" ? localStorage.getItem("exam_device_uuid") : "dev_anon");
+    const currentUuid = deviceUuid || (typeof localStorage !== "undefined" ? localStorage.getItem("exam_device_uuid") : "dev_anon");
 
     if (typeof onExamStart === "function") {
       onExamStart({
@@ -139,7 +147,7 @@ export default function ExamGate({
         section: selectedSection,
         isTester: result.isTester,
         deviceUuid: currentUuid,
-        mdnsCandidate: deviceMeta.mdns || "unsupported",
+        mdnsCandidate: "unsupported",
         code: result.isTester ? accessCode : "",
       });
     }

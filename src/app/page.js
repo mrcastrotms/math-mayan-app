@@ -22,13 +22,18 @@ const ExamGate = dynamic(() => import("../components/ExamGate"), {
   loading: () => <div className="min-h-screen bg-slate-900" />,
 });
 
+const subscribeClientReady = (onStoreChange) => {
+  const timer = setTimeout(onStoreChange, 0);
+  return () => clearTimeout(timer);
+};
+
 export default function ExamApp() {
   const router = useRouter();
   const state = useExamState();
   const { view, navigateTo } = useViewPersistence("start");
   const { displaySections, isLoading } = useCachedSections(state?.availableSections);
   const mounted = useSyncExternalStore(
-    () => () => {},
+    subscribeClientReady,
     () => true,
     () => false,
   );

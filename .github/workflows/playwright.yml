@@ -2,9 +2,9 @@ name: Playwright Tests
 
 on:
   push:
-    branches: [main, master]
+    branches: [test, develop, main, production]
   pull_request:
-    branches: [main, master]
+    branches: [test, develop, main, production]
 
 env:
   NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
@@ -54,6 +54,9 @@ jobs:
 
       - name: Build Next.js App
         run: npm run build
+
+      - name: Run lint
+        run: npm run lint -- --quiet
 
       - name: Run unit tests
         run: npm run test:unit
