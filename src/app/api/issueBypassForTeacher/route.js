@@ -1,7 +1,7 @@
 // src/app/api/issueBypassForTeacher/route.js
 import { getApps, initializeApp, cert } from "firebase-admin/app";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
-import { getAuth } from "firebase-admin/auth";
+import { requireTeacherIdToken } from "../../../lib/teacherAuth";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -20,21 +20,9 @@ export async function POST(req) {
     const db = getFirestore();
     const body = await req.json();
 
-    const idToken = req.headers.get("authorization")?.replace("Bearer ", "");
-    if (!idToken) {
-      return Response.json({ error: "Missing id token" }, { status: 401 });
-    }
-
-    const decoded = await getAuth()
-      .verifyIdToken(idToken)
-      .catch(() => null);
+    const decoded = await requireTeacherIdToken(req);
     if (!decoded) {
-      return Response.json({ error: "Invalid id token" }, { status: 401 });
-    }
-
-    const teacherDoc = await db.collection("teachers").doc(decoded.uid).get();
-    if (!teacherDoc.exists) {
-      return Response.json({ error: "Not a teacher" }, { status: 403 });
+      return Response.json({ error: "Unauthorized teacher session" }, { status: 401 });
     }
 
     const token = crypto.randomBytes(24).toString("hex");

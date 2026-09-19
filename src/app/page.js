@@ -14,6 +14,7 @@ import { handleStudentJoin } from "../utils/studentSessionManager";
 import ExamAppRouter from "../components/ExamAppRouter";
 import StudentLockOverlay from "../components/StudentLockOverlay";
 import PinModal from "../components/PinModal";
+import { verifyTeacherPin } from "../utils/teacherAuth";
 
 const DevAdminPanel = dynamic(() => import("../components/DevAdminPanel"), { ssr: false });
 const ExamGate = dynamic(() => import("../components/ExamGate"), {
@@ -118,8 +119,8 @@ export default function ExamApp() {
         title="Teacher Login"
         description=""
         placeholder="••••"
-        onSubmit={(pin) => {
-          if (pin === "0801") {
+        onSubmit={async (pin) => {
+          if (await verifyTeacherPin(pin)) {
             state?.setIsAdminMode?.(true);
             navigateTo("dashboard");
           } else {

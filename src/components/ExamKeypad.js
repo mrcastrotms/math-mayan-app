@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { verifyTeacherPin } from "../utils/teacherAuth";
 
 export default function ExamKeypad({
   handlePadClick,
@@ -26,9 +27,9 @@ export default function ExamKeypad({
     }
   };
 
-  const handlePinSubmit = (e) => {
+  const handlePinSubmit = async (e) => {
     e.preventDefault();
-    if (enteredPin === "0801") {
+    if (await verifyTeacherPin(enteredPin)) {
       setShowPinPrompt(false);
       setEnteredPin("");
       setPinError(false);

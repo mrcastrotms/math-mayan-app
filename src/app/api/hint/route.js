@@ -1,18 +1,30 @@
 import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
+import { enforceRateLimit } from "../../../lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request) {
   try {
+    if (!enforceRateLimit(request, "hint", 30)) {
+      return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+    }
     const body = await request.json();
     const { question, instruction = "", observation = "" } = body;
 
-    if (!question) {
+    if (
+      typeof question !== "string" ||
+      question.length === 0 ||
+      question.length > 1000 ||
+      typeof instruction !== "string" ||
+      instruction.length > 500 ||
+      typeof observation !== "string" ||
+      observation.length > 500
+    ) {
       return NextResponse.json({ error: "Question text is required." }, { status: 400 });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
 
     if (apiKey) {
       const ai = new GoogleGenAI({ apiKey });

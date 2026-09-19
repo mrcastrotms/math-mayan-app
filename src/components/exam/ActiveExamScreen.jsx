@@ -6,6 +6,7 @@ import AiHintModal from "../AiHintModal";
 import { useState } from "react";
 import ConfirmSubmitModal from "../ui/ConfirmSubmitModal";
 import TapeDiagramManipulative from "../manipulatives/TapeDiagramManipulative";
+import { verifyTeacherPin } from "../../utils/teacherAuth";
 
 export default function ActiveExamScreen({ state, navigateTo, adminPanel }) {
   const [showAiHint, setShowAiHint] = useState(false);
@@ -78,9 +79,9 @@ export default function ActiveExamScreen({ state, navigateTo, adminPanel }) {
     navigateTo("dashboard");
   };
 
-  const handleTimerDoubleClick = () => {
+  const handleTimerDoubleClick = async () => {
     const enteredPin = window.prompt("Enter Teacher Override PIN:");
-    if (enteredPin === "2026") {
+    if (await verifyTeacherPin(enteredPin)) {
       if (typeof state?.handleNinjaOneMinute === "function") {
         state.handleNinjaOneMinute();
       } else if (typeof state?.setTimeLeft === "function") {

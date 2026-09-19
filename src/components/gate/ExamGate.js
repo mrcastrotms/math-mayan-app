@@ -95,8 +95,18 @@ export default function ExamGate({
 
   const handleStartExam = async (e) => {
     e.preventDefault();
-    const result = validateAndResolve();
+    let result;
+    try {
+      result = await validateAndResolve();
+    } catch {
+      setError("Roster validation is unavailable. Please try again.");
+      return;
+    }
     if (!result) return;
+    if (!result.isValid) {
+      setError("Name not recognized on class roster. Check your spelling.");
+      return;
+    }
 
     try {
       localStorage.setItem("exam_student_name", result.finalStudentName);
