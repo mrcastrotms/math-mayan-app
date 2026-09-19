@@ -1,10 +1,16 @@
 "use client";
+import Scratchpad from "../Scratchpad";
+import AiHintModal from "../AiHintModal";
 
 import { useState } from "react";
 import ConfirmSubmitModal from "../ui/ConfirmSubmitModal";
 import TapeDiagramManipulative from "../manipulatives/TapeDiagramManipulative";
 
 export default function ActiveExamScreen({ state, navigateTo, adminPanel }) {
+  const [showAiHint, setShowAiHint] = useState(false);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinInput, setPinInput] = useState("");
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [localShowBehaviorMenu, setLocalShowBehaviorMenu] = useState(false);
 

@@ -3,7 +3,7 @@ export default function NumberPad({ onPadClick, onBackspace, onClear }) {
 
   return (
     <div className="w-full max-w-md px-6">
-      <div className="grid grid-cols-3 gap-3 mb-3">
+      <div className="grid grid-cols-3 max-w-xs mx-auto gap-2 grid-cols-3 gap-3 mb-3">
         {buttons.map((btn, idx) => (
           <button
             key={idx}
