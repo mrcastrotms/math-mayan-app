@@ -1,6 +1,5 @@
 // src/components/DevAdminPanel.js
 "use client";
-import { useState, useEffect } from "react";
 import { useDraggablePanel } from "../hooks/useDraggablePanel";
 
 export default function DevAdminPanel({
@@ -11,15 +10,10 @@ export default function DevAdminPanel({
   handleTryHarder,
   canTriggerHarder,
 }) {
-  const [isMounted, setIsMounted] = useState(false);
   const { position, handlePointerDown, handlePointerMove, handlePointerUp } =
     useDraggablePanel(280);
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  if (!isDevMode || !isMounted) return null;
+  if (!isDevMode) return null;
 
   return (
     <div

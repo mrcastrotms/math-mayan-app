@@ -1,30 +1,33 @@
 // src/hooks/useAppTheme.js
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
 import { THEME_CONFIG } from "../utils/themeStyles";
 
 const STORAGE_KEY = "math_app_theme";
 const VALID_THEMES = ["default", "sepia", "contrast"];
 
 export function useAppTheme() {
-  const [theme, setTheme] = useState("default");
-  const [isReady, setIsReady] = useState(false);
-
-  useEffect(() => {
+  const storedTheme = useSyncExternalStore(
+    () => () => {},
+    () => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved && VALID_THEMES.includes(saved)) {
-        setTheme(saved);
-        document.documentElement.setAttribute("data-theme", saved);
-      } else {
-        document.documentElement.setAttribute("data-theme", "default");
-      }
-    } catch (e) {}
-    setIsReady(true);
-  }, []);
+      return saved && VALID_THEMES.includes(saved) ? saved : "default";
+    } catch (e) {
+      return "default";
+    }
+    },
+    () => "default",
+  );
+  const [selectedTheme, setSelectedTheme] = useState(null);
+  const theme = selectedTheme || storedTheme;
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
 
   const changeTheme = (newTheme) => {
     if (!VALID_THEMES.includes(newTheme)) return;
-    setTheme(newTheme);
+    setSelectedTheme(newTheme);
     try {
       localStorage.setItem(STORAGE_KEY, newTheme);
       document.documentElement.setAttribute("data-theme", newTheme);
@@ -44,7 +47,7 @@ export function useAppTheme() {
 
   return {
     theme,
-    isReady,
+    isReady: true,
     changeTheme,
     getThemeClasses,
   };

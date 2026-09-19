@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useExamState } from "../hooks/useExamState";
@@ -26,12 +26,15 @@ export default function ExamApp() {
   const state = useExamState();
   const { view, navigateTo } = useViewPersistence("start");
   const { displaySections, isLoading } = useCachedSections(state?.availableSections);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const [isTeacherPinOpen, setIsTeacherPinOpen] = useState(false);
   const [scannedReportId] = useState(() => (typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("report") || null : null));
 
   const stateRef = useRef(state);
-  useEffect(() => { setMounted(true); }, []);
   useEffect(() => { stateRef.current = state; }, [state]);
   useEffect(() => {
     if (view === "dashboard" && !state?.isAdminMode) state?.setIsAdminMode?.(true);
