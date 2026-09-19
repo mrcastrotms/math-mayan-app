@@ -12,13 +12,12 @@ export function handleStudentJoin({ name, code, uid, section, state, router }) {
         process.env.NEXT_PUBLIC_ENABLE_BYPASS === "true");
 
     if (allowed) {
+      // Immediately start the exam and set query param without blocking the transition
+      state?.setExamStarted?.(true);
       if (!window.location.search.includes("bypass=true")) {
-        router.push("/?bypass=true");
-      } else {
-        state?.setExamStarted?.(true);
+        router.replace("/?bypass=true");
       }
     } else {
-      // In production, start exam without setting bypass query
       state?.setExamStarted?.(true);
     }
   } else {
