@@ -17,6 +17,7 @@ export default function ExamAppRouter({
 
   useEffect(() => {
     if (typeof window !== "undefined") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsTeacherAuth(window.sessionStorage.getItem("teacher_authorized") === "true");
     }
   }, [view]);
