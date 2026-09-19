@@ -2,7 +2,11 @@
 import React from "react";
 import dynamic from "next/dynamic";
 import StartScreen from "./StartScreen";
-import ActiveExamContainer from "./ActiveExamContainer";
+// Remove this line:
+// import ActiveExamContainer from "./ActiveExamContainer";
+
+// Add this line:
+import ActiveExamScreen from "./exam/ActiveExamScreen";
 
 const ParentReportView = dynamic(() => import("./ParentReportView"));
 const TeacherDashboard = dynamic(() => import("./TeacherDashboard"));
@@ -59,7 +63,13 @@ export default function ExamAppRouter({
   }
 
   if (state?.examStarted || state?.isBypassActive || view === "exam") {
-    return <ActiveExamContainer state={state} adminPanel={adminPanel} />;
+    return (
+      <ActiveExamScreen
+        state={state}
+        adminPanel={adminPanel}
+        navigateTo={navigateTo}
+      />
+    );
   }
 
   return (
