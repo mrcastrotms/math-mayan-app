@@ -57,7 +57,7 @@ export default function ExamKeypad({
           onClick={handleBackspace}
           className="bg-amber-50 border border-amber-200 text-amber-700 font-bold text-lg py-3 rounded-xl hover:bg-amber-100 transition active:scale-95 shadow-sm"
         >
-          Del
+          ㅤDelㅤ
         </button>
       </div>
 
@@ -68,7 +68,7 @@ export default function ExamKeypad({
           onClick={handleClear}
           className="w-full bg-rose-50 border border-rose-200 text-rose-700 font-bold text-sm py-2 rounded-xl hover:bg-rose-100 transition shadow-sm"
         >
-          Clear (C)
+          ㅤㅤClearㅤㅤ
         </button>
       </div>
 
@@ -79,14 +79,14 @@ export default function ExamKeypad({
           onClick={handlePassQuestion}
           className="px-6 py-3 bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold rounded-xl hover:bg-indigo-100 transition active:scale-95 shadow-sm"
         >
-          AI Hint
+          Hint
         </button>
         <button
           type="button"
           onClick={handleSubmitQuestion}
           className="px-8 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition active:scale-95"
         >
-          Submit Answer
+          Submit
         </button>
       </div>
 
@@ -95,16 +95,17 @@ export default function ExamKeypad({
         <button
           type="button"
           onClick={onFinishClick}
-          className={"px-5 py-2.5 rounded-xl font-bold text-sm transition shadow-sm flex items-center gap-2 " + (
-            isTimeAllowed
+          className={
+            "px-5 py-2.5 rounded-xl font-bold text-sm transition shadow-sm flex items-center gap-2 " +
+            (isTimeAllowed
               ? "bg-red-600 hover:bg-red-700 text-white shadow-red-200"
-              : "bg-slate-100 text-slate-400 border border-slate-200 hover:bg-slate-200 hover:text-slate-600"
-          )}
+              : "bg-slate-100 text-slate-400 border border-slate-200 hover:bg-slate-200 hover:text-slate-600")
+          }
         >
-          Finish Exam Early
+          Do Not Click
           {!isTimeAllowed && (
             <span className="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">
-              T-15m / PIN
+              PIN
             </span>
           )}
         </button>
@@ -135,11 +136,12 @@ export default function ExamKeypad({
                   setEnteredPin(e.target.value);
                   setPinError(false);
                 }}
-                className={"w-full text-center text-2xl tracking-widest py-2 px-3 border rounded-xl mb-2 outline-none font-mono " + (
-                  pinError
+                className={
+                  "w-full text-center text-2xl tracking-widest py-2 px-3 border rounded-xl mb-2 outline-none font-mono " +
+                  (pinError
                     ? "border-red-500 bg-red-50 text-red-700"
-                    : "border-slate-300 focus:border-blue-500"
-                )}
+                    : "border-slate-300 focus:border-blue-500")
+                }
               />
               {pinError && (
                 <p className="text-red-500 text-xs text-center font-bold mb-3">
