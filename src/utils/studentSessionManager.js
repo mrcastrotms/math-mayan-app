@@ -76,7 +76,7 @@ export function handleStudentJoin({
 
   if (isMrCastro || code === "00000") {
     state?.setIsDevMode?.(true);
-    state?.setIsAdminMode?.(true);
+    state?.setIsAdminMode?.(false);
     state?.setIsLocked?.(false);
 
     if (
