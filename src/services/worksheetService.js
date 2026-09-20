@@ -1,3 +1,4 @@
+import { buildClassworkDocId } from "../utils/submissionGateUtils.mjs";
 import {
   addDoc,
   collection,
@@ -114,7 +115,13 @@ export async function saveWorksheetGrade({
   hintsUsed = 0,
   submittedAt = serverTimestamp(),
 }) {
-  return addDoc(collection(db, "exam_results"), {
+  const studentIdentifier = student?.uid || student?.name || "anonymous";
+  const docId = buildClassworkDocId({
+    worksheetId: worksheet?.id,
+    studentIdentifier,
+  });
+
+  const payload = {
     studentName: student?.name || "Unknown Student",
     googleAccountName: student?.displayName || "Anonymous",
     studentEmail: student?.email || "No Email (Anonymous)",
@@ -140,7 +147,13 @@ export async function saveWorksheetGrade({
     status: "submitted",
     submittedAt,
     timestamp: serverTimestamp(),
-  });
+  };
+
+  if (docId) {
+    await setDoc(doc(db, "exam_results", docId), payload, { merge: false });
+    return { id: docId };
+  }
+  return addDoc(collection(db, "exam_results"), payload);
 }
 
 export async function loadAssignedWorks(section) {

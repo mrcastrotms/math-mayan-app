@@ -65,13 +65,18 @@ export function useExamLifecycle({
     passedCode,
     passedSection,
     onTimeSync,
+    overrideStudent,
   ) => {
     setIsValidatingCode(true);
     try {
+      const activeStudent = overrideStudent || student;
+      const activeName = overrideStudent?.name || customStudentName;
       return await processSessionCodeVerification({
         code: passedCode || sessionCodeInput,
         section: passedSection || selectedSection,
         isTeacher,
+        student: activeStudent,
+        customStudentName: activeName,
         setExamDuration,
         setActiveActivityType,
         setStartTime,

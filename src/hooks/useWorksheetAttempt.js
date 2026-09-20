@@ -52,6 +52,7 @@ export function useWorksheetAttempt(worksheet, student) {
   };
 
   const submit = async () => {
+    if (status === "submitted" || status === "submitting") return false;
     if (isWorksheetClosed(worksheet.dueDate)) {
       setError("This assignment is closed.");
       return false;
