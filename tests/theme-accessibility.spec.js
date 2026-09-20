@@ -32,6 +32,22 @@ test.describe("system theme and teacher enforcement controls", () => {
     ).toBeVisible();
   });
 
+  test("opens the complete historical attendance and values report", async ({ page }) => {
+    await page.addInitScript(() => {
+      sessionStorage.setItem("teacher_authorized", "true");
+      sessionStorage.setItem("exam_active_view", "dashboard");
+      localStorage.setItem("math_app_sections", JSON.stringify(["4A"]));
+    });
+    await page.goto("/?view=dashboard");
+    await page.getByRole("button", { name: "Open complete attendance history" }).click();
+    await expect(page.getByRole("heading", { name: "Attendance & Values History" })).toBeVisible();
+    await expect(page.getByLabel("Date")).toBeVisible();
+    await expect(page.getByLabel("Grade")).toBeVisible();
+    await expect(page.getByText("Attendance trend")).toBeVisible();
+    await page.getByRole("button", { name: "Back to dashboard" }).click();
+    await expect(page.getByRole("heading", { name: "Attendance Book" })).toBeVisible();
+  });
+
   test("keeps Standard theme text dark and activity choices touch-sized", async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem("math_app_theme", "default");

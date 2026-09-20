@@ -22,6 +22,7 @@ import WorksheetBuilderCard from "./WorksheetBuilderCard";
 import WorksheetManagerCard from "./WorksheetManagerCard";
 import AttendanceBook from "./AttendanceBook";
 import BehaviorBook from "./BehaviorBook";
+import AttendanceValuesHistory from "./AttendanceValuesHistory";
 
 export default function TeacherDashboard({
   setIsAdminMode,
@@ -32,6 +33,7 @@ export default function TeacherDashboard({
   onStudentVersion,
 }) {
   const [isViewingGradebook, setIsViewingGradebook] = useState(false);
+  const [isViewingAttendanceHistory, setIsViewingAttendanceHistory] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
   const [showAddSectionModal, setShowAddSectionModal] = useState(false);
   const [sectionToDelete, setSectionToDelete] = useState(null);
@@ -95,6 +97,10 @@ export default function TeacherDashboard({
     );
   }
 
+  if (isViewingAttendanceHistory) {
+    return <AttendanceValuesHistory availableSections={availableSections} onBack={() => setIsViewingAttendanceHistory(false)} />;
+  }
+
   return (
     <div className="flex flex-col items-center justify-start pt-16 min-h-screen bg-[var(--app-bg)] text-[var(--app-fg)] p-8 relative font-sans w-full z-50 absolute top-0 left-0 overflow-y-auto">
       <h1 className="text-4xl font-bold mb-8 text-blue-400">
@@ -125,8 +131,8 @@ export default function TeacherDashboard({
 
       <WorksheetBuilderCard availableSections={availableSections} />
       <WorksheetManagerCard availableSections={availableSections} />
-      <AttendanceBook availableSections={availableSections} />
-      <BehaviorBook />
+      <AttendanceBook availableSections={availableSections} onOpenHistory={() => setIsViewingAttendanceHistory(true)} />
+      <BehaviorBook onOpenHistory={() => setIsViewingAttendanceHistory(true)} />
 
       <section className="w-full max-w-4xl bg-[var(--app-surface)] border border-[var(--app-border)] rounded-2xl p-6 shadow-xl mb-6" aria-labelledby="theme-controls-title">
         <h2 id="theme-controls-title" className="text-lg font-bold mb-3">
