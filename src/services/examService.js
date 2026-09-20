@@ -1,5 +1,8 @@
 import {
   collection,
+  doc,
+  setDoc,
+  getDoc,
   addDoc,
   serverTimestamp,
   query,
@@ -7,6 +10,73 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { db } from "../firebase";
+import {
+  buildExamDocId,
+  isPriorSubmissionActive,
+} from "../utils/submissionGateUtils.mjs";
+
+export async function checkExistingExamSubmission(
+  sessionCode,
+  selectedSection,
+  studentIdentifier,
+  studentName,
+) {
+  if (!sessionCode || sessionCode === "00000") {
+    return { alreadySubmitted: false };
+  }
+
+  try {
+    const docId = buildExamDocId({
+      sessionCode,
+      section: selectedSection,
+      studentIdentifier: studentIdentifier || studentName,
+    });
+
+    if (docId) {
+      const snap = await getDoc(doc(db, "exam_results", docId));
+      if (snap.exists() && isPriorSubmissionActive(snap.data())) {
+        return {
+          alreadySubmitted: true,
+          score: snap.data().score,
+          record: snap.data(),
+        };
+      }
+    }
+
+    const q = query(
+      collection(db, "exam_results"),
+      where("sessionCode", "==", sessionCode),
+      where("section", "==", selectedSection),
+    );
+    const querySnap = await getDocs(q);
+
+    for (const docSnap of querySnap.docs) {
+      const rec = docSnap.data();
+      if (!isPriorSubmissionActive(rec)) continue;
+
+      const matchesName =
+        studentName &&
+        rec.studentName?.trim().toLowerCase() === studentName.trim().toLowerCase();
+      const matchesUid =
+        studentIdentifier &&
+        studentIdentifier !== "anonymous" &&
+        rec.uid === studentIdentifier;
+
+      if (matchesName || matchesUid) {
+        return {
+          alreadySubmitted: true,
+          score: rec.score,
+          record: rec,
+        };
+      }
+    }
+
+    return { alreadySubmitted: false };
+  } catch (e) {
+    console.error("Error checking existing exam submission:", e);
+    return { alreadySubmitted: false };
+  }
+}
 
 export async function saveExamResult(
   student,
@@ -24,20 +94,26 @@ export async function saveExamResult(
 ) {
   if (!student) return;
   try {
-    const resultRef = await addDoc(collection(db, "exam_results"), {
-      // Safely pull the typed name, fallback to "Unknown" if missing
-      studentName:
-        customStudentName?.trim() || student.name || "Unknown Student",
+    const studentName =
+      customStudentName?.trim() || student.name || "Unknown Student";
+    const uid = student.uid || "anonymous";
 
-      // Provide string fallbacks so Firestore doesn't crash on 'undefined'
+    const docId = buildExamDocId({
+      sessionCode: sessionCodeInput,
+      section: selectedSection,
+      studentIdentifier: uid !== "anonymous" ? uid : studentName,
+      isTestRun,
+    });
+
+    const payload = {
+      studentName,
       googleAccountName: student.displayName || "Anonymous",
       studentEmail: student.email || "No Email (Anonymous)",
-      uid: student.uid || "anonymous",
-
+      uid,
       section: selectedSection,
       sessionCode: sessionCodeInput,
       activityType: activeActivityType,
-      isTestRun,
+      isTestRun: Boolean(isTestRun),
       score: finalScore,
       demerits,
       questionsAttempted,
@@ -45,7 +121,14 @@ export async function saveExamResult(
       loginTime: loginTime || null,
       startTime: startTime || null,
       timestamp: serverTimestamp(),
-    });
+    };
+
+    if (docId) {
+      await setDoc(doc(db, "exam_results", docId), payload, { merge: false });
+      return docId;
+    }
+
+    const resultRef = await addDoc(collection(db, "exam_results"), payload);
     return resultRef.id;
   } catch (e) {
     console.error("Failed to save exam result:", e);

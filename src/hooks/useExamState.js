@@ -140,9 +140,12 @@ export function useExamState() {
     setAppText,
     examQuestions,
     handleUnlock,
-    handleVerifyAndStart: (code, sec) =>
-      lifecycle.handleVerifyAndStart(code, sec, (dur) =>
-        timer.setTimeLeft(dur),
+    handleVerifyAndStart: (code, sec, overrideStudent) =>
+      lifecycle.handleVerifyAndStart(
+        code,
+        sec,
+        (dur) => timer.setTimeLeft(dur),
+        overrideStudent,
       ),
     handleTryAgain: () =>
       lifecycle.recordAttemptAndReset((dur) => {
