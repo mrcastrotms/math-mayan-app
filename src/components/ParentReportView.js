@@ -7,12 +7,30 @@ import ParentQuestionCard from "./ParentQuestionCard";
 export default function ParentReportView({ reportId }) {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
-    getDoc(doc(db, "exam_results", reportId)).then((snap) => {
-      if (snap.exists()) setReport(snap.data());
-      setLoading(false);
-    });
+    let cancelled = false;
+    async function loadReport() {
+      try {
+        const snap = await getDoc(doc(db, "exam_results", reportId));
+        if (cancelled) return;
+        if (snap.exists()) {
+          setReport({ id: snap.id, ...snap.data() });
+        } else {
+          setLoadError("Report not found or invalid QR code.");
+        }
+      } catch (error) {
+        console.error("Failed to load public report:", error);
+        if (!cancelled) setLoadError("Unable to load this report right now.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    loadReport();
+    return () => {
+      cancelled = true;
+    };
   }, [reportId]);
 
   if (loading) {
@@ -29,7 +47,7 @@ export default function ParentReportView({ reportId }) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-8 text-center">
         <p className="text-2xl font-bold text-red-500">
-          Report not found or invalid QR code.
+          {loadError || "Report not found or invalid QR code."}
         </p>
       </div>
     );

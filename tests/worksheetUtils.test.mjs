@@ -6,10 +6,16 @@ import {
   isWorksheetClosed,
   normalizeWorksheetAnswer,
   scoreWorksheet,
+  canAdvanceWorksheetQuestion,
 } from "../src/utils/worksheetUtils.mjs";
+import { normalizeMathLatex } from "../src/utils/mathExpressionUtils.mjs";
+import { normalizeWorksheetParts, WORKSHEET_SCHEMA_VERSION } from "../src/utils/worksheetParts.mjs";
 
 test("normalizes multiplication typography consistently", () => {
   assert.equal(normalizeWorksheetAnswer("4 × 4 · 4 * 4"), "4*4*4*4");
+  assert.equal(normalizeWorksheetAnswer(" 4   x  4 ⋅ 4 "), "4*4*4");
+  assert.equal(normalizeWorksheetAnswer("12 ÷ 3"), "12/3");
+  assert.equal(normalizeWorksheetAnswer("10 − 4"), "10-4");
   assert.equal(isWorksheetAnswerCorrect("4 · 4 · 4 · 4", {
     correctAnswer: "4 x 4 x 4 x 4",
   }), true);
@@ -29,4 +35,27 @@ test("reports progress and deadline state", () => {
   assert.equal(getWorksheetStatus({ answers: { q1: "4" } }, "2026-09-20T13:00:00Z", now), "In Progress");
   assert.equal(getWorksheetStatus(null, "2026-09-20T11:00:00Z", now), "Closed");
   assert.equal(isWorksheetClosed("2026-09-20T11:00:00Z", now), true);
+});
+
+test("requires an answer before forward worksheet navigation", () => {
+  assert.equal(canAdvanceWorksheetQuestion(""), false);
+  assert.equal(canAdvanceWorksheetQuestion("  "), false);
+  assert.equal(canAdvanceWorksheetQuestion("0"), true);
+});
+
+test("uses explicit text spacing for KaTeX expressions", () => {
+  assert.equal(normalizeMathLatex("x\\;+\u00a0y"), "x\\text{ }+\u00a0y");
+});
+
+test("normalizes multi-part worksheets while preserving part instructions", () => {
+  const worksheet = normalizeWorksheetParts({
+    schemaVersion: 2,
+    parts: [
+      { id: "a", title: "Part A", instruction: "Write the exponent", questions: [{ prompt: "2^3", correctAnswer: "8" }] },
+      { id: "b", title: "Part B", instruction: "Find the square root", questions: [{ prompt: "sqrt(9)", correctAnswer: "3" }] },
+    ],
+  });
+  assert.equal(worksheet.schemaVersion, WORKSHEET_SCHEMA_VERSION);
+  assert.equal(worksheet.parts[1].instruction, "Find the square root");
+  assert.deepEqual(worksheet.questions.map((question) => question.partId), ["a", "b"]);
 });

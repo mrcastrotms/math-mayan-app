@@ -9,6 +9,7 @@ export default function ExamKeypad({
   handleSubmitQuestion,
   handleFinishExam,
   timeLeft = 0,
+  showExtendedKeys = false,
 }) {
   const [showPinPrompt, setShowPinPrompt] = useState(false);
   const [enteredPin, setEnteredPin] = useState("");
@@ -40,14 +41,32 @@ export default function ExamKeypad({
 
   return (
     <>
-      {/* 3x4 Number Grid with Comma */}
-      <div className="grid grid-cols-3 gap-3 max-w-xs mx-auto mb-4">
+      {/* Number grid */}
+      <div
+        className="mx-auto mb-3 grid max-w-xs grid-cols-3 gap-3"
+        aria-label="Number keypad"
+      >
         {["1", "2", "3", "4", "5", "6", "7", "8", "9", ",", "0"].map((item) => (
           <button
             key={item}
             type="button"
             onClick={() => handlePadClick?.(item)}
-            className="bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xl py-3 rounded-xl hover:bg-slate-100 transition active:scale-95 shadow-sm"
+            aria-label={`Enter ${item}`}
+            className="min-h-14 bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xl py-3 rounded-xl hover:bg-slate-100 transition active:scale-95 shadow-sm touch-manipulation"
+          >
+            {item}
+          </button>
+        ))}
+      </div>
+
+      <div className="mx-auto mb-4 grid max-w-xs grid-cols-4 gap-3" aria-label="Math operation keypad">
+        {["+", "−", "×", "÷", ...(showExtendedKeys ? ["^"] : [])].map((item) => (
+          <button
+            key={item}
+            type="button"
+            onClick={() => handlePadClick?.(item === "−" ? "-" : item)}
+            aria-label={`Enter ${item === "^" ? "exponent" : item} operation`}
+            className="min-h-14 rounded-xl border border-amber-200 bg-amber-50 py-3 text-xl font-bold text-amber-700 shadow-sm transition hover:bg-amber-100 active:scale-95 touch-manipulation"
           >
             {item}
           </button>
@@ -55,7 +74,8 @@ export default function ExamKeypad({
         <button
           type="button"
           onClick={handleBackspace}
-          className="bg-amber-50 border border-amber-200 text-amber-700 font-bold text-lg py-3 rounded-xl hover:bg-amber-100 transition active:scale-95 shadow-sm"
+          aria-label="Delete last answer character"
+          className="min-h-14 bg-amber-50 border border-amber-200 text-amber-700 font-bold text-lg py-3 rounded-xl hover:bg-amber-100 transition active:scale-95 shadow-sm touch-manipulation"
         >
           ㅤDelㅤ
         </button>
@@ -66,7 +86,8 @@ export default function ExamKeypad({
         <button
           type="button"
           onClick={handleClear}
-          className="w-full bg-rose-50 border border-rose-200 text-rose-700 font-bold text-sm py-2 rounded-xl hover:bg-rose-100 transition shadow-sm"
+          aria-label="Clear answer"
+          className="w-full min-h-12 bg-rose-50 border border-rose-200 text-rose-700 font-bold text-sm py-2 rounded-xl hover:bg-rose-100 transition shadow-sm touch-manipulation"
         >
           ㅤㅤClearㅤㅤ
         </button>

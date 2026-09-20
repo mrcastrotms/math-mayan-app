@@ -198,6 +198,156 @@ quota. Gradebook reports preserve every submitted item, classwork title,
 answered/correct totals, and hint usage; the existing QR report URL and batch
 print flow remain available.
 
+### Live worksheet classroom controls
+
+Worksheet sessions request fullscreen and show a recovery control if fullscreen
+or window focus is lost. A loss of focus records one demerit in the student's
+`activeSessions/{studentUid}` document and displays the existing lock overlay.
+The header subscribes to the same document for live merits and demerits.
+Teachers can award either value from each Live Classroom student card.
+
+Forward navigation is intentionally answer-gated: blank questions cannot be
+skipped, while previous questions remain available for review. The worksheet
+keypad includes `+`, `-`, `×`, and `÷`; exponent controls appear only for
+exponent-enabled work (`type: "exponent"` or `gradeLevel: 5`).
+
+The **Assigned Work Manager** lets teachers refresh assignments, clone work to
+another section, edit a deadline, or revoke a published assignment without
+deleting its history.
+
+### Student dashboard sizing and Standard theme
+
+The student activity dashboard uses large, padded controls with a minimum
+6rem height and larger supporting text so the primary destinations are usable
+on tablets and phones. The Standard theme explicitly declares a light color
+scheme, dark foreground (`#0f172a`), white surface, and dark focus color;
+shared light-surface utilities inherit those values to prevent text from
+washing out against the background.
+
+Worksheet answers are normalized before grading so whitespace, multiplication
+symbols (`x`, `×`, `·`, `⋅`), division symbols (`÷`, `⁄`), Unicode minus
+variants, and thousands separators do not cause equivalent answers to be
+marked incorrect. Exponent-enabled questions use the extended touch keypad,
+which provides large, accessible number/operator buttons for `+`, `-`, `×`,
+`÷`, and `^`; standard arithmetic keeps the compact numeric keypad.
+
+The teacher assignment manager provides **Clone**, **Edit**, **Unassign**, and
+**Delete** actions. Edit changes the due date, Unassign revokes publication
+without removing history, and Delete permanently removes the worksheet record.
+The manager and theme-enforcement cards use opaque active-theme surfaces rather
+than translucent backgrounds so Standard-theme text remains readable.
+
+On phone-sized screens, Student Home moves the theme choices and Reset Session
+action into a fixed, safe-area-aware bottom navigation bar. The welcome card,
+activity buttons, and assigned-work panel use contained flex/grid layouts with
+wrapping long text so assigned work cannot widen the page or introduce
+horizontal scrolling. Desktop retains the existing top-row theme controls.
+
+The lock overlay countdown uses an absolute deadline and a stable unlock
+callback, so its 45-second grace timer continues to tick even when the parent
+component re-renders. Math expressions convert literal `\;` spacing to
+explicit KaTeX `\text{ }` spacing before rendering.
+
+### Multi-part worksheets
+
+Worksheets use `schemaVersion: 2` and support a `parts` array. Each part has an
+`id`, `title`, `instruction`, and `questions`; the persisted top-level
+`questions` array remains available for backwards compatibility and is
+normalized from the parts. Each question receives a `partId`, allowing the
+student workspace to show the correct part instruction immediately above the
+question group.
+
+Teachers can add Part/Section blocks in the builder or paste JSON such as:
+
+```json
+{
+  "schemaVersion": 2,
+  "parts": [
+    {
+      "id": "part-a",
+      "title": "Part A",
+      "instruction": "Write the exponent",
+      "questions": [
+        {
+          "id": "a1",
+          "prompt": "2^3",
+          "correctAnswer": "8",
+          "acceptedAnswers": ["8"]
+        }
+      ]
+    }
+  ]
+}
+```
+
+Imported or generated content always remains in the teacher answer-key review
+step before publication. The dashboard's **Student Version** action returns to
+the Exam Gate; after the reset limit is reached, `0801` and `2026` are accepted
+teacher reset codes.
+
+Teacher access is session-scoped: entering `0801` or `2026` in the Exam Gate
+teacher modal sets the dashboard authorization for the current browser session,
+so the Dashboard does not ask for the same code again. Direct dashboard access
+uses the same in-app modal rather than a browser prompt. The Gradebook summary
+card opens the live Gradebook view, and Student Version clears the teacher
+session and returns to the Exam Gate.
+
+PIN entry fields are intentionally plain text controls with browser autocomplete
+disabled; they are access codes, not saved account passwords. Student names are
+entered manually without roster dropdown suggestions, then resolved against the
+selected section roster asynchronously when the student starts.
+
+Teacher-generated five-character session codes remain required for timed exams.
+After reaching Student Home, a student must enter the active teacher code before
+the exam starts; Firestore supplies the session duration and activity type. On
+submission, the saved Gradebook record ID is included in the parent Gmail link
+so families can open the complete report.
+
+The teacher dashboard also includes an Attendance Book and Behavior & Values
+Book. Student Home presence is recorded in Firestore with heartbeats; a student
+is marked present after remaining in the session for at least ten minutes.
+Behavior session records persist merits and demerits beyond the live-session
+document, and the teacher view calculates a relative daily score from 70% to
+100% based on net merits.
+
+Each dashboard book links to **Attendance & Values History**. This complete
+Firestore-backed report loads records across dates, combines attendance days
+with merits, demerits, and relative values scores per student, and supports
+exact-date and grade filters. Its attendance trend graph summarizes qualifying
+students by day so historical reports remain available after the current day.
+The report also has a section filter, so Grade 4A and Grade 4B can be reviewed
+as separate cohorts rather than combined.
+
+Teacher Dashboard cards share the active theme surface, border, and foreground
+tokens, and the dashboard uses a consistent gap between every card. The
+historical report is centered in its own responsive page shell; fixed-width
+tables scroll inside the report rather than widening the dashboard.
+
+Assigned Work Manager's **Edit** action opens a full worksheet editor. Teachers
+can update the title, instructions, due date, part titles/instructions,
+question prompts, correct answers, and accepted answers. Changes are normalized
+back into the versioned worksheet schema and saved to Firestore.
+
+Attendance & Values History supports selecting student rows and purging their
+matching attendance and behavior records. The purge respects the active
+date/grade/section filters and requires confirmation before deleting the
+selected Firestore documents; it does not delete Gradebook exam results.
+
+During production exams, leaving fullscreen, switching tabs/windows, using
+browser back navigation, or triggering an unload activates the lock workflow.
+The lock state is persisted in session storage, and horizontal overscroll is
+disabled while the exam is active to reduce accidental laptop touchpad swipe
+navigation. Tester/bypass sessions intentionally skip enforcement so local
+development remains usable; normal verified student sessions use the guards.
+
+Browser zoom remains available. The exam surface uses `pan-y pinch-zoom`
+instead of disabling touch gestures, so Mac trackpad pinch, Lenovo touchpad
+zoom where supported by the browser/driver, and touchscreen pinch-to-zoom can
+still enlarge small text. Only horizontal page navigation is constrained.
+Classwork and exam answer panels include an extended math keypad with `+`, `−`,
+`×`, `÷`, and `^`; exponent-enabled classwork also exposes the exponent key
+for repeated multiplication and powers.
+
 ## 🛡️ Git Workflow & Branch Protections
 
 - Direct pushes to `develop` and `main` are disabled.

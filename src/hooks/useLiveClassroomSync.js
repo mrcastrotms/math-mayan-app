@@ -34,7 +34,7 @@ export function useLiveClassroomSync({
 
     return () => {
       clearInterval(pingInterval);
-      unsubCommands();
+      if (typeof unsubCommands === "function") unsubCommands();
     };
   }, [student?.uid, isTeacher]);
 
@@ -65,10 +65,16 @@ export function useLiveClassroomSync({
   // Teacher subscription: streams active students matching the section
   useEffect(() => {
     if (!isTeacher || !activeSection) return;
-    return subscribeToLiveStudents(activeSection, setLiveStudents);
+    const unsubscribe = subscribeToLiveStudents(activeSection, setLiveStudents);
+    return typeof unsubscribe === "function" ? unsubscribe : undefined;
   }, [isTeacher, activeSection]);
 
   const sendCommand = (uid, type, payload = {}) => {
+    if (type === "ADD_MERIT" || type === "ADD_DEMERIT") {
+      updateStudentConduct(uid, type === "ADD_MERIT" ? "merits" : "demerits").catch((error) =>
+        console.error("Unable to update student conduct:", error),
+      );
+    }
     return sendStudentCommand(uid, type, payload);
   };
 
