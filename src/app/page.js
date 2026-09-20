@@ -95,7 +95,21 @@ export default function ExamApp() {
         onUnlock={() => stateRef.current?.setIsLocked?.(false)}
       />
 
-      {view === "start" && !state?.examStarted && !state?.isBypassActive ? (
+      {scannedReportId ? (
+        <ExamAppRouter
+          state={state}
+          view={view}
+          navigateTo={navigateTo}
+          displaySections={displaySections}
+          isLoading={isLoading}
+          scannedReportId={scannedReportId}
+          adminPanel={adminPanel}
+          themeState={themeState}
+          onJoin={(name, code, uid, section) =>
+            handleStudentJoin({ name, code, uid, section, state, router })
+          }
+        />
+      ) : view === "start" && !state?.examStarted && !state?.isBypassActive ? (
         <ExamGate
           availableSections={displaySections}
           isLoading={isLoading}
