@@ -6,6 +6,7 @@ import {
   isWorksheetClosed,
   normalizeWorksheetAnswer,
   scoreWorksheet,
+  canAdvanceWorksheetQuestion,
 } from "../src/utils/worksheetUtils.mjs";
 
 test("normalizes multiplication typography consistently", () => {
@@ -29,4 +30,10 @@ test("reports progress and deadline state", () => {
   assert.equal(getWorksheetStatus({ answers: { q1: "4" } }, "2026-09-20T13:00:00Z", now), "In Progress");
   assert.equal(getWorksheetStatus(null, "2026-09-20T11:00:00Z", now), "Closed");
   assert.equal(isWorksheetClosed("2026-09-20T11:00:00Z", now), true);
+});
+
+test("requires an answer before forward worksheet navigation", () => {
+  assert.equal(canAdvanceWorksheetQuestion(""), false);
+  assert.equal(canAdvanceWorksheetQuestion("  "), false);
+  assert.equal(canAdvanceWorksheetQuestion("0"), true);
 });

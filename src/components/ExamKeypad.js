@@ -9,6 +9,7 @@ export default function ExamKeypad({
   handleSubmitQuestion,
   handleFinishExam,
   timeLeft = 0,
+  showExtendedKeys = false,
 }) {
   const [showPinPrompt, setShowPinPrompt] = useState(false);
   const [enteredPin, setEnteredPin] = useState("");
@@ -42,7 +43,7 @@ export default function ExamKeypad({
     <>
       {/* 3x4 Number Grid with Comma */}
       <div className="grid grid-cols-3 gap-3 max-w-xs mx-auto mb-4">
-        {["1", "2", "3", "4", "5", "6", "7", "8", "9", ",", "0"].map((item) => (
+        {["1", "2", "3", "4", "5", "6", "7", "8", "9", ",", "0", ...(showExtendedKeys ? ["+", "-", "×", "÷", "^"] : [])].map((item) => (
           <button
             key={item}
             type="button"

@@ -198,6 +198,23 @@ quota. Gradebook reports preserve every submitted item, classwork title,
 answered/correct totals, and hint usage; the existing QR report URL and batch
 print flow remain available.
 
+### Live worksheet classroom controls
+
+Worksheet sessions request fullscreen and show a recovery control if fullscreen
+or window focus is lost. A loss of focus records one demerit in the student's
+`activeSessions/{studentUid}` document and displays the existing lock overlay.
+The header subscribes to the same document for live merits and demerits.
+Teachers can award either value from each Live Classroom student card.
+
+Forward navigation is intentionally answer-gated: blank questions cannot be
+skipped, while previous questions remain available for review. The worksheet
+keypad includes `+`, `-`, `×`, and `÷`; exponent controls appear only for
+exponent-enabled work (`type: "exponent"` or `gradeLevel: 5`).
+
+The **Assigned Work Manager** lets teachers refresh assignments, clone work to
+another section, edit a deadline, or revoke a published assignment without
+deleting its history.
+
 ## 🛡️ Git Workflow & Branch Protections
 
 - Direct pushes to `develop` and `main` are disabled.

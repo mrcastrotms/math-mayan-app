@@ -29,6 +29,8 @@ test("teacher must review generated/manual answer keys before publishing", async
   await page.getByLabel("Questions").fill("Write 4^4 | 4 × 4 × 4 × 4");
   await page.getByRole("button", { name: "Post assigned work" }).click();
   await expect(page.getByText("Answer key review")).toBeVisible();
+  await expect(page.getByLabel("Verified prompt / LaTeX")).toHaveValue("Write 4^4");
+  await page.getByLabel("Verified prompt / LaTeX").fill("Write 4^{4}");
   await expect(page.getByLabel("Verified answer")).toHaveValue("4 × 4 × 4 × 4");
   await expect(page.getByRole("button", { name: "Confirm answer key and publish" })).toBeVisible();
 });
