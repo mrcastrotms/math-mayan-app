@@ -68,27 +68,30 @@ export default function StudentHome({ studentName, section, onSelectMode, themeS
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--app-bg)] text-[var(--app-fg)]">
-      <div className="max-w-2xl w-full p-6 sm:p-10 bg-[var(--app-surface)] rounded-xl shadow-lg border border-[var(--app-border)] text-center relative">
-        <div className="absolute top-4 left-4">
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-8 bg-[var(--app-bg)] text-[var(--app-fg)]">
+      <div className="w-full max-w-4xl">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <ThemeToggle
             theme={activeThemeState.theme}
             changeTheme={activeThemeState.changeTheme}
             disabled={activeThemeState.themeLocked}
           />
+          <div className="flex flex-col items-start gap-2 sm:items-end">
+            {activeThemeState.themeLocked && (
+              <p role="status" className="text-xs font-semibold text-amber-700">
+                Theme locked by teacher
+              </p>
+            )}
+            <button
+              onClick={handleResetSession}
+              className="text-xs font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/50 px-3 py-2 rounded-md border border-red-200 dark:border-red-900/50"
+            >
+              Reset Session
+            </button>
+          </div>
         </div>
-        {activeThemeState.themeLocked && (
-          <p role="status" className="text-xs font-semibold text-amber-700 mb-3">
-            Theme locked by teacher
-          </p>
-        )}
-        <button
-          onClick={handleResetSession}
-          className="absolute top-4 right-4 text-xs font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/50 px-3 py-1.5 rounded-md border border-red-200 dark:border-red-900/50"
-        >
-          Reset Session
-        </button>
 
+        <div data-testid="student-welcome-card" className="min-h-[42rem] w-full rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-8 text-center shadow-lg sm:p-12">
         <h1 className="text-3xl font-bold mb-2 text-[var(--app-fg)]">
           Welcome, {studentName}!
         </h1>
@@ -176,6 +179,7 @@ export default function StudentHome({ studentName, section, onSelectMode, themeS
             <span className="text-xs px-2.5 py-1 bg-red-200 dark:bg-red-800 rounded-full">Video</span>
           </button>
         </div>
+      </div>
       </div>
     </div>
   );

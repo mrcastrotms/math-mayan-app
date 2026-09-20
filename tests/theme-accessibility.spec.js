@@ -41,6 +41,12 @@ test.describe("system theme and teacher enforcement controls", () => {
     const activity = page.getByRole("button", { name: /Classwork Practice/ });
     await expect(activity).toBeVisible();
     expect(await activity.evaluate((element) => element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(96);
+    const welcomeCard = page.getByTestId("student-welcome-card");
+    const cardBox = await welcomeCard.boundingBox();
+    expect(cardBox.width).toBeGreaterThanOrEqual(768);
+    await expect(page.getByRole("button", { name: "Standard", exact: true })).toBeVisible();
+    expect(await page.getByRole("button", { name: "Standard", exact: true }).evaluate((element) => element.closest("[data-testid='student-welcome-card']"))).toBeNull();
+    expect(await page.getByRole("button", { name: "Reset Session" }).evaluate((element) => element.closest("[data-testid='student-welcome-card']"))).toBeNull();
     expect(await page.locator("html").evaluate((element) => getComputedStyle(element).getPropertyValue("--app-fg").trim())).toBe("#0f172a");
     expect(await page.locator("body").evaluate((element) => getComputedStyle(element).color)).toMatch(/rgb\(15, 23, 42\)/);
   });
