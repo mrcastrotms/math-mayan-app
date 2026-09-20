@@ -9,6 +9,7 @@ import {
   canAdvanceWorksheetQuestion,
 } from "../src/utils/worksheetUtils.mjs";
 import { normalizeMathLatex } from "../src/utils/mathExpressionUtils.mjs";
+import { normalizeWorksheetParts, WORKSHEET_SCHEMA_VERSION } from "../src/utils/worksheetParts.mjs";
 
 test("normalizes multiplication typography consistently", () => {
   assert.equal(normalizeWorksheetAnswer("4 × 4 · 4 * 4"), "4*4*4*4");
@@ -44,4 +45,17 @@ test("requires an answer before forward worksheet navigation", () => {
 
 test("uses explicit text spacing for KaTeX expressions", () => {
   assert.equal(normalizeMathLatex("x\\;+\u00a0y"), "x\\text{ }+\u00a0y");
+});
+
+test("normalizes multi-part worksheets while preserving part instructions", () => {
+  const worksheet = normalizeWorksheetParts({
+    schemaVersion: 2,
+    parts: [
+      { id: "a", title: "Part A", instruction: "Write the exponent", questions: [{ prompt: "2^3", correctAnswer: "8" }] },
+      { id: "b", title: "Part B", instruction: "Find the square root", questions: [{ prompt: "sqrt(9)", correctAnswer: "3" }] },
+    ],
+  });
+  assert.equal(worksheet.schemaVersion, WORKSHEET_SCHEMA_VERSION);
+  assert.equal(worksheet.parts[1].instruction, "Find the square root");
+  assert.deepEqual(worksheet.questions.map((question) => question.partId), ["a", "b"]);
 });

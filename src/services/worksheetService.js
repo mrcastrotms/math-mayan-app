@@ -14,14 +14,18 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { isWorksheetAnswerCorrect } from "../utils/worksheetUtils.mjs";
+import { normalizeWorksheetParts, WORKSHEET_SCHEMA_VERSION } from "../utils/worksheetParts.mjs";
 
-export async function createWorksheet({ title, instructions, section, dueDate, questions, createdBy = "teacher_admin" }) {
+export async function createWorksheet({ title, instructions, section, dueDate, questions, parts, createdBy = "teacher_admin" }) {
+  const normalized = normalizeWorksheetParts({ questions, parts });
   const reference = await addDoc(collection(db, "worksheets"), {
     title: title.trim(),
     instructions: instructions.trim(),
     section,
     dueDate,
-    questions,
+    schemaVersion: WORKSHEET_SCHEMA_VERSION,
+    parts: normalized.parts,
+    questions: normalized.questions,
     createdBy,
     createdAt: serverTimestamp(),
     active: false,
@@ -55,12 +59,13 @@ export async function deleteWorksheet(worksheetId) {
 }
 
 export async function cloneWorksheet(worksheet, section, dueDate) {
+  const normalized = normalizeWorksheetParts(worksheet);
   return createWorksheet({
     title: `${worksheet.title} (Copy)`,
     instructions: worksheet.instructions || "",
     section,
     dueDate: dueDate || worksheet.dueDate,
-    questions: worksheet.questions || [],
+    questions: normalized.questions,
   });
 }
 

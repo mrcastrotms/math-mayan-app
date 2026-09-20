@@ -27,7 +27,7 @@ export default function StudentHome({ studentName, section, onSelectMode, themeS
       };
       if (resetCount >= 2) {
         const override = prompt("Session reset limit reached. Ask Mr. Castro to enter the override PIN:");
-        if (override === "4040") {
+        if (["4040", "0801", "2026"].includes(override)) {
           forceLogout();
         } else if (override !== null) {
           alert("Incorrect PIN.");

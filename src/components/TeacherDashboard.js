@@ -27,6 +27,7 @@ export default function TeacherDashboard({
   setAvailableSections,
   appText,
   setAppText,
+  onStudentVersion,
 }) {
   const [isViewingGradebook, setIsViewingGradebook] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
@@ -158,7 +159,13 @@ export default function TeacherDashboard({
 
       <button
         type="button"
-        onClick={() => setIsAdminMode(false)}
+        onClick={() => {
+          if (onStudentVersion) {
+            onStudentVersion();
+          } else {
+            setIsAdminMode(false);
+          }
+        }}
         className="text-slate-400 hover:text-white underline text-lg font-bold cursor-pointer"
       >
         Student Version

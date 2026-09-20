@@ -70,6 +70,12 @@ export default function ExamAppRouter({
         appText={state?.appText || {}}
         setAppText={state?.setAppText || (() => {})}
         themeState={themeState}
+        onStudentVersion={() => {
+          window.sessionStorage.removeItem("teacher_authorized");
+          window.sessionStorage.removeItem("exam_active_view");
+          setIsTeacherAuth(false);
+          window.location.replace("/");
+        }}
       />
     );
   }
