@@ -31,7 +31,7 @@ export default function RootLayout({ children }) {
               (function() {
                 try {
                   var saved = localStorage.getItem('math_app_theme');
-                  var valid = ['default', 'sepia', 'contrast'];
+                  var valid = ['default', 'dark', 'sepia', 'contrast'];
                   var theme = (saved && valid.indexOf(saved) !== -1) ? saved : 'default';
                   document.documentElement.setAttribute('data-theme', theme);
                 } catch (e) {}

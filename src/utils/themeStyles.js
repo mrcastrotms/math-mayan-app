@@ -11,6 +11,10 @@ export const START_SCREEN_COPY = {
   teacherButton: "Teacher Dashboard",
 };
 
+import { VALID_THEMES } from "./themeUtils.mjs";
+
+export { VALID_THEMES };
+
 export const THEME_CONFIG = {
   global: {
     errorBanner:
@@ -46,6 +50,16 @@ export const THEME_CONFIG = {
         "w-14 h-14 rounded-xl font-bold text-lg transition-all bg-[#eadfc5] text-[#3c2f2f] hover:bg-[#decfa8]",
       activeSectionBtn:
         "w-14 h-14 rounded-xl font-bold text-lg transition-all bg-amber-700 text-amber-50 shadow-md scale-110",
+    },
+    dark: {
+      bg: "bg-slate-950 text-slate-100",
+      card: "bg-slate-900 border-slate-700 text-slate-100",
+      input:
+        "w-full p-4 border-2 rounded-xl focus:outline-none text-lg font-medium bg-slate-900 border-slate-700 text-slate-100 focus:border-blue-400",
+      sectionBtn:
+        "w-14 h-14 rounded-xl font-bold text-lg transition-all bg-slate-800 text-slate-200 hover:bg-slate-700",
+      activeSectionBtn:
+        "w-14 h-14 rounded-xl font-bold text-lg transition-all bg-blue-500 text-white shadow-lg shadow-blue-950 scale-110",
     },
     contrast: {
       bg: "bg-black text-white",
