@@ -11,6 +11,7 @@ import {
   addDoc,
   serverTimestamp,
   getDocs,
+  writeBatch,
 } from "firebase/firestore";
 import { db } from "../firebase";
 
@@ -81,10 +82,45 @@ export function subscribeToLiveStudents(activeSection, onUpdate) {
       if (!lastBeat || now - lastBeat < STALE_THRESHOLD_MS) {
         list.push({ id: snap.id, ...data });
       }
+
     });
 
     onUpdate(list);
   });
+}
+
+export function subscribeToStudentTheme(studentUid, onUpdate) {
+  if (!db || !studentUid) return () => {};
+  return onSnapshot(
+    doc(db, "activeSessions", studentUid),
+    (snapshot) => {
+      const data = snapshot.data() || {};
+      onUpdate({
+        theme: data.themeLocked ? data.enforcedTheme || "default" : null,
+        locked: Boolean(data.themeLocked),
+      });
+    },
+    (error) => console.error("Error subscribing to student theme:", error),
+  );
+}
+
+export async function broadcastSectionTheme(activeSection, theme, locked) {
+  if (!db || !activeSection) return 0;
+  const snapshot = await getDocs(
+    query(
+      collection(db, "activeSessions"),
+      where("section", "==", activeSection),
+    ),
+  );
+  const batch = writeBatch(db);
+  snapshot.forEach((session) => {
+    batch.update(session.ref, {
+      enforcedTheme: locked ? theme : null,
+      themeLocked: Boolean(locked),
+    });
+  });
+  await batch.commit();
+  return snapshot.size;
 }
 
 export async function sendStudentCommand(studentUid, type, payload = {}) {

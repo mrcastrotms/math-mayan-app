@@ -142,6 +142,29 @@ confirmation and persists the complete updated list to the Firestore document
 `settings/classes` under the `list` field. The local cache is refreshed by the
 existing app configuration flow.
 
+### Themes and accessibility
+
+The application supports `Standard`, `Dark`, `Sepia`, and `High Contrast` themes.
+The selected theme is stored in `localStorage` as `math_app_theme`, applied to
+`<html data-theme="...">` before the app renders, and backed by global CSS
+variables and visible focus rings. High Contrast uses a black/white palette with
+yellow focus indicators for low-vision users.
+
+Teachers can use **Teacher Dashboard > Theme Enforcement** to broadcast the
+selected theme to active students in the current section. The broadcast updates
+each matching `activeSessions/{studentUid}` Firestore document with
+`{ enforcedTheme, themeLocked }`. Students receive the update through a
+Firestore snapshot listener; their theme controls are disabled and an accessible
+“Theme locked by teacher” status is shown until the teacher releases the lock.
+
+Theme unit tests run with Node's built-in test runner. Browser coverage validates
+theme persistence and the teacher controls:
+
+```bash
+npm run test:unit
+npx playwright test tests/theme-accessibility.spec.js
+```
+
 ## 🛡️ Git Workflow & Branch Protections
 
 - Direct pushes to `develop` and `main` are disabled.
