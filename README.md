@@ -215,6 +215,15 @@ The **Assigned Work Manager** lets teachers refresh assignments, clone work to
 another section, edit a deadline, or revoke a published assignment without
 deleting its history.
 
+### Student dashboard sizing and Standard theme
+
+The student activity dashboard uses large, padded controls with a minimum
+6rem height and larger supporting text so the primary destinations are usable
+on tablets and phones. The Standard theme explicitly declares a light color
+scheme, dark foreground (`#0f172a`), white surface, and dark focus color;
+shared light-surface utilities inherit those values to prevent text from
+washing out against the background.
+
 ## 🛡️ Git Workflow & Branch Protections
 
 - Direct pushes to `develop` and `main` are disabled.
