@@ -8,21 +8,21 @@ import {
   unassignWorksheet,
   updateWorksheet,
 } from "../services/worksheetService";
+import WorksheetEditModal from "./WorksheetEditModal";
 
 export default function WorksheetManagerCard({ availableSections = [] }) {
   const [works, setWorks] = useState([]);
   const [message, setMessage] = useState("");
+  const [editingWork, setEditingWork] = useState(null);
 
   const refresh = () => loadAllWorksheets().then(setWorks).catch(() => setMessage("Unable to load assignments."));
   useEffect(() => {
     refresh();
   }, []);
 
-  const editDeadline = async (work) => {
-    const dueDate = window.prompt("New due date/time (ISO format)", work.dueDate || "");
-    if (!dueDate) return;
+  const saveWork = async (changes) => {
     try {
-      await updateWorksheet(work.id, { dueDate });
+      await updateWorksheet(editingWork.id, changes);
       setMessage("Assignment updated.");
       refresh();
     } catch (error) {
@@ -72,7 +72,7 @@ export default function WorksheetManagerCard({ availableSections = [] }) {
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               <button type="button" onClick={() => clone(work)} className="rounded-lg bg-blue-700 px-3 py-2 text-xs font-bold">Clone</button>
-              <button type="button" onClick={() => editDeadline(work)} className="rounded-lg bg-amber-700 px-3 py-2 text-xs font-bold text-white">Edit</button>
+              <button type="button" onClick={() => setEditingWork(work)} className="rounded-lg bg-amber-700 px-3 py-2 text-xs font-bold text-white">Edit</button>
               {work.active && <button type="button" onClick={async () => { await unassignWorksheet(work.id); setMessage("Assignment revoked."); refresh(); }} className="rounded-lg bg-red-700 px-3 py-2 text-xs font-bold">Unassign</button>}
               <button type="button" onClick={() => remove(work)} className="rounded-lg bg-red-900 px-3 py-2 text-xs font-bold text-white">Delete</button>
             </div>
@@ -80,6 +80,7 @@ export default function WorksheetManagerCard({ availableSections = [] }) {
         ))}
       </div>
       {message && <p role="status" className="mt-3 text-sm text-emerald-300">{message}</p>}
+      {editingWork && <WorksheetEditModal work={editingWork} onClose={() => setEditingWork(null)} onSave={saveWork} />}
     </section>
   );
 }

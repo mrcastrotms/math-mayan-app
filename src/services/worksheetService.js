@@ -43,7 +43,17 @@ export async function publishWorksheet(worksheetId) {
 }
 
 export async function updateWorksheet(worksheetId, changes) {
-  await updateDoc(doc(db, "worksheets", worksheetId), changes);
+  const normalized = changes.parts
+    ? normalizeWorksheetParts(changes).questions
+    : null;
+  await updateDoc(doc(db, "worksheets", worksheetId), {
+    ...changes,
+    ...(changes.parts ? {
+      schemaVersion: WORKSHEET_SCHEMA_VERSION,
+      parts: normalizeWorksheetParts(changes).parts,
+      questions: normalized,
+    } : {}),
+  });
 }
 
 export async function unassignWorksheet(worksheetId) {

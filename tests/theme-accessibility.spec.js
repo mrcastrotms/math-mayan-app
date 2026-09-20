@@ -38,6 +38,7 @@ test.describe("system theme and teacher enforcement controls", () => {
       sessionStorage.setItem("exam_active_view", "dashboard");
       localStorage.setItem("math_app_sections", JSON.stringify(["4A"]));
     });
+
     await page.goto("/?view=dashboard");
     await page.getByRole("button", { name: "Open complete attendance history" }).click();
     await expect(page.getByRole("heading", { name: "Attendance & Values History" })).toBeVisible();
@@ -47,6 +48,20 @@ test.describe("system theme and teacher enforcement controls", () => {
     await expect(page.getByText("Attendance trend")).toBeVisible();
     await page.getByRole("button", { name: "Back to dashboard" }).click();
     await expect(page.getByRole("heading", { name: "Attendance Book" })).toBeVisible();
+  });
+
+  test("provides worksheet content editing and history purge controls", async ({ page }) => {
+    await page.addInitScript(() => {
+      sessionStorage.setItem("teacher_authorized", "true");
+      sessionStorage.setItem("exam_active_view", "dashboard");
+      localStorage.setItem("math_app_sections", JSON.stringify(["4A"]));
+    });
+    await page.goto("/?view=dashboard");
+    await expect(page.getByRole("heading", { name: "Assigned Work Manager" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Attendance Book" })).toBeVisible();
+    await page.getByRole("button", { name: "Open complete attendance history" }).click();
+    await expect(page.getByRole("button", { name: /Purge selected/ })).toBeVisible();
+    await expect(page.getByText("No students match these filters.")).toBeVisible();
   });
 
   test("spaces dashboard cards and applies active theme surfaces", async ({ page }) => {
