@@ -8,11 +8,11 @@ const firebaseConfig = {
     "AIzaSyFakeKeyForCiTesting1234567890",
   authDomain:
     process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ||
-    "math-mayan-app.firebaseapp.com",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "math-mayan-app",
+    "mayan-school-exams.firebaseapp.com",
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "mayan-school-exams",
   storageBucket:
     process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ||
-    "math-mayan-app.appspot.com",
+    "mayan-school-exams.appspot.com",
   messagingSenderId:
     process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "123456789012",
   appId:
