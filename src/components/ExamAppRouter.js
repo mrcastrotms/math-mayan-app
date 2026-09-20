@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import StartScreen from "./StartScreen";
 import StudentHome from "./StudentHome";
 import ActiveExamScreen from "./exam/ActiveExamScreen";
+import PinModal from "./PinModal";
 
 const ParentReportView = dynamic(() => import("./ParentReportView"));
 const TeacherDashboard = dynamic(() => import("./TeacherDashboard"));
@@ -14,6 +15,7 @@ export default function ExamAppRouter({
   state, view, navigateTo, displaySections, isLoading, scannedReportId, onJoin, adminPanel, themeState
 }) {
   const [isTeacherAuth, setIsTeacherAuth] = useState(false);
+  const [showTeacherLogin, setShowTeacherLogin] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -30,20 +32,25 @@ export default function ExamAppRouter({
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
           <div className="bg-gray-800 p-8 rounded-xl shadow-2xl max-w-sm w-full text-center">
             <h2 className="text-2xl font-bold mb-6">Teacher Access</h2>
-            <button 
-              onClick={() => {
-                const pin = window.prompt("Enter Teacher PIN:");
-                if (pin === "0801") {
-                  window.sessionStorage.setItem("teacher_authorized", "true");
-                  setIsTeacherAuth(true);
-                } else {
-                  alert("Incorrect PIN");
-                }
-              }}
+            <button
+              onClick={() => setShowTeacherLogin(true)}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg mb-4 transition-colors"
             >
               Unlock Dashboard
             </button>
+            <PinModal
+              isOpen={showTeacherLogin}
+              onClose={() => setShowTeacherLogin(false)}
+              title="Teacher Login"
+              description="Enter the teacher access code to open the dashboard."
+              placeholder="Teacher code"
+              onSubmit={(pin) => {
+                if (!["0801", "2026"].includes(pin.trim())) return false;
+                window.sessionStorage.setItem("teacher_authorized", "true");
+                setIsTeacherAuth(true);
+                return true;
+              }}
+            />
             <button 
               onClick={() => navigateTo("start")}
               className="text-gray-400 hover:text-white underline"

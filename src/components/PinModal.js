@@ -14,6 +14,7 @@ export default function PinModal({
   showInput = true,
 }) {
   const [pin, setPin] = useState("");
+  const [error, setError] = useState("");
   const inputRef = useRef(null);
 
   // Pure side-effect: DOM focus only, no setState calls
@@ -28,14 +29,20 @@ export default function PinModal({
 
   const handleClose = () => {
     setPin("");
+    setError("");
     onClose();
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(pin);
-    setPin("");
-    onClose();
+    const accepted = onSubmit(pin);
+    if (accepted !== false) {
+      setPin("");
+      setError("");
+      onClose();
+    } else {
+      setError("Incorrect code. Try again.");
+    }
   };
 
   return (
@@ -62,6 +69,7 @@ export default function PinModal({
               placeholder={placeholder}
             />
           )}
+          {error && <p role="alert" className="text-sm font-semibold text-red-600">{error}</p>}
 
           <div className="flex gap-3 mt-6">
             <button
