@@ -286,6 +286,11 @@ uses the same in-app modal rather than a browser prompt. The Gradebook summary
 card opens the live Gradebook view, and Student Version clears the teacher
 session and returns to the Exam Gate.
 
+PIN entry fields are intentionally plain text controls with browser autocomplete
+disabled; they are access codes, not saved account passwords. Student names are
+entered manually without roster dropdown suggestions, then resolved against the
+selected section roster asynchronously when the student starts.
+
 ## 🛡️ Git Workflow & Branch Protections
 
 - Direct pushes to `develop` and `main` are disabled.

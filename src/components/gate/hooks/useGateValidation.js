@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { matchStudentToRoster, getSectionStudents } from "../../../utils/rosterUtils";
+import { matchStudentToRoster } from "../../../utils/rosterUtils";
 
 export function useGateValidation({
   studentName,
@@ -49,10 +49,6 @@ export function useGateValidation({
     );
   };
 
-  const rosterOptions = useMemo(() => {
-    return getSectionStudents(sectionRoster);
-  }, [sectionRoster]);
-
   const resolvedOfficialName = useMemo(() => {
     const target = studentName || storedName;
     if (!target || sectionRoster.length === 0) return "";
@@ -60,7 +56,7 @@ export function useGateValidation({
     return match?.matched ? match.officialName : "";
   }, [studentName, storedName, sectionRoster]);
 
-  const validateAndResolve = () => {
+  const validateAndResolve = async () => {
     const trimmed = (studentName || "").trim();
     if (!trimmed) return null;
 
@@ -84,7 +80,6 @@ export function useGateValidation({
   };
 
   return {
-    rosterOptions,
     resolvedOfficialName,
     validateAndResolve,
     isLoadingRoster,

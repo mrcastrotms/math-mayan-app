@@ -67,11 +67,15 @@ test.describe("system theme and teacher enforcement controls", () => {
   test("keeps teacher authentication through the dashboard and opens Gradebook", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "Welcome", exact: true }).click();
+    const teacherCode = page.getByPlaceholder("••••");
+    await expect(teacherCode).toHaveAttribute("type", "text");
+    await expect(teacherCode).toHaveAttribute("autocomplete", "off");
     await page.getByPlaceholder("••••").fill("0801");
     await page.getByRole("button", { name: "Confirm", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Teacher Dashboard" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Open", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Open", exact: true }).click();
     await expect(page.getByRole("button", { name: "Back", exact: true })).toBeVisible();
+    await expect(page.locator("datalist")).toHaveCount(0);
   });
 });
