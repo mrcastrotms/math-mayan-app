@@ -323,6 +323,16 @@ tokens, and the dashboard uses a consistent gap between every card. The
 historical report is centered in its own responsive page shell; fixed-width
 tables scroll inside the report rather than widening the dashboard.
 
+Assigned Work Manager's **Edit** action opens a full worksheet editor. Teachers
+can update the title, instructions, due date, part titles/instructions,
+question prompts, correct answers, and accepted answers. Changes are normalized
+back into the versioned worksheet schema and saved to Firestore.
+
+Attendance & Values History supports selecting student rows and purging their
+matching attendance and behavior records. The purge respects the active
+date/grade/section filters and requires confirmation before deleting the
+selected Firestore documents; it does not delete Gradebook exam results.
+
 During production exams, leaving fullscreen, switching tabs/windows, using
 browser back navigation, or triggering an unload activates the lock workflow.
 The lock state is persisted in session storage, and horizontal overscroll is
