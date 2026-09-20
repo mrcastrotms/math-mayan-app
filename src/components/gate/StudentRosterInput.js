@@ -5,7 +5,6 @@ import React from "react";
 export default function StudentRosterInput({
   studentName,
   onChangeName,
-  rosterOptions = [],
   displayGreetingName,
   onResetUser,
   onLabelInteraction,
@@ -58,7 +57,6 @@ export default function StudentRosterInput({
         type="text"
         required
         value={studentName}
-        list="roster-suggestions"
         autoComplete="off"
         onChange={(e) => onChangeName(e.target.value)}
         placeholder=""
@@ -74,11 +72,6 @@ export default function StudentRosterInput({
           boxSizing: "border-box",
         }}
       />
-      <datalist id="roster-suggestions">
-        {rosterOptions.map((name) => (
-          <option key={name} value={name} />
-        ))}
-      </datalist>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 const TEACHER_PIN = "0801196604650";
 
@@ -17,7 +17,12 @@ export default function StudentLockOverlay({
     const parsed = Number(saved);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 45;
   });
-
+  const unlockRef = useRef(onUnlock);
+  const deadlineRef = useRef(null);
+  const initialGraceRef = useRef(graceSeconds);
+  useEffect(() => {
+    unlockRef.current = onUnlock;
+  }, [onUnlock]);
   const isDevOrPreview =
     typeof window !== "undefined" &&
     (window.location.hostname === "localhost" ||
@@ -32,27 +37,30 @@ export default function StudentLockOverlay({
       return;
     }
 
-    const timer = setInterval(() => {
-      setGraceSeconds((prev) => {
-        const next = prev - 1;
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem("exam_lock_grace", String(next));
-        }
-        if (next <= 0) {
-          clearInterval(timer);
-          if (typeof window !== "undefined") {
-            sessionStorage.removeItem("exam_is_locked");
-            sessionStorage.removeItem("exam_lock_grace");
-          }
-          onUnlock?.();
-          return 0;
-        }
-        return next;
-      });
-    }, 1000);
+    const now = Date.now();
+    deadlineRef.current = now + initialGraceRef.current * 1000;
+    let completed = false;
+    let timer;
+    const updateCountdown = () => {
+      if (completed) return;
+      const next = Math.max(0, Math.ceil((deadlineRef.current - Date.now()) / 1000));
+      setGraceSeconds(next);
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("exam_lock_grace", String(next));
+      }
+      if (next === 0) {
+        completed = true;
+        sessionStorage.removeItem("exam_is_locked");
+        sessionStorage.removeItem("exam_lock_grace");
+        unlockRef.current?.();
+        clearInterval(timer);
+      }
+    };
+    updateCountdown();
+    timer = setInterval(updateCountdown, 250);
 
     return () => clearInterval(timer);
-  }, [isLocked, onUnlock]);
+  }, [isLocked]);
 
   if (!isLocked) return null;
 

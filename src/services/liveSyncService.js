@@ -4,6 +4,7 @@ import {
   setDoc,
   onSnapshot,
   updateDoc,
+  increment,
   deleteDoc,
   collection,
   query,
@@ -11,9 +12,11 @@ import {
   addDoc,
   serverTimestamp,
   getDocs,
+  getDoc,
   writeBatch,
 } from "firebase/firestore";
 import { db } from "../firebase";
+import { recordBehaviorChange } from "./behaviorService";
 
 export function initStudentSession(student, currentQuestionIndex = 0) {
   if (!db || !student?.uid) return null;
@@ -26,6 +29,7 @@ export function initStudentSession(student, currentQuestionIndex = 0) {
       section: student.section,
       isLocked: false,
       demerits: student.demerits || 0,
+      merits: student.merits || 0,
       currentQuestionIndex: Number(currentQuestionIndex) || 0,
       lastHeartbeat: serverTimestamp(),
       sessionStartedAt: Date.now(), // timestamp to reject stale commands
@@ -42,6 +46,25 @@ export function initStudentSession(student, currentQuestionIndex = 0) {
     .catch(() => {});
 
   return ref;
+}
+
+export async function updateStudentConduct(studentUid, field, amount = 1) {
+  if (!db || !studentUid || !["merits", "demerits"].includes(field)) return;
+  const reference = doc(db, "activeSessions", studentUid);
+  const snapshot = await getDoc(reference);
+  if (!snapshot.exists()) return;
+  const session = snapshot.data();
+  await updateDoc(reference, {
+    [field]: increment(amount),
+  });
+  await recordBehaviorChange({
+    uid: studentUid,
+    studentName: session.name,
+    section: session.section,
+    sessionCode: session.code || "",
+    sessionStartedAt: session.sessionStartedAt || "",
+    field,
+  });
 }
 
 export function pingHeartbeat(studentUid) {
@@ -101,6 +124,18 @@ export function subscribeToStudentTheme(studentUid, onUpdate) {
       });
     },
     (error) => console.error("Error subscribing to student theme:", error),
+  );
+}
+
+export function subscribeToStudentConduct(studentUid, onUpdate) {
+  if (!db || !studentUid) return () => {};
+  return onSnapshot(
+    doc(db, "activeSessions", studentUid),
+    (snapshot) => {
+      const data = snapshot.data() || {};
+      onUpdate({ merits: data.merits || 0, demerits: data.demerits || 0 });
+    },
+    (error) => console.error("Error subscribing to student conduct:", error),
   );
 }
 

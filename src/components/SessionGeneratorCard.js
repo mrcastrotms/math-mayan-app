@@ -12,7 +12,7 @@ export default function SessionGeneratorCard({
   onResetSession,
 }) {
   return (
-    <div className="bg-slate-800 p-8 rounded-2xl flex-1 shadow-2xl border border-slate-700 flex flex-col justify-between">
+    <div className="flex-1 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-8 text-[var(--app-fg)] shadow-2xl flex flex-col justify-between">
       <div>
         <h2 className="text-2xl font-bold mb-2">Session</h2>
         <p className="text-slate-400 mb-4 text-sm">Generate a secure code</p>

@@ -9,17 +9,23 @@ import {
   serverTimestamp,
   setDoc,
   where,
+  updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { isWorksheetAnswerCorrect } from "../utils/worksheetUtils.mjs";
+import { normalizeWorksheetParts, WORKSHEET_SCHEMA_VERSION } from "../utils/worksheetParts.mjs";
 
-export async function createWorksheet({ title, instructions, section, dueDate, questions, createdBy = "teacher_admin" }) {
+export async function createWorksheet({ title, instructions, section, dueDate, questions, parts, createdBy = "teacher_admin" }) {
+  const normalized = normalizeWorksheetParts({ questions, parts });
   const reference = await addDoc(collection(db, "worksheets"), {
     title: title.trim(),
     instructions: instructions.trim(),
     section,
     dueDate,
-    questions,
+    schemaVersion: WORKSHEET_SCHEMA_VERSION,
+    parts: normalized.parts,
+    questions: normalized.questions,
     createdBy,
     createdAt: serverTimestamp(),
     active: false,
@@ -34,6 +40,43 @@ export async function publishWorksheet(worksheetId) {
     status: "published",
     publishedAt: serverTimestamp(),
   }, { merge: true });
+}
+
+export async function updateWorksheet(worksheetId, changes) {
+  const normalized = changes.parts
+    ? normalizeWorksheetParts(changes).questions
+    : null;
+  await updateDoc(doc(db, "worksheets", worksheetId), {
+    ...changes,
+    ...(changes.parts ? {
+      schemaVersion: WORKSHEET_SCHEMA_VERSION,
+      parts: normalizeWorksheetParts(changes).parts,
+      questions: normalized,
+    } : {}),
+  });
+}
+
+export async function unassignWorksheet(worksheetId) {
+  await updateDoc(doc(db, "worksheets", worksheetId), {
+    active: false,
+    status: "revoked",
+    revokedAt: serverTimestamp(),
+  });
+}
+
+export async function deleteWorksheet(worksheetId) {
+  await deleteDoc(doc(db, "worksheets", worksheetId));
+}
+
+export async function cloneWorksheet(worksheet, section, dueDate) {
+  const normalized = normalizeWorksheetParts(worksheet);
+  return createWorksheet({
+    title: `${worksheet.title} (Copy)`,
+    instructions: worksheet.instructions || "",
+    section,
+    dueDate: dueDate || worksheet.dueDate,
+    questions: normalized.questions,
+  });
 }
 
 export function subscribeToAssignedWorks(section, onUpdate, onError) {
@@ -107,5 +150,10 @@ export async function loadAssignedWorks(section) {
     where("section", "==", section),
     where("active", "==", true),
   ));
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+}
+
+export async function loadAllWorksheets() {
+  const snapshot = await getDocs(collection(db, "worksheets"));
   return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
 }
