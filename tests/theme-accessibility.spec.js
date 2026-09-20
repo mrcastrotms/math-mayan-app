@@ -45,6 +45,7 @@ test.describe("system theme and teacher enforcement controls", () => {
     const cardBox = await welcomeCard.boundingBox();
     expect(cardBox.width).toBeGreaterThanOrEqual(768);
     await expect(page.getByRole("button", { name: "Standard", exact: true })).toBeVisible();
+    expect(await page.getByRole("button", { name: "Standard", exact: true }).locator("..").evaluate((element) => getComputedStyle(element).backgroundColor)).toBe("rgb(255, 255, 255)");
     expect(await page.getByRole("button", { name: "Standard", exact: true }).evaluate((element) => element.closest("[data-testid='student-welcome-card']"))).toBeNull();
     expect(await page.getByRole("button", { name: "Reset Session" }).evaluate((element) => element.closest("[data-testid='student-welcome-card']"))).toBeNull();
     expect(await page.locator("html").evaluate((element) => getComputedStyle(element).getPropertyValue("--app-fg").trim())).toBe("#0f172a");
