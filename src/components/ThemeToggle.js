@@ -9,7 +9,7 @@ export default function ThemeToggle({ theme, changeTheme, disabled = false }) {
 
   return (
     <div
-      className="flex flex-wrap gap-2 bg-white/80 dark:bg-slate-800/80 p-1.5 rounded-xl shadow-sm border border-slate-200 backdrop-blur-sm"
+      className="flex flex-wrap gap-2 bg-[var(--app-surface)] p-1.5 rounded-xl shadow-sm border border-[var(--app-border)]"
       aria-label={disabled ? "Theme locked by teacher" : "Choose theme"}
     >
       {themes.map(([value, label]) => (

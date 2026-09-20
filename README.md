@@ -231,6 +231,17 @@ marked incorrect. Exponent-enabled questions use the extended touch keypad,
 which provides large, accessible number/operator buttons for `+`, `-`, `×`,
 `÷`, and `^`; standard arithmetic keeps the compact numeric keypad.
 
+The teacher assignment manager provides **Clone**, **Edit**, **Unassign**, and
+**Delete** actions. Edit changes the due date, Unassign revokes publication
+without removing history, and Delete permanently removes the worksheet record.
+The manager and theme-enforcement cards use opaque active-theme surfaces rather
+than translucent backgrounds so Standard-theme text remains readable.
+
+The lock overlay countdown uses an absolute deadline and a stable unlock
+callback, so its 45-second grace timer continues to tick even when the parent
+component re-renders. Math expressions convert literal `\;` spacing to
+explicit KaTeX `\text{ }` spacing before rendering.
+
 ## 🛡️ Git Workflow & Branch Protections
 
 - Direct pushes to `develop` and `main` are disabled.
