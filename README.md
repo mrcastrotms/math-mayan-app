@@ -291,6 +291,12 @@ disabled; they are access codes, not saved account passwords. Student names are
 entered manually without roster dropdown suggestions, then resolved against the
 selected section roster asynchronously when the student starts.
 
+Teacher-generated five-character session codes remain required for timed exams.
+After reaching Student Home, a student must enter the active teacher code before
+the exam starts; Firestore supplies the session duration and activity type. On
+submission, the saved Gradebook record ID is included in the parent Gmail link
+so families can open the complete report.
+
 ## 🛡️ Git Workflow & Branch Protections
 
 - Direct pushes to `develop` and `main` are disabled.

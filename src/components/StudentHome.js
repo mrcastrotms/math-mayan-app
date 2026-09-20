@@ -7,12 +7,14 @@ import ThemeToggle from "./ThemeToggle";
 import { useAssignedWorks } from "../hooks/useAssignedWorks";
 import AssignedWorkPanel from "./AssignedWorkPanel";
 import WorksheetWorkspace from "./WorksheetWorkspace";
+import PinModal from "./PinModal";
 
-export default function StudentHome({ studentName, section, onSelectMode, themeState }) {
+export default function StudentHome({ studentName, section, onSelectMode, onStartExam, themeState }) {
   const localThemeState = useAppTheme();
   const activeThemeState = themeState || localThemeState;
   const [currentView, setCurrentView] = useState("menu");
   const [selectedWork, setSelectedWork] = useState(null);
+  const [showExamCode, setShowExamCode] = useState(false);
   const { works, error: assignedWorkError } = useAssignedWorks(section);
 
   const handleResetSession = () => {
@@ -124,7 +126,7 @@ export default function StudentHome({ studentName, section, onSelectMode, themeS
           </button>
 
           <button
-            onClick={() => onSelectMode("exam")}
+            onClick={() => setShowExamCode(true)}
             data-testid="start-exam-button"
             className="min-h-[6rem] p-6 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 rounded-lg font-medium text-blue-700 dark:text-blue-300 transition-all text-left flex items-center justify-between gap-4 text-lg"
           >
@@ -179,7 +181,15 @@ export default function StudentHome({ studentName, section, onSelectMode, themeS
             <span className="text-xs px-2.5 py-1 bg-red-200 dark:bg-red-800 rounded-full">Video</span>
           </button>
         </div>
-      </div>
+        <PinModal
+          isOpen={showExamCode}
+          onClose={() => setShowExamCode(false)}
+          title="Enter Session Code"
+          description="Enter the five-character code your teacher generated for this exam."
+          placeholder="ABCDE"
+          onSubmit={async (code) => onStartExam?.(code)}
+        />
+        </div>
       </div>
     </div>
   );

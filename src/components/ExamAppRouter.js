@@ -106,6 +106,7 @@ export default function ExamAppRouter({
         }}
         studentAnswers={state?.studentAnswers}
         demerits={state?.demerits || 0}
+        reportId={state?.reportId}
       >
         {adminPanel}
       </FinishedScreen>
@@ -119,11 +120,20 @@ export default function ExamAppRouter({
         section={state?.selectedSection || state?.student?.section || "4A"}
         onSelectMode={(mode) => {
           if (mode === "exam") {
-            state?.setExamDuration?.(45 * 60);
-            state?.setTimeLeft?.(45 * 60);
-            state?.setExamStarted?.(true);
-            navigateTo("exam");
+            return;
           } else if (mode === "classwork") navigateTo("classwork");
+        }}
+        onStartExam={async (code) => {
+          const started = await state?.handleVerifyAndStart?.(
+            code.trim().toUpperCase(),
+            state?.selectedSection || state?.student?.section,
+          );
+          if (started) {
+            state?.setSessionCodeInput?.(code.trim().toUpperCase());
+            navigateTo("exam");
+            return true;
+          }
+          return false;
         }}
         themeState={themeState}
       />
