@@ -3,6 +3,14 @@ import React from "react";
 import { formatReadableAnswer } from "../utils/reportFormattingUtils";
 
 export default function StudentReportQuestionsTable({ answers = [] }) {
+  const answerRows = Array.isArray(answers)
+    ? answers
+    : Object.entries(answers || {}).map(([question, studentInput]) => ({
+        question,
+        studentInput,
+        correctAnswer: "—",
+        isCorrect: false,
+      }));
   return (
     <div>
       <h3 className="text-xl font-bold mb-4 text-slate-800">Exam Questions</h3>
@@ -19,7 +27,7 @@ export default function StudentReportQuestionsTable({ answers = [] }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
-            {answers.map((ans, idx) => {
+            {answerRows.map((ans, idx) => {
               const rawQuestion =
                 typeof ans.question === "object" && ans.question !== null
                   ? ans.question.question ||
