@@ -279,6 +279,13 @@ step before publication. The dashboard's **Student Version** action returns to
 the Exam Gate; after the reset limit is reached, `0801` and `2026` are accepted
 teacher reset codes.
 
+Teacher access is session-scoped: entering `0801` or `2026` in the Exam Gate
+teacher modal sets the dashboard authorization for the current browser session,
+so the Dashboard does not ask for the same code again. Direct dashboard access
+uses the same in-app modal rather than a browser prompt. The Gradebook summary
+card opens the live Gradebook view, and Student Version clears the teacher
+session and returns to the Exam Gate.
+
 ## 🛡️ Git Workflow & Branch Protections
 
 - Direct pushes to `develop` and `main` are disabled.

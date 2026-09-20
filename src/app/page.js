@@ -126,11 +126,13 @@ export default function ExamApp() {
         description=""
         placeholder="••••"
         onSubmit={(pin) => {
-          if (pin === "0801") {
+          if (["0801", "2026"].includes(pin.trim())) {
+            window.sessionStorage.setItem("teacher_authorized", "true");
             state?.setIsAdminMode?.(true);
             navigateTo("dashboard");
+            return true;
           } else {
-            alert("Unauthorized: Invalid Teacher PIN.");
+            return false;
           }
         }}
       />

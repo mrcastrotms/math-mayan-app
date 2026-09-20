@@ -67,10 +67,10 @@ export default function TeacherDashboard({
     }
   };
 
-  const handleOpenGradebook = () => {
+  const handleOpenGradebook = async () => {
     setIsViewingGradebook(true);
     setSelectedReport(null);
-    gradebook.fetchGradebook();
+    await gradebook.fetchGradebook();
   };
 
   if (selectedReport) {
