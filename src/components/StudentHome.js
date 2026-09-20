@@ -8,6 +8,7 @@ import { useAssignedWorks } from "../hooks/useAssignedWorks";
 import AssignedWorkPanel from "./AssignedWorkPanel";
 import WorksheetWorkspace from "./WorksheetWorkspace";
 import PinModal from "./PinModal";
+import { useStudentAttendance } from "../hooks/useStudentAttendance";
 
 export default function StudentHome({ studentName, section, onSelectMode, onStartExam, themeState }) {
   const localThemeState = useAppTheme();
@@ -16,6 +17,11 @@ export default function StudentHome({ studentName, section, onSelectMode, onStar
   const [selectedWork, setSelectedWork] = useState(null);
   const [showExamCode, setShowExamCode] = useState(false);
   const { works, error: assignedWorkError } = useAssignedWorks(section);
+  useStudentAttendance({
+    studentName,
+    section,
+    uid: typeof window !== "undefined" ? localStorage.getItem("exam_device_uuid") : "",
+  });
 
   const handleResetSession = () => {
     if (typeof window !== "undefined") {

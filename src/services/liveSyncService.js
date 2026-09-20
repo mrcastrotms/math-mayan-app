@@ -16,6 +16,7 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { db } from "../firebase";
+import { recordBehaviorChange } from "./behaviorService";
 
 export function initStudentSession(student, currentQuestionIndex = 0) {
   if (!db || !student?.uid) return null;
@@ -52,8 +53,17 @@ export async function updateStudentConduct(studentUid, field, amount = 1) {
   const reference = doc(db, "activeSessions", studentUid);
   const snapshot = await getDoc(reference);
   if (!snapshot.exists()) return;
+  const session = snapshot.data();
   await updateDoc(reference, {
     [field]: increment(amount),
+  });
+  await recordBehaviorChange({
+    uid: studentUid,
+    studentName: session.name,
+    section: session.section,
+    sessionCode: session.code || "",
+    sessionStartedAt: session.sessionStartedAt || "",
+    field,
   });
 }
 

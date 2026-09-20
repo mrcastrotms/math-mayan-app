@@ -297,6 +297,13 @@ the exam starts; Firestore supplies the session duration and activity type. On
 submission, the saved Gradebook record ID is included in the parent Gmail link
 so families can open the complete report.
 
+The teacher dashboard also includes an Attendance Book and Behavior & Values
+Book. Student Home presence is recorded in Firestore with heartbeats; a student
+is marked present after remaining in the session for at least ten minutes.
+Behavior session records persist merits and demerits beyond the live-session
+document, and the teacher view calculates a relative daily score from 70% to
+100% based on net merits.
+
 ## 🛡️ Git Workflow & Branch Protections
 
 - Direct pushes to `develop` and `main` are disabled.

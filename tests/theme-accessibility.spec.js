@@ -23,6 +23,8 @@ test.describe("system theme and teacher enforcement controls", () => {
     await page.goto("/?view=dashboard");
 
     await expect(page.getByRole("heading", { name: "Theme Enforcement" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Attendance Book" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Behavior & Values Book" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Lock Theme", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Release Lock", exact: true })).toBeVisible();
     await expect(
