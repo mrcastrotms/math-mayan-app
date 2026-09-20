@@ -69,7 +69,7 @@ export default function StudentHome({ studentName, section, onSelectMode, themeS
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--app-bg)] text-[var(--app-fg)]">
-      <div className="max-w-2xl w-full p-10 bg-white dark:bg-zinc-900 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-800 text-center relative">
+      <div className="max-w-2xl w-full p-6 sm:p-10 bg-[var(--app-surface)] rounded-xl shadow-lg border border-[var(--app-border)] text-center relative">
         <div className="absolute top-4 left-4">
           <ThemeToggle
             theme={activeThemeState.theme}
@@ -89,10 +89,10 @@ export default function StudentHome({ studentName, section, onSelectMode, themeS
           Reset Session
         </button>
 
-        <h1 className="text-3xl font-bold mb-2 text-zinc-900 dark:text-zinc-100">
+        <h1 className="text-3xl font-bold mb-2 text-[var(--app-fg)]">
           Welcome, {studentName}!
         </h1>
-        <p className="text-zinc-500 dark:text-zinc-400 mb-8">
+        <p className="text-[var(--app-fg)] opacity-75 mb-8">
           Section: {section}
         </p>
 
@@ -103,7 +103,7 @@ export default function StudentHome({ studentName, section, onSelectMode, themeS
             onOpenWork={setSelectedWork}
           />
           {assignedWorkError && <p role="alert" className="mb-4 text-sm text-red-700">{assignedWorkError}</p>}
-          <h2 className="text-lg font-semibold mb-4 text-zinc-800 dark:text-zinc-200">
+          <h2 className="text-lg font-semibold mb-4 text-[var(--app-fg)]">
             What do you want to do today?
           </h2>
         </div>
@@ -111,11 +111,11 @@ export default function StudentHome({ studentName, section, onSelectMode, themeS
         <div className="grid grid-cols-1 gap-4">
           <button
             onClick={() => onSelectMode("classwork")}
-            className="p-4 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800 rounded-lg font-medium text-emerald-700 dark:text-emerald-300 transition-all text-left flex items-center justify-between"
+            className="min-h-[6rem] p-6 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800 rounded-lg font-medium text-emerald-700 dark:text-emerald-300 transition-all text-left flex items-center justify-between gap-4 text-lg"
           >
             <div>
               <div className="font-bold">Classwork Practice</div>
-              <div className="text-xs opacity-80">Interactive guided problems and scaffolds</div>
+              <div className="text-sm opacity-80">Interactive guided problems and scaffolds</div>
             </div>
             <span className="text-xs px-2.5 py-1 bg-emerald-200 dark:bg-emerald-800 rounded-full">Interactive</span>
           </button>
@@ -123,55 +123,55 @@ export default function StudentHome({ studentName, section, onSelectMode, themeS
           <button
             onClick={() => onSelectMode("exam")}
             data-testid="start-exam-button"
-            className="p-4 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 rounded-lg font-medium text-blue-700 dark:text-blue-300 transition-all text-left flex items-center justify-between"
+            className="min-h-[6rem] p-6 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 rounded-lg font-medium text-blue-700 dark:text-blue-300 transition-all text-left flex items-center justify-between gap-4 text-lg"
           >
             <div>
               <div className="font-bold">Timed Exam / Assessment</div>
-              <div className="text-xs opacity-80">Secured test environment with timer and tracking</div>
+              <div className="text-sm opacity-80">Secured test environment with timer and tracking</div>
             </div>
             <span className="text-xs px-2.5 py-1 bg-blue-200 dark:bg-blue-800 rounded-full">Graded</span>
           </button>
 
           <button
             onClick={() => onSelectMode("studyguide")}
-            className="p-4 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/30 dark:hover:bg-amber-900/50 border border-amber-200 dark:border-amber-800 rounded-lg font-medium text-amber-700 dark:text-amber-300 transition-all text-left flex items-center justify-between"
+            className="min-h-[6rem] p-6 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/30 dark:hover:bg-amber-900/50 border border-amber-200 dark:border-amber-800 rounded-lg font-medium text-amber-700 dark:text-amber-300 transition-all text-left flex items-center justify-between gap-4 text-lg"
           >
             <div>
               <div className="font-bold">Study Guide and Review</div>
-              <div className="text-xs opacity-80">Self-paced practice materials and concepts</div>
+              <div className="text-sm opacity-80">Self-paced practice materials and concepts</div>
             </div>
             <span className="text-xs px-2.5 py-1 bg-amber-200 dark:bg-amber-800 rounded-full">Review</span>
           </button>
 
           <button
             onClick={() => setCurrentView("mayans")}
-            className="p-4 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-800 rounded-lg font-medium text-indigo-700 dark:text-indigo-300 transition-all text-left flex items-center justify-between"
+            className="min-h-[6rem] p-6 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-800 rounded-lg font-medium text-indigo-700 dark:text-indigo-300 transition-all text-left flex items-center justify-between gap-4 text-lg"
           >
             <div>
               <div className="font-bold">Mayans Are Learning</div>
-              <div className="text-xs opacity-80">Live Moodle course viewer & week switcher</div>
+              <div className="text-sm opacity-80">Live Moodle course viewer & week switcher</div>
             </div>
             <span className="text-xs px-2.5 py-1 bg-indigo-200 dark:bg-indigo-800 rounded-full">Portal</span>
           </button>
 
           <button
             onClick={() => setCurrentView("zearn")}
-            className="p-4 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/30 dark:hover:bg-purple-900/50 border border-purple-200 dark:border-purple-800 rounded-lg font-medium text-purple-700 dark:text-purple-300 transition-all text-left flex items-center justify-between"
+            className="min-h-[6rem] p-6 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/30 dark:hover:bg-purple-900/50 border border-purple-200 dark:border-purple-800 rounded-lg font-medium text-purple-700 dark:text-purple-300 transition-all text-left flex items-center justify-between gap-4 text-lg"
           >
             <div>
               <div className="font-bold">Zearn Math</div>
-              <div className="text-xs opacity-80">Digital lessons, fluency drills & curriculum sprints</div>
+              <div className="text-sm opacity-80">Digital lessons, fluency drills & curriculum sprints</div>
             </div>
             <span className="text-xs px-2.5 py-1 bg-purple-200 dark:bg-purple-800 rounded-full">Platform</span>
           </button>
 
           <button
             onClick={() => setCurrentView("youtube")}
-            className="p-4 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/50 border border-red-200 dark:border-red-800 rounded-lg font-medium text-red-700 dark:text-red-300 transition-all text-left flex items-center justify-between"
+            className="min-h-[6rem] p-6 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/50 border border-red-200 dark:border-red-800 rounded-lg font-medium text-red-700 dark:text-red-300 transition-all text-left flex items-center justify-between gap-4 text-lg"
           >
             <div>
               <div className="font-bold">YouTube Video Hub</div>
-              <div className="text-xs opacity-80">Search and watch educational & intermission videos</div>
+              <div className="text-sm opacity-80">Search and watch educational & intermission videos</div>
             </div>
             <span className="text-xs px-2.5 py-1 bg-red-200 dark:bg-red-800 rounded-full">Video</span>
           </button>

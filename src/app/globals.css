@@ -13,6 +13,15 @@ body {
   --app-focus: #2563eb;
 }
 
+[data-theme="default"] {
+  color-scheme: light;
+  --app-bg: #f8fafc;
+  --app-fg: #0f172a;
+  --app-surface: #ffffff;
+  --app-border: #cbd5e1;
+  --app-focus: #1d4ed8;
+}
+
 [data-theme="dark"] {
   --app-bg: #020617;
   --app-fg: #f8fafc;
@@ -40,6 +49,14 @@ body {
 body {
   background: var(--app-bg);
   color: var(--app-fg);
+}
+
+[data-theme="default"] .bg-white,
+[data-theme="default"] .bg-slate-50,
+[data-theme="default"] .bg-zinc-50,
+[data-theme="default"] .bg-gray-50 {
+  background-color: var(--app-surface) !important;
+  color: var(--app-fg) !important;
 }
 
 :focus-visible {
