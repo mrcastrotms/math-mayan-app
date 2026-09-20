@@ -46,7 +46,7 @@ export default function ExamGate({
     ? selectedSectionState
     : sections[0] || "4A";
 
-  const { rosterOptions, resolvedOfficialName, validateAndResolve } = useGateValidation({
+  const { resolvedOfficialName, validateAndResolve } = useGateValidation({
     studentName,
     storedName,
     selectedSection,
@@ -110,7 +110,7 @@ export default function ExamGate({
 
   const handleStartExam = async (e) => {
     e.preventDefault();
-    const result = validateAndResolve();
+    const result = await validateAndResolve();
     if (!result) return;
 
     try {
@@ -161,7 +161,7 @@ export default function ExamGate({
 
         <form onSubmit={handleStartExam} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           <SectionSelector sections={sections} selectedSection={selectedSection} onSelectSection={setSelectedSection} currentTheme={current} />
-          <StudentRosterInput studentName={studentName} onChangeName={setStudentName} rosterOptions={rosterOptions} displayGreetingName={displayGreetingName} onResetUser={handleResetUser} onLabelInteraction={handleLabelInteraction} currentTheme={current} />
+          <StudentRosterInput studentName={studentName} onChangeName={setStudentName} displayGreetingName={displayGreetingName} onResetUser={handleResetUser} onLabelInteraction={handleLabelInteraction} currentTheme={current} />
           <TeacherPinGate showCodeField={showCodeField} accessCode={accessCode} onChangeAccessCode={setAccessCode} currentTheme={current} />
 
           <button type="submit" disabled={isLoading} style={{ padding: "16px", background: current.accent, color: "#ffffff", fontWeight: 800, fontSize: "1.1rem", letterSpacing: "1px", borderRadius: "8px", border: "none", cursor: isLoading ? "not-allowed" : "pointer", marginTop: "8px", opacity: isLoading ? 0.7 : 1 }}>
