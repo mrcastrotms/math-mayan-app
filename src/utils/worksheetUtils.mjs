@@ -1,8 +1,10 @@
 export function normalizeWorksheetAnswer(value) {
   return String(value ?? "")
     .toLowerCase()
-    .replace(/x/g, "*")
-    .replace(/[×·]/g, "*")
+    .normalize("NFKC")
+    .replace(/[x×·⋅]/g, "*")
+    .replace(/[÷⁄]/g, "/")
+    .replace(/[−–—]/g, "-")
     .replace(/\s+/g, "")
     .replace(/,/g, "")
     .trim();

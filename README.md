@@ -224,6 +224,13 @@ scheme, dark foreground (`#0f172a`), white surface, and dark focus color;
 shared light-surface utilities inherit those values to prevent text from
 washing out against the background.
 
+Worksheet answers are normalized before grading so whitespace, multiplication
+symbols (`x`, `×`, `·`, `⋅`), division symbols (`÷`, `⁄`), Unicode minus
+variants, and thousands separators do not cause equivalent answers to be
+marked incorrect. Exponent-enabled questions use the extended touch keypad,
+which provides large, accessible number/operator buttons for `+`, `-`, `×`,
+`÷`, and `^`; standard arithmetic keeps the compact numeric keypad.
+
 ## 🛡️ Git Workflow & Branch Protections
 
 - Direct pushes to `develop` and `main` are disabled.

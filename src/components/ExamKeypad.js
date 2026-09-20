@@ -42,13 +42,17 @@ export default function ExamKeypad({
   return (
     <>
       {/* 3x4 Number Grid with Comma */}
-      <div className="grid grid-cols-3 gap-3 max-w-xs mx-auto mb-4">
+      <div
+        className={`grid gap-3 mx-auto mb-4 ${showExtendedKeys ? "grid-cols-4 max-w-sm" : "grid-cols-3 max-w-xs"}`}
+        aria-label={showExtendedKeys ? "Extended touch math keypad" : "Number keypad"}
+      >
         {["1", "2", "3", "4", "5", "6", "7", "8", "9", ",", "0", ...(showExtendedKeys ? ["+", "-", "×", "÷", "^"] : [])].map((item) => (
           <button
             key={item}
             type="button"
             onClick={() => handlePadClick?.(item)}
-            className="bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xl py-3 rounded-xl hover:bg-slate-100 transition active:scale-95 shadow-sm"
+            aria-label={`Enter ${item}`}
+            className="min-h-14 bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xl py-3 rounded-xl hover:bg-slate-100 transition active:scale-95 shadow-sm touch-manipulation"
           >
             {item}
           </button>
@@ -56,7 +60,8 @@ export default function ExamKeypad({
         <button
           type="button"
           onClick={handleBackspace}
-          className="bg-amber-50 border border-amber-200 text-amber-700 font-bold text-lg py-3 rounded-xl hover:bg-amber-100 transition active:scale-95 shadow-sm"
+          aria-label="Delete last answer character"
+          className="min-h-14 bg-amber-50 border border-amber-200 text-amber-700 font-bold text-lg py-3 rounded-xl hover:bg-amber-100 transition active:scale-95 shadow-sm touch-manipulation"
         >
           ㅤDelㅤ
         </button>
@@ -67,7 +72,8 @@ export default function ExamKeypad({
         <button
           type="button"
           onClick={handleClear}
-          className="w-full bg-rose-50 border border-rose-200 text-rose-700 font-bold text-sm py-2 rounded-xl hover:bg-rose-100 transition shadow-sm"
+          aria-label="Clear answer"
+          className="w-full min-h-12 bg-rose-50 border border-rose-200 text-rose-700 font-bold text-sm py-2 rounded-xl hover:bg-rose-100 transition shadow-sm touch-manipulation"
         >
           ㅤㅤClearㅤㅤ
         </button>

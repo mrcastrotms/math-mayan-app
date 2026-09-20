@@ -11,6 +11,9 @@ import {
 
 test("normalizes multiplication typography consistently", () => {
   assert.equal(normalizeWorksheetAnswer("4 × 4 · 4 * 4"), "4*4*4*4");
+  assert.equal(normalizeWorksheetAnswer(" 4   x  4 ⋅ 4 "), "4*4*4");
+  assert.equal(normalizeWorksheetAnswer("12 ÷ 3"), "12/3");
+  assert.equal(normalizeWorksheetAnswer("10 − 4"), "10-4");
   assert.equal(isWorksheetAnswerCorrect("4 · 4 · 4 · 4", {
     correctAnswer: "4 x 4 x 4 x 4",
   }), true);
