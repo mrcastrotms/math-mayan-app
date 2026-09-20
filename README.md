@@ -237,6 +237,12 @@ without removing history, and Delete permanently removes the worksheet record.
 The manager and theme-enforcement cards use opaque active-theme surfaces rather
 than translucent backgrounds so Standard-theme text remains readable.
 
+On phone-sized screens, Student Home moves the theme choices and Reset Session
+action into a fixed, safe-area-aware bottom navigation bar. The welcome card,
+activity buttons, and assigned-work panel use contained flex/grid layouts with
+wrapping long text so assigned work cannot widen the page or introduce
+horizontal scrolling. Desktop retains the existing top-row theme controls.
+
 The lock overlay countdown uses an absolute deadline and a stable unlock
 callback, so its 45-second grace timer continues to tick even when the parent
 component re-renders. Math expressions convert literal `\;` spacing to

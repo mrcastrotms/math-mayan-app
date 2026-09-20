@@ -20,7 +20,7 @@ export default function AssignedWorkPanel({ works = [], studentId, onOpenWork })
   }, [studentId, works]);
 
   return (
-    <section aria-labelledby="assigned-work-title" className="mb-8 text-left">
+    <section aria-labelledby="assigned-work-title" className="mb-8 min-w-0 max-w-full overflow-hidden text-left">
       <h2 id="assigned-work-title" className="text-xl font-bold mb-3">
         Assigned Work
       </h2>
@@ -29,19 +29,19 @@ export default function AssignedWorkPanel({ works = [], studentId, onOpenWork })
           No assignments are currently posted for your section.
         </p>
       ) : (
-        <div className="grid gap-3">
+        <div className="grid min-w-0 gap-3">
           {works.map((work) => {
             const status = getWorksheetStatus(attempts[work.id], work.dueDate);
             const closed = status === "Closed";
             return (
-              <article key={work.id} className="rounded-lg border border-current/20 p-4">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <h3 className="font-bold">{work.title}</h3>
-                    <p className="text-sm opacity-75">{work.instructions || "Complete the assigned questions."}</p>
+              <article key={work.id} className="min-w-0 max-w-full overflow-hidden rounded-lg border border-current/20 p-4">
+                  <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0 max-w-full break-words">
+                      <h3 className="break-words font-bold">{work.title}</h3>
+                      <p className="break-words text-sm opacity-75">{work.instructions || "Complete the assigned questions."}</p>
                   </div>
                   {work.questions?.[0]?.prompt && <MathExpression value={work.questions[0].prompt} className="mt-2 text-sm" />}
-                  <span className="rounded-full border px-2 py-1 text-xs font-bold">{status}</span>
+                  <span className="shrink-0 rounded-full border px-2 py-1 text-xs font-bold">{status}</span>
                 </div>
                 <p className="mt-2 text-xs opacity-75">
                   Due: {work.dueDate ? new Date(work.dueDate).toLocaleString() : "No deadline"}
