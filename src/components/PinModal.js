@@ -32,9 +32,9 @@ export default function PinModal({
     onClose();
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const accepted = onSubmit(pin);
+    const accepted = await onSubmit(pin);
     if (accepted !== false) {
       setPin("");
       setError("");
