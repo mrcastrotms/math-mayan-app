@@ -36,9 +36,13 @@ export function sectionGrade(section = "") {
   return match ? match[0] : String(section || "Unknown");
 }
 
-export function historicalStudentRows(attendance = [], behavior = [], { dateKey = "", grade = "all" } = {}) {
+export function historicalStudentRows(attendance = [], behavior = [], { dateKey = "", grade = "all", section = "all" } = {}) {
   const filtered = (items) =>
-    items.filter((item) => (!dateKey || item.dateKey === dateKey) && (grade === "all" || sectionGrade(item.section) === grade));
+    items.filter((item) =>
+      (!dateKey || item.dateKey === dateKey) &&
+      (grade === "all" || sectionGrade(item.section) === grade) &&
+      (section === "all" || item.section === section),
+    );
   const rows = new Map();
   const add = (item) => {
     const key = `${item.uid || item.studentName || "unknown"}_${item.section || ""}`;
@@ -72,10 +76,10 @@ export function historicalStudentRows(attendance = [], behavior = [], { dateKey 
   return [...rows.values()].sort((a, b) => a.studentName.localeCompare(b.studentName));
 }
 
-export function historicalDailyTotals(attendance = [], behavior = [], grade = "all") {
+export function historicalDailyTotals(attendance = [], behavior = [], grade = "all", section = "all") {
   const dates = new Set([...attendance, ...behavior].map((item) => item.dateKey).filter(Boolean));
   return [...dates].sort().map((dateKey) => {
-    const rows = historicalStudentRows(attendance, behavior, { dateKey, grade });
+    const rows = historicalStudentRows(attendance, behavior, { dateKey, grade, section });
     return {
       dateKey,
       present: rows.filter((row) => row.attendanceDays > 0).length,

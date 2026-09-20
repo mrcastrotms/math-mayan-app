@@ -43,4 +43,6 @@ test("builds historical student rows and daily totals by grade and date", () => 
     { dateKey: "2026-09-19", present: 1, students: 1, merits: 0, demerits: 0 },
     { dateKey: "2026-09-20", present: 1, students: 1, merits: 2, demerits: 0 },
   ]);
+  assert.equal(historicalStudentRows(attendance, behavior, { grade: "4", section: "4B" }).length, 1);
+  assert.equal(historicalStudentRows(attendance, behavior, { grade: "4", section: "4A" }).length, 0);
 });

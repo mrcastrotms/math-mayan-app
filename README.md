@@ -315,11 +315,20 @@ Firestore-backed report loads records across dates, combines attendance days
 with merits, demerits, and relative values scores per student, and supports
 exact-date and grade filters. Its attendance trend graph summarizes qualifying
 students by day so historical reports remain available after the current day.
+The report also has a section filter, so Grade 4A and Grade 4B can be reviewed
+as separate cohorts rather than combined.
 
 Teacher Dashboard cards share the active theme surface, border, and foreground
 tokens, and the dashboard uses a consistent gap between every card. The
 historical report is centered in its own responsive page shell; fixed-width
 tables scroll inside the report rather than widening the dashboard.
+
+During production exams, leaving fullscreen, switching tabs/windows, using
+browser back navigation, or triggering an unload activates the lock workflow.
+The lock state is persisted in session storage, and horizontal overscroll is
+disabled while the exam is active to reduce accidental laptop touchpad swipe
+navigation. Tester/bypass sessions intentionally skip enforcement so local
+development remains usable; normal verified student sessions use the guards.
 
 ## 🛡️ Git Workflow & Branch Protections
 

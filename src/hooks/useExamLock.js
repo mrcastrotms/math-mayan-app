@@ -13,7 +13,9 @@ export function useExamLock({
   student,
   onLockBreach,
 }) {
-  const [isLocked, setIsLocked] = useState(false);
+  const [isLocked, setIsLocked] = useState(() =>
+    typeof window !== "undefined" && sessionStorage.getItem("exam_is_locked") === "true",
+  );
   const [overrideCode, setOverrideCode] = useState("");
   const studentUid = student?.uid;
   const studentName = student?.name;
@@ -103,6 +105,12 @@ export function useExamLock({
       alert("Incorrect PIN");
     }
   };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (isLocked) sessionStorage.setItem("exam_is_locked", "true");
+    else sessionStorage.removeItem("exam_is_locked");
+  }, [isLocked]);
 
   return { isLocked, setIsLocked, overrideCode, setOverrideCode, handleUnlock };
 }
