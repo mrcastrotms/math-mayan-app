@@ -169,7 +169,10 @@ npx playwright test tests/theme-accessibility.spec.js
 
 Teachers can post section-specific worksheets from **Teacher Dashboard > Assign
 Classwork**. Enter one question per line as `prompt | answer`, choose a due
-date/time, and post it to Firestore's `worksheets` collection. Students see
+date/time, review the generated answer key, and explicitly publish it to
+Firestore's `worksheets` collection. Drafts are not visible to students.
+Prompts render with textbook-style math typography, including superscripts,
+radicals, and multiplication symbols. Students see
 matching work in **Assigned Work** on phones and desktop layouts. Answers are
 debounced and saved to `worksheet_attempts/{worksheetId}_{studentId}`, so
 students can leave after any question and resume later on another device using
@@ -185,7 +188,15 @@ The builder also accepts a phone camera or image upload. The image is sent to
 records; teachers must review the generated prompt and answer text before
 posting. Student worksheets provide up to four Socratic hints per saved
 attempt, disable the hint action after the quota, and save the hint count with
-the attempt. The existing `/api/hint` service is used for the hint response.
+the attempt. The existing `/api/ai/hint` enforces the four-request server-side quota before calling
+Gemini and returns a progressive Socratic hint without the final answer.
+
+The worksheet workspace uses a focused one-question-at-a-time layout with
+student/section context, a deadline countdown, theme-lock support,
+previous/next navigation, touch-friendly input, and an accessible four-hint
+quota. Gradebook reports preserve every submitted item, classwork title,
+answered/correct totals, and hint usage; the existing QR report URL and batch
+print flow remain available.
 
 ## 🛡️ Git Workflow & Branch Protections
 
