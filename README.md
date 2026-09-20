@@ -330,6 +330,14 @@ disabled while the exam is active to reduce accidental laptop touchpad swipe
 navigation. Tester/bypass sessions intentionally skip enforcement so local
 development remains usable; normal verified student sessions use the guards.
 
+Browser zoom remains available. The exam surface uses `pan-y pinch-zoom`
+instead of disabling touch gestures, so Mac trackpad pinch, Lenovo touchpad
+zoom where supported by the browser/driver, and touchscreen pinch-to-zoom can
+still enlarge small text. Only horizontal page navigation is constrained.
+Classwork and exam answer panels include an extended math keypad with `+`, `−`,
+`×`, `÷`, and `^`; exponent-enabled classwork also exposes the exponent key
+for repeated multiplication and powers.
+
 ## 🛡️ Git Workflow & Branch Protections
 
 - Direct pushes to `develop` and `main` are disabled.

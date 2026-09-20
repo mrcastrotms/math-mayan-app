@@ -41,18 +41,32 @@ export default function ExamKeypad({
 
   return (
     <>
-      {/* 3x4 Number Grid with Comma */}
+      {/* Number grid */}
       <div
-        className={`grid gap-3 mx-auto mb-4 ${showExtendedKeys ? "grid-cols-4 max-w-sm" : "grid-cols-3 max-w-xs"}`}
-        aria-label={showExtendedKeys ? "Extended touch math keypad" : "Number keypad"}
+        className="mx-auto mb-3 grid max-w-xs grid-cols-3 gap-3"
+        aria-label="Number keypad"
       >
-        {["1", "2", "3", "4", "5", "6", "7", "8", "9", ",", "0", ...(showExtendedKeys ? ["+", "-", "×", "÷", "^"] : [])].map((item) => (
+        {["1", "2", "3", "4", "5", "6", "7", "8", "9", ",", "0"].map((item) => (
           <button
             key={item}
             type="button"
             onClick={() => handlePadClick?.(item)}
             aria-label={`Enter ${item}`}
             className="min-h-14 bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xl py-3 rounded-xl hover:bg-slate-100 transition active:scale-95 shadow-sm touch-manipulation"
+          >
+            {item}
+          </button>
+        ))}
+      </div>
+
+      <div className="mx-auto mb-4 grid max-w-xs grid-cols-4 gap-3" aria-label="Math operation keypad">
+        {["+", "−", "×", "÷", ...(showExtendedKeys ? ["^"] : [])].map((item) => (
+          <button
+            key={item}
+            type="button"
+            onClick={() => handlePadClick?.(item === "−" ? "-" : item)}
+            aria-label={`Enter ${item === "^" ? "exponent" : item} operation`}
+            className="min-h-14 rounded-xl border border-amber-200 bg-amber-50 py-3 text-xl font-bold text-amber-700 shadow-sm transition hover:bg-amber-100 active:scale-95 touch-manipulation"
           >
             {item}
           </button>

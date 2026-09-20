@@ -56,7 +56,7 @@ export default function WorksheetWorkspace({ worksheet, student, onBack }) {
 
   if (attempt.status === "submitted") {
     return (
-      <main className="min-h-screen bg-[var(--app-bg)] p-4 text-[var(--app-fg)] sm:p-8">
+      <main className="exam-session-shell min-h-screen bg-[var(--app-bg)] p-4 text-[var(--app-fg)] sm:p-8">
         <div className="mx-auto max-w-3xl rounded-2xl border border-current/20 p-6 text-center">
           <h1 className="text-2xl font-bold">{worksheet.title}</h1>
           <p className="mt-3">Submitted. Score: {attempt.result.score}%</p>
@@ -135,7 +135,7 @@ export default function WorksheetWorkspace({ worksheet, student, onBack }) {
             handleSubmitQuestion={() => setCurrentIndex((value) => Math.min(value + 1, worksheetModel.questions.length - 1))}
             handlePassQuestion={() => {}}
             timeLeft={secondsLeft}
-            showExtendedKeys={currentQuestion.type === "exponent" || worksheetModel.gradeLevel === 5}
+            showExtendedKeys
           />
           <div className="mt-5 flex flex-wrap justify-between gap-3">
             <button type="button" disabled={currentIndex === 0} onClick={() => setCurrentIndex((value) => value - 1)} className="rounded-lg border px-4 py-3 font-bold disabled:opacity-40">Previous</button>
