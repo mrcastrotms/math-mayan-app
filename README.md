@@ -130,3 +130,10 @@ src/
 ├── styles/               # Styling configurations and shared theme tokens
 └── utils/                # Pure scoring math, session handling, and sanitizers
 ```
+
+## 🛡️ Git Workflow & Branch Protections
+
+- Direct pushes to `develop` and `main` are disabled.
+- All feature additions must originate from `feature/<name>` branches.
+- Automated agents and human contributors must submit Pull Requests into `develop`.
+- For details, review [CONTRIBUTING.md](./CONTRIBUTING.md).
