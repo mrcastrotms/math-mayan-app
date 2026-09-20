@@ -93,7 +93,7 @@ export default function TeacherDashboard({
   }
 
   return (
-    <div className="flex flex-col items-center justify-start pt-16 min-h-screen bg-slate-900 text-white p-8 relative font-sans w-full z-50 absolute top-0 left-0 overflow-y-auto">
+    <div className="flex flex-col items-center justify-start pt-16 min-h-screen bg-[var(--app-bg)] text-[var(--app-fg)] p-8 relative font-sans w-full z-50 absolute top-0 left-0 overflow-y-auto">
       <h1 className="text-4xl font-bold mb-8 text-blue-400">
         Teacher Dashboard
       </h1>
@@ -123,11 +123,11 @@ export default function TeacherDashboard({
       <WorksheetBuilderCard availableSections={availableSections} />
       <WorksheetManagerCard availableSections={availableSections} />
 
-      <section className="w-full max-w-4xl bg-slate-800/90 border border-slate-700 rounded-2xl p-6 shadow-xl mb-6" aria-labelledby="theme-controls-title">
-        <h2 id="theme-controls-title" className="text-lg font-bold text-white mb-3">
+      <section className="w-full max-w-4xl bg-[var(--app-surface)] border border-[var(--app-border)] rounded-2xl p-6 shadow-xl mb-6" aria-labelledby="theme-controls-title">
+        <h2 id="theme-controls-title" className="text-lg font-bold mb-3">
           Theme Enforcement
         </h2>
-        <p className="text-sm text-slate-300 mb-4">
+        <p className="text-sm opacity-75 mb-4">
           Broadcast the selected theme to active students in Section {activeSection || "All"}.
         </p>
         <div className="flex flex-wrap items-center gap-3">

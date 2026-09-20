@@ -50,6 +50,10 @@ export async function unassignWorksheet(worksheetId) {
   });
 }
 
+export async function deleteWorksheet(worksheetId) {
+  await deleteDoc(doc(db, "worksheets", worksheetId));
+}
+
 export async function cloneWorksheet(worksheet, section, dueDate) {
   return createWorksheet({
     title: `${worksheet.title} (Copy)`,

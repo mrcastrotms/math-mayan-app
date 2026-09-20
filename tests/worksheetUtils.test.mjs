@@ -8,6 +8,7 @@ import {
   scoreWorksheet,
   canAdvanceWorksheetQuestion,
 } from "../src/utils/worksheetUtils.mjs";
+import { normalizeMathLatex } from "../src/utils/mathExpressionUtils.mjs";
 
 test("normalizes multiplication typography consistently", () => {
   assert.equal(normalizeWorksheetAnswer("4 × 4 · 4 * 4"), "4*4*4*4");
@@ -39,4 +40,8 @@ test("requires an answer before forward worksheet navigation", () => {
   assert.equal(canAdvanceWorksheetQuestion(""), false);
   assert.equal(canAdvanceWorksheetQuestion("  "), false);
   assert.equal(canAdvanceWorksheetQuestion("0"), true);
+});
+
+test("uses explicit text spacing for KaTeX expressions", () => {
+  assert.equal(normalizeMathLatex("x\\;+\u00a0y"), "x\\text{ }+\u00a0y");
 });
