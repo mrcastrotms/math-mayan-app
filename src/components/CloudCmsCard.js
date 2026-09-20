@@ -21,11 +21,11 @@ export default function CloudCmsCard({ appText, setAppText }) {
   };
 
   return (
-    <div className="bg-slate-800 p-8 rounded-2xl w-full max-w-4xl shadow-2xl border border-slate-700 mb-8">
+    <div className="w-full max-w-4xl rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-8 text-[var(--app-fg)] shadow-2xl">
       <div className="flex justify-between items-center mb-4">
         <div>
           <h2 className="text-2xl font-bold text-yellow-400">App Editor</h2>
-          <p className="text-slate-400 text-sm">
+          <p className="text-sm opacity-75">
             Edit your app copy and save directly to Firebase
           </p>
         </div>

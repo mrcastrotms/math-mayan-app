@@ -126,7 +126,7 @@ export default function WorksheetBuilderCard({ availableSections = [] }) {
   };
 
   return (
-    <section aria-labelledby="worksheet-builder-title" className="mb-6 w-full max-w-4xl rounded-2xl border border-slate-700 bg-slate-800 p-6 text-white shadow-xl">
+    <section aria-labelledby="worksheet-builder-title" className="w-full max-w-4xl rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-6 text-[var(--app-fg)] shadow-xl">
       <h2 id="worksheet-builder-title" className="mb-2 text-xl font-bold">Assign Classwork</h2>
       <p className="mb-4 text-sm text-slate-300">Create mobile-friendly work. One question per line using <code>prompt | answer</code>.</p>
       <form onSubmit={handleCreate} className="grid gap-4">

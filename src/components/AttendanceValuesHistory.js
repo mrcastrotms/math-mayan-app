@@ -38,6 +38,7 @@ export default function AttendanceValuesHistory({ availableSections = [], onBack
   const maxPresent = Math.max(1, ...dailyTotals.map((item) => item.present));
 
   return (
+    <div className="flex min-h-screen w-full items-start justify-center bg-[var(--app-bg)] p-4 pt-16 text-[var(--app-fg)] sm:p-8">
     <section className="w-full max-w-5xl rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-6 text-[var(--app-fg)] shadow-xl" aria-labelledby="attendance-values-history-title">
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -87,5 +88,6 @@ export default function AttendanceValuesHistory({ availableSections = [], onBack
         {rows.length === 0 && <p className="py-4 text-sm opacity-75">No students match these filters.</p>}
       </div>
     </section>
+    </div>
   );
 }

@@ -48,6 +48,23 @@ test.describe("system theme and teacher enforcement controls", () => {
     await expect(page.getByRole("heading", { name: "Attendance Book" })).toBeVisible();
   });
 
+  test("spaces dashboard cards and applies active theme surfaces", async ({ page }) => {
+    await page.addInitScript(() => {
+      sessionStorage.setItem("teacher_authorized", "true");
+      sessionStorage.setItem("exam_active_view", "dashboard");
+      localStorage.setItem("math_app_sections", JSON.stringify(["4A"]));
+      localStorage.setItem("math_app_theme", "dark");
+    });
+    await page.goto("/?view=dashboard");
+    const dashboard = page.getByRole("heading", { name: "Teacher Dashboard" }).locator("..");
+    expect(await dashboard.evaluate((element) => getComputedStyle(element).rowGap)).toBe("24px");
+    for (const name of ["Class Sections", "App Editor", "Question Bank"]) {
+      const card = page.getByRole("heading", { name }).locator("..");
+      await expect(card).toBeVisible();
+      expect(await card.evaluate((element) => getComputedStyle(element).backgroundColor)).not.toBe("rgb(30, 41, 59)");
+    }
+  });
+
   test("keeps Standard theme text dark and activity choices touch-sized", async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem("math_app_theme", "default");
