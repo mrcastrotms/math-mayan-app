@@ -242,6 +242,43 @@ callback, so its 45-second grace timer continues to tick even when the parent
 component re-renders. Math expressions convert literal `\;` spacing to
 explicit KaTeX `\text{ }` spacing before rendering.
 
+### Multi-part worksheets
+
+Worksheets use `schemaVersion: 2` and support a `parts` array. Each part has an
+`id`, `title`, `instruction`, and `questions`; the persisted top-level
+`questions` array remains available for backwards compatibility and is
+normalized from the parts. Each question receives a `partId`, allowing the
+student workspace to show the correct part instruction immediately above the
+question group.
+
+Teachers can add Part/Section blocks in the builder or paste JSON such as:
+
+```json
+{
+  "schemaVersion": 2,
+  "parts": [
+    {
+      "id": "part-a",
+      "title": "Part A",
+      "instruction": "Write the exponent",
+      "questions": [
+        {
+          "id": "a1",
+          "prompt": "2^3",
+          "correctAnswer": "8",
+          "acceptedAnswers": ["8"]
+        }
+      ]
+    }
+  ]
+}
+```
+
+Imported or generated content always remains in the teacher answer-key review
+step before publication. The dashboard's **Student Version** action returns to
+the Exam Gate; after the reset limit is reached, `0801` and `2026` are accepted
+teacher reset codes.
+
 ## 🛡️ Git Workflow & Branch Protections
 
 - Direct pushes to `develop` and `main` are disabled.

@@ -88,13 +88,24 @@ export default function ExamGate({
   };
 
   const handleHardReset = () => {
+    const resetCount = Number(sessionStorage.getItem("session_resets") || 0);
+    if (resetCount >= 2) {
+      const override = window.prompt("Reset limit reached. Enter teacher PIN:");
+      if (!["0801", "2026"].includes(override)) {
+        if (override !== null) window.alert("Incorrect PIN.");
+        return;
+      }
+    }
     try {
       if (typeof sessionStorage !== "undefined") sessionStorage.clear();
       if (typeof localStorage !== "undefined") {
         ["math_mayan_teacher", "exam_active_view", "activeExamSession", "exam_student_name"].forEach((k) => localStorage.removeItem(k));
       }
     } catch (_) {}
-    if (typeof window !== "undefined") window.location.href = window.location.pathname;
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("session_resets", String(resetCount + 1));
+      window.location.href = window.location.pathname;
+    }
   };
 
   const handleStartExam = async (e) => {
