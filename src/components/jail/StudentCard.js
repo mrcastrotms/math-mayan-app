@@ -25,6 +25,9 @@ export default function StudentCard({ student, onSendCommand }) {
               <span>·</span>
               <span>Q{(student.currentQuestionIndex ?? 0) + 1}</span>
               <span>·</span>
+              <span className="text-emerald-400 font-semibold">
+                Merits: {student.merits || 0}
+              </span>
               <span className="text-amber-400 font-semibold">
                 Demerits: {student.demerits || 0}
               </span>
@@ -41,7 +44,7 @@ export default function StudentCard({ student, onSendCommand }) {
           </span>
         </div>
 
-        <div className="grid grid-cols-5 gap-1.5 pt-2 border-t border-slate-800">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 pt-2 border-t border-slate-800">
           <button
             type="button"
             onClick={() =>
@@ -61,6 +64,13 @@ export default function StudentCard({ student, onSendCommand }) {
             className="py-1.5 px-1 rounded-lg text-xs font-bold bg-amber-900/40 hover:bg-amber-800 text-amber-200 border border-amber-700/50 transition text-center"
           >
             +1 Dem
+          </button>
+          <button
+            type="button"
+            onClick={() => onSendCommand?.(student.uid, "ADD_MERIT")}
+            className="py-1.5 px-1 rounded-lg text-xs font-bold bg-emerald-900/40 hover:bg-emerald-800 text-emerald-200 border border-emerald-700/50 transition text-center"
+          >
+            +1 Merit
           </button>
           <button
             type="button"

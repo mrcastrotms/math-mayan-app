@@ -29,6 +29,10 @@ export function isWorksheetClosed(dueDate, now = Date.now()) {
   return Boolean(dueDate && new Date(dueDate).getTime() <= now);
 }
 
+export function canAdvanceWorksheetQuestion(answer) {
+  return String(answer ?? "").trim().length > 0;
+}
+
 export function scoreWorksheet(questions = [], answers = {}) {
   const answered = questions.filter((question) =>
     Object.prototype.hasOwnProperty.call(answers, question.id),

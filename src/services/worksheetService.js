@@ -9,6 +9,8 @@ import {
   serverTimestamp,
   setDoc,
   where,
+  updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { isWorksheetAnswerCorrect } from "../utils/worksheetUtils.mjs";
@@ -34,6 +36,28 @@ export async function publishWorksheet(worksheetId) {
     status: "published",
     publishedAt: serverTimestamp(),
   }, { merge: true });
+}
+
+export async function updateWorksheet(worksheetId, changes) {
+  await updateDoc(doc(db, "worksheets", worksheetId), changes);
+}
+
+export async function unassignWorksheet(worksheetId) {
+  await updateDoc(doc(db, "worksheets", worksheetId), {
+    active: false,
+    status: "revoked",
+    revokedAt: serverTimestamp(),
+  });
+}
+
+export async function cloneWorksheet(worksheet, section, dueDate) {
+  return createWorksheet({
+    title: `${worksheet.title} (Copy)`,
+    instructions: worksheet.instructions || "",
+    section,
+    dueDate: dueDate || worksheet.dueDate,
+    questions: worksheet.questions || [],
+  });
 }
 
 export function subscribeToAssignedWorks(section, onUpdate, onError) {
@@ -107,5 +131,10 @@ export async function loadAssignedWorks(section) {
     where("section", "==", section),
     where("active", "==", true),
   ));
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+}
+
+export async function loadAllWorksheets() {
+  const snapshot = await getDocs(collection(db, "worksheets"));
   return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
 }

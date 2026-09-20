@@ -117,6 +117,14 @@ export default function WorksheetBuilderCard({ availableSections = [] }) {
             {reviewQuestions.map((question, index) => (
               <div key={question.id} className="grid gap-2 rounded-lg border border-slate-700 p-3">
                 <p className="text-xs font-bold text-slate-400">Question {index + 1} preview</p>
+                <label className="grid gap-1 text-xs font-bold">Verified prompt / LaTeX
+                  <textarea
+                    value={question.prompt || ""}
+                    onChange={(event) => updateReviewQuestion(question.id, "prompt", event.target.value)}
+                    rows="2"
+                    className="rounded-lg bg-slate-800 p-2 text-white"
+                  />
+                </label>
                 <MathExpression value={question.prompt} className="text-lg" />
                 <label className="grid gap-1 text-xs font-bold">Verified answer
                   <input value={question.correctAnswer || ""} onChange={(event) => updateReviewQuestion(question.id, "correctAnswer", event.target.value)} className="rounded-lg bg-slate-800 p-2 text-white" />

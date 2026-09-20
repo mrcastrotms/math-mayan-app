@@ -69,6 +69,11 @@ export function useLiveClassroomSync({
   }, [isTeacher, activeSection]);
 
   const sendCommand = (uid, type, payload = {}) => {
+    if (type === "ADD_MERIT" || type === "ADD_DEMERIT") {
+      updateStudentConduct(uid, type === "ADD_MERIT" ? "merits" : "demerits").catch((error) =>
+        console.error("Unable to update student conduct:", error),
+      );
+    }
     return sendStudentCommand(uid, type, payload);
   };
 
