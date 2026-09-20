@@ -46,6 +46,14 @@ export default function StudentReportModal({ report, onBack }) {
         </div>
 
         <StudentReportMetaGrid report={report} />
+        {report.assignmentTitle && (
+          <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4 text-blue-950">
+            <p className="text-xs font-bold uppercase tracking-wide">Assigned classwork</p>
+            <p className="text-lg font-bold">{report.assignmentTitle}</p>
+            <p className="text-sm">{report.correctAnswers ?? "—"} of {report.totalQuestions ?? "—"} correct · {report.questionsAttempted ?? 0} answered</p>
+            <p className="text-sm">Hints used: {report.hintsUsed ?? 0} / {report.maxHints ?? 4}</p>
+          </div>
+        )}
 
         <div className="mb-8">
           <h3 className="text-xl font-bold mb-4 text-slate-800">Demerits</h3>
