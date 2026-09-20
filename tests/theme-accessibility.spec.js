@@ -37,7 +37,7 @@ test.describe("system theme and teacher enforcement controls", () => {
       localStorage.setItem("math_app_theme", "default");
     });
 
-    await page.goto("/?bypass=true");
+    await page.goto("/?view=student-home");
 
     await expect(page.getByRole("heading", { name: "What do you want to do today?" })).toBeVisible();
     const activity = page.getByRole("button", { name: /Classwork Practice/ });
@@ -52,6 +52,19 @@ test.describe("system theme and teacher enforcement controls", () => {
     expect(await page.getByRole("button", { name: "Reset Session" }).evaluate((element) => element.closest("[data-testid='student-welcome-card']"))).toBeNull();
     expect(await page.locator("html").evaluate((element) => getComputedStyle(element).getPropertyValue("--app-fg").trim())).toBe("#0f172a");
     expect(await page.locator("body").evaluate((element) => getComputedStyle(element).color)).toMatch(/rgb\(15, 23, 42\)/);
+  });
+
+  test("keeps Student Home contained on phones with bottom controls", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => {
+      localStorage.setItem("exam_student_name", "Mobile Test Student");
+      sessionStorage.setItem("exam_active_view", "student-home");
+    });
+    await page.goto("/?view=student-home");
+    await expect(page.getByTestId("student-welcome-card")).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Mobile student controls" })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+    expect(await page.getByRole("navigation", { name: "Mobile student controls" }).evaluate((element) => getComputedStyle(element).position)).toBe("fixed");
   });
 
   test("returns teachers to the Exam Gate from Student Version", async ({ page }) => {
