@@ -18,6 +18,7 @@ import TeacherSectionModals from "./TeacherSectionModals";
 import ThemeToggle from "./ThemeToggle";
 import { useAppTheme } from "../hooks/useAppTheme";
 import { broadcastSectionTheme } from "../services/liveSyncService";
+import WorksheetBuilderCard from "./WorksheetBuilderCard";
 
 export default function TeacherDashboard({
   setIsAdminMode,
@@ -117,6 +118,8 @@ export default function TeacherDashboard({
         activeSection={activeSection}
         onSendCommand={sendCommand}
       />
+
+      <WorksheetBuilderCard availableSections={availableSections} />
 
       <section className="w-full max-w-4xl bg-slate-800/90 border border-slate-700 rounded-2xl p-6 shadow-xl mb-6" aria-labelledby="theme-controls-title">
         <h2 id="theme-controls-title" className="text-lg font-bold text-white mb-3">
