@@ -1,5 +1,9 @@
 // src/utils/examSessionUtils.js
-import { saveExamResult, verifySessionCode } from "../services/examService";
+import {
+  saveExamResult,
+  verifySessionCode,
+  checkExistingExamSubmission,
+} from "../services/examService";
 import { computeEnhancedScore } from "./scoringUtils";
 
 export async function exitFullscreenSafely() {
@@ -69,6 +73,8 @@ export async function processSessionCodeVerification({
   code,
   section,
   isTeacher,
+  student,
+  customStudentName,
   setExamDuration,
   setActiveActivityType,
   setStartTime,
@@ -87,6 +93,21 @@ export async function processSessionCodeVerification({
   }
 
   if (result) {
+    if (!isTeacher && code !== "00000") {
+      const priorCheck = await checkExistingExamSubmission(
+        code,
+        section,
+        student?.uid,
+        student?.name || customStudentName,
+      );
+      if (priorCheck?.alreadySubmitted) {
+        alert(
+          `You have already submitted this exam!\n\nScore: ${priorCheck.score}%\n\nDuplicate submissions are not permitted.`,
+        );
+        return false;
+      }
+    }
+
     if (result.duration) {
       setExamDuration?.(result.duration);
       onTimeSync?.(result.duration);
