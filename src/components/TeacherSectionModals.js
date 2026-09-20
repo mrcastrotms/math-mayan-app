@@ -3,6 +3,7 @@ import React from "react";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import PinModal from "./PinModal";
+import { addSection, normalizeSection, removeSection } from "../utils/sectionUtils.mjs";
 
 export default function TeacherSectionModals({
   availableSections,
@@ -13,9 +14,9 @@ export default function TeacherSectionModals({
   setSectionToDelete,
 }) {
   const handleConfirmAddSection = async (rawInput) => {
-    const newSec = (rawInput || "").trim().toUpperCase();
-    if (!newSec || availableSections.includes(newSec)) return;
-    const updated = [...availableSections, newSec];
+    const newSec = normalizeSection(rawInput);
+    const updated = addSection(availableSections, newSec);
+    if (updated === availableSections) return;
     setAvailableSections(updated);
     await setDoc(
       doc(db, "settings", "classes"),
@@ -26,7 +27,7 @@ export default function TeacherSectionModals({
 
   const handleConfirmDeleteSection = async () => {
     if (!sectionToDelete) return;
-    const updated = availableSections.filter((s) => s !== sectionToDelete);
+    const updated = removeSection(availableSections, sectionToDelete);
     setAvailableSections(updated);
     await setDoc(
       doc(db, "settings", "classes"),

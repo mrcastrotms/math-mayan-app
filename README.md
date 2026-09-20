@@ -109,6 +109,9 @@ Automated end-to-end tests run across Chromium, Firefox, and WebKit using Playwr
 # Run all end-to-end tests
 npx playwright test
 
+# Run unit tests for pure utilities
+npm run test:unit
+
 # Run tests in interactive UI mode
 npx playwright test --ui
 
@@ -130,6 +133,14 @@ src/
 ├── styles/               # Styling configurations and shared theme tokens
 └── utils/                # Pure scoring math, session handling, and sanitizers
 ```
+
+### Managing class sections
+
+Teachers can add or remove sections from **Teacher Dashboard > Class Sections**.
+Each section has an accessible `Delete section <name>` control. Deletion requires
+confirmation and persists the complete updated list to the Firestore document
+`settings/classes` under the `list` field. The local cache is refreshed by the
+existing app configuration flow.
 
 ## 🛡️ Git Workflow & Branch Protections
 
