@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { createWorksheet } from "../services/worksheetService";
+import { createWorksheet, publishWorksheet } from "../services/worksheetService";
+import MathExpression from "./MathExpression";
 
 function createQuestions(rawQuestions) {
   return rawQuestions
@@ -28,6 +29,8 @@ export default function WorksheetBuilderCard({ availableSections = [] }) {
   const [rawQuestions, setRawQuestions] = useState("");
   const [status, setStatus] = useState("");
   const [isDigitizing, setIsDigitizing] = useState(false);
+  const [reviewQuestions, setReviewQuestions] = useState([]);
+  const [reviewId, setReviewId] = useState("");
 
   const handleDigitize = async (event) => {
     const file = event.target.files?.[0];
@@ -47,7 +50,15 @@ export default function WorksheetBuilderCard({ availableSections = [] }) {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
-      setRawQuestions(result.questions.map((question) =>
+      const questions = result.questions.map((question, index) => ({
+        ...question,
+        id: question.id || `q${index + 1}`,
+        acceptedAnswers: question.acceptedAnswers?.length
+          ? question.acceptedAnswers
+          : [question.correctAnswer],
+      }));
+      setReviewQuestions(questions);
+      setRawQuestions(questions.map((question) =>
         `${question.prompt} | ${question.correctAnswer}`).join("\n"));
       setStatus("Review the digitized questions before posting.");
     } catch (error) {
@@ -60,23 +71,19 @@ export default function WorksheetBuilderCard({ availableSections = [] }) {
 
   const handleCreate = async (event) => {
     event.preventDefault();
-    const questions = createQuestions(rawQuestions);
+    const questions = reviewQuestions.length ? reviewQuestions : createQuestions(rawQuestions);
     if (!title.trim() || !section || !dueDate || questions.length === 0) {
       setStatus("Add a title, section, due date, and at least one question.");
       return;
     }
-    setStatus("Saving assignment…");
-    try {
-      await createWorksheet({ title, instructions, section, dueDate, questions });
-      setTitle("");
-      setInstructions("");
-      setDueDate("");
-      setRawQuestions("");
-      setStatus("Assignment posted.");
-    } catch (error) {
-      console.error("Unable to create worksheet:", error);
-      setStatus("Assignment could not be saved.");
-    }
+    setReviewQuestions(questions);
+    setStatus("Review every question and answer, then publish.");
+  };
+
+  const updateReviewQuestion = (id, key, value) => {
+    setReviewQuestions((current) => current.map((question) =>
+      question.id === id ? { ...question, [key]: value, acceptedAnswers: key === "correctAnswer" ? [value] : question.acceptedAnswers } : question,
+    ));
   };
 
   return (
@@ -103,6 +110,38 @@ export default function WorksheetBuilderCard({ availableSections = [] }) {
         <label className="grid gap-1 text-sm font-bold">Questions
           <textarea required value={rawQuestions} onChange={(event) => setRawQuestions(event.target.value)} rows="5" placeholder={"Write 4^4 as repeated multiplication | 4*4*4*4"} className="rounded-lg bg-slate-900 p-3 text-white" />
         </label>
+        {reviewQuestions.length > 0 && (
+          <fieldset className="grid gap-3 rounded-xl border border-amber-400/50 bg-slate-900 p-4">
+            <legend className="px-2 text-sm font-bold text-amber-300">Answer key review</legend>
+            <p className="text-xs text-slate-300">Confirm every prompt and answer before publishing.</p>
+            {reviewQuestions.map((question, index) => (
+              <div key={question.id} className="grid gap-2 rounded-lg border border-slate-700 p-3">
+                <p className="text-xs font-bold text-slate-400">Question {index + 1} preview</p>
+                <MathExpression value={question.prompt} className="text-lg" />
+                <label className="grid gap-1 text-xs font-bold">Verified answer
+                  <input value={question.correctAnswer || ""} onChange={(event) => updateReviewQuestion(question.id, "correctAnswer", event.target.value)} className="rounded-lg bg-slate-800 p-2 text-white" />
+                </label>
+              </div>
+            ))}
+            <button type="button" onClick={async () => {
+              try {
+                const worksheetId = reviewId || await createWorksheet({ title, instructions, section, dueDate, questions: reviewQuestions });
+                setReviewId(worksheetId);
+                await publishWorksheet(worksheetId);
+                setTitle("");
+                setInstructions("");
+                setDueDate("");
+                setRawQuestions("");
+                setReviewQuestions([]);
+                setReviewId("");
+                setStatus("Assignment published.");
+              } catch (error) {
+                console.error("Unable to publish worksheet:", error);
+                setStatus("Assignment could not be published.");
+              }
+            }} className="rounded-lg bg-emerald-600 px-4 py-3 font-bold text-white">Confirm answer key and publish</button>
+          </fieldset>
+        )}
         <label className="grid gap-1 text-sm font-bold">
           Digitize a photographed worksheet (optional)
           <input type="file" accept="image/*" capture="environment" onChange={handleDigitize} disabled={isDigitizing} className="rounded-lg border border-slate-600 p-3 text-sm" />

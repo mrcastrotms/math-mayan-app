@@ -11,6 +11,7 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "../firebase";
+import { isWorksheetAnswerCorrect } from "../utils/worksheetUtils.mjs";
 
 export async function createWorksheet({ title, instructions, section, dueDate, questions, createdBy = "teacher_admin" }) {
   const reference = await addDoc(collection(db, "worksheets"), {
@@ -21,9 +22,18 @@ export async function createWorksheet({ title, instructions, section, dueDate, q
     questions,
     createdBy,
     createdAt: serverTimestamp(),
-    active: true,
+    active: false,
+    status: "draft",
   });
   return reference.id;
+}
+
+export async function publishWorksheet(worksheetId) {
+  await setDoc(doc(db, "worksheets", worksheetId), {
+    active: true,
+    status: "published",
+    publishedAt: serverTimestamp(),
+  }, { merge: true });
 }
 
 export function subscribeToAssignedWorks(section, onUpdate, onError) {
@@ -58,6 +68,7 @@ export async function saveWorksheetGrade({
   worksheet,
   answers,
   result,
+  hintsUsed = 0,
   submittedAt = serverTimestamp(),
 }) {
   return addDoc(collection(db, "exam_results"), {
@@ -72,10 +83,17 @@ export async function saveWorksheetGrade({
     assignmentId: worksheet.id,
     assignmentTitle: worksheet.title,
     score: result.score,
-    answers,
+    answers: worksheet.questions.map((question) => ({
+      question: question.prompt,
+      studentInput: answers[question.id] ?? "—",
+      correctAnswer: question.correctAnswer,
+      isCorrect: isWorksheetAnswerCorrect(answers[question.id], question),
+    })),
     questionsAttempted: result.answered,
     totalQuestions: result.total,
     correctAnswers: result.correct,
+    hintsUsed,
+    maxHints: 4,
     status: "submitted",
     submittedAt,
     timestamp: serverTimestamp(),
