@@ -13,6 +13,7 @@ export default function AttendanceValuesHistory({ availableSections = [], onBack
   const [behavior, setBehavior] = useState([]);
   const [dateKey, setDateKey] = useState("");
   const [grade, setGrade] = useState("all");
+  const [section, setSection] = useState("all");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -30,11 +31,13 @@ export default function AttendanceValuesHistory({ availableSections = [], onBack
   );
   const rows = useMemo(() => {
     const filteredBehavior = behavior.filter(
-      (item) => (!dateKey || item.dateKey === dateKey) && (grade === "all" || sectionGrade(item.section) === grade),
+      (item) => (!dateKey || item.dateKey === dateKey) &&
+        (grade === "all" || sectionGrade(item.section) === grade) &&
+        (section === "all" || item.section === section),
     );
-    return historicalStudentRows(attendance, relativeBehaviorScores(filteredBehavior), { dateKey, grade });
-  }, [attendance, behavior, dateKey, grade]);
-  const dailyTotals = useMemo(() => historicalDailyTotals(attendance, behavior, grade), [attendance, behavior, grade]);
+    return historicalStudentRows(attendance, relativeBehaviorScores(filteredBehavior), { dateKey, grade, section });
+  }, [attendance, behavior, dateKey, grade, section]);
+  const dailyTotals = useMemo(() => historicalDailyTotals(attendance, behavior, grade, section), [attendance, behavior, grade, section]);
   const maxPresent = Math.max(1, ...dailyTotals.map((item) => item.present));
 
   return (
@@ -58,6 +61,15 @@ export default function AttendanceValuesHistory({ availableSections = [], onBack
           <select value={grade} onChange={(event) => setGrade(event.target.value)} className="rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
             <option value="all">All grades</option>
             {grades.map((item) => <option key={item} value={item}>Grade {item}</option>)}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-sm font-semibold">
+          Section
+          <select value={section} onChange={(event) => setSection(event.target.value)} className="rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
+            <option value="all">All sections</option>
+            {availableSections
+              .filter((item) => grade === "all" || sectionGrade(item) === grade)
+              .map((item) => <option key={item} value={item}>Section {item}</option>)}
           </select>
         </label>
         <button type="button" onClick={() => setDateKey("")} className="rounded-lg border border-[var(--app-border)] px-3 py-2 text-sm font-bold">All dates</button>

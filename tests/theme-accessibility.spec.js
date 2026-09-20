@@ -43,6 +43,7 @@ test.describe("system theme and teacher enforcement controls", () => {
     await expect(page.getByRole("heading", { name: "Attendance & Values History" })).toBeVisible();
     await expect(page.getByLabel("Date")).toBeVisible();
     await expect(page.getByLabel("Grade")).toBeVisible();
+    await expect(page.getByLabel("Section")).toBeVisible();
     await expect(page.getByText("Attendance trend")).toBeVisible();
     await page.getByRole("button", { name: "Back to dashboard" }).click();
     await expect(page.getByRole("heading", { name: "Attendance Book" })).toBeVisible();
