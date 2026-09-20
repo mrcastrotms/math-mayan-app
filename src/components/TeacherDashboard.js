@@ -20,6 +20,8 @@ import { useAppTheme } from "../hooks/useAppTheme";
 import { broadcastSectionTheme } from "../services/liveSyncService";
 import WorksheetBuilderCard from "./WorksheetBuilderCard";
 import WorksheetManagerCard from "./WorksheetManagerCard";
+import AttendanceBook from "./AttendanceBook";
+import BehaviorBook from "./BehaviorBook";
 
 export default function TeacherDashboard({
   setIsAdminMode,
@@ -123,6 +125,8 @@ export default function TeacherDashboard({
 
       <WorksheetBuilderCard availableSections={availableSections} />
       <WorksheetManagerCard availableSections={availableSections} />
+      <AttendanceBook availableSections={availableSections} />
+      <BehaviorBook />
 
       <section className="w-full max-w-4xl bg-[var(--app-surface)] border border-[var(--app-border)] rounded-2xl p-6 shadow-xl mb-6" aria-labelledby="theme-controls-title">
         <h2 id="theme-controls-title" className="text-lg font-bold mb-3">
