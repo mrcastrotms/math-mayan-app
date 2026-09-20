@@ -19,10 +19,13 @@ export default function ClassManagerCard({
  >
  {sec}
  <button
+ type="button"
+ aria-label={`Delete section ${sec}`}
+ title={`Delete section ${sec}`}
  onClick={() => onDeleteSection(sec)}
  className="text-red-400 hover:text-red-300 font-bold ml-2"
  >
- 
+ x
  </button>
  </div>
  ))}
