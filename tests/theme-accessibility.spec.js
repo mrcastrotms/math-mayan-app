@@ -51,4 +51,16 @@ test.describe("system theme and teacher enforcement controls", () => {
     expect(await page.locator("html").evaluate((element) => getComputedStyle(element).getPropertyValue("--app-fg").trim())).toBe("#0f172a");
     expect(await page.locator("body").evaluate((element) => getComputedStyle(element).color)).toMatch(/rgb\(15, 23, 42\)/);
   });
+
+  test("returns teachers to the Exam Gate from Student Version", async ({ page }) => {
+    await page.goto("/");
+    await page.evaluate(() => {
+      sessionStorage.setItem("teacher_authorized", "true");
+      sessionStorage.setItem("exam_active_view", "dashboard");
+      localStorage.setItem("math_app_sections", JSON.stringify(["4A"]));
+    });
+    await page.reload();
+    await page.getByRole("button", { name: "Student Version" }).click();
+    await expect(page.getByRole("heading", { name: "Select your section" })).toBeVisible();
+  });
 });
