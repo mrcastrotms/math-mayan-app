@@ -14,7 +14,9 @@ export default function WorksheetManagerCard({ availableSections = [] }) {
   const [message, setMessage] = useState("");
 
   const refresh = () => loadAllWorksheets().then(setWorks).catch(() => setMessage("Unable to load assignments."));
-  useEffect(refresh, []);
+  useEffect(() => {
+    refresh();
+  }, []);
 
   const editDeadline = async (work) => {
     const dueDate = window.prompt("New due date/time (ISO format)", work.dueDate || "");

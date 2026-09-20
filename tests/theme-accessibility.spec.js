@@ -75,7 +75,7 @@ test.describe("system theme and teacher enforcement controls", () => {
     await expect(page.getByRole("heading", { name: "Teacher Dashboard" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Open", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Open", exact: true }).click();
-    await expect(page.getByRole("button", { name: "Back", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Dashboard", exact: true })).toBeVisible();
     await expect(page.locator("datalist")).toHaveCount(0);
   });
 });

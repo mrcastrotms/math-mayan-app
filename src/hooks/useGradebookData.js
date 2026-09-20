@@ -63,7 +63,7 @@ export function useGradebookData() {
         },
         (error) => {
           console.error("Failed to load real-time gradebook:", error);
-          unsubscribe();
+          if (typeof unsubscribe === "function") unsubscribe();
           unsubscribe = onSnapshot(
             collection(db, "exam_results"),
             (snapshot) => {
@@ -95,7 +95,9 @@ export function useGradebookData() {
     }
 
     // Clean up websocket listener on unmount
-    return () => unsubscribe();
+    return () => {
+      if (typeof unsubscribe === "function") unsubscribe();
+    };
   }, [readGradebook]);
 
   // Preserved manual refresh method for full backwards compatibility

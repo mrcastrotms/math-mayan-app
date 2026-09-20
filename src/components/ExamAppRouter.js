@@ -81,7 +81,10 @@ export default function ExamAppRouter({
           window.sessionStorage.removeItem("teacher_authorized");
           window.sessionStorage.removeItem("exam_active_view");
           setIsTeacherAuth(false);
-          window.location.replace("/");
+          state?.setIsAdminMode?.(false);
+          state?.setExamStarted?.(false);
+          state?.setExamFinished?.(false);
+          navigateTo("start");
         }}
       />
     );
