@@ -4,11 +4,16 @@ import MayansPortalView from "./MayansPortalView";
 import ZearnHubView from "./ZearnHubView";
 import { useAppTheme } from "../hooks/useAppTheme";
 import ThemeToggle from "./ThemeToggle";
+import { useAssignedWorks } from "../hooks/useAssignedWorks";
+import AssignedWorkPanel from "./AssignedWorkPanel";
+import WorksheetWorkspace from "./WorksheetWorkspace";
 
 export default function StudentHome({ studentName, section, onSelectMode, themeState }) {
   const localThemeState = useAppTheme();
   const activeThemeState = themeState || localThemeState;
   const [currentView, setCurrentView] = useState("menu");
+  const [selectedWork, setSelectedWork] = useState(null);
+  const { works, error: assignedWorkError } = useAssignedWorks(section);
 
   const handleResetSession = () => {
     if (typeof window !== "undefined") {
@@ -52,6 +57,16 @@ export default function StudentHome({ studentName, section, onSelectMode, themeS
     return <ZearnHubView onBack={() => setCurrentView("menu")} />;
   }
 
+  if (selectedWork) {
+    return (
+      <WorksheetWorkspace
+        worksheet={selectedWork}
+        student={{ name: studentName, section, uid: typeof window !== "undefined" ? localStorage.getItem("exam_device_uuid") : "" }}
+        onBack={() => setSelectedWork(null)}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--app-bg)] text-[var(--app-fg)]">
       <div className="max-w-2xl w-full p-10 bg-white dark:bg-zinc-900 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-800 text-center relative">
@@ -82,6 +97,12 @@ export default function StudentHome({ studentName, section, onSelectMode, themeS
         </p>
 
         <div className="mb-8 text-left">
+          <AssignedWorkPanel
+            works={works}
+            studentId={typeof window !== "undefined" ? localStorage.getItem("exam_device_uuid") : ""}
+            onOpenWork={setSelectedWork}
+          />
+          {assignedWorkError && <p role="alert" className="mb-4 text-sm text-red-700">{assignedWorkError}</p>}
           <h2 className="text-lg font-semibold mb-4 text-zinc-800 dark:text-zinc-200">
             What do you want to do today?
           </h2>
