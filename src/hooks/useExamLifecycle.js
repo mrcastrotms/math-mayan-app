@@ -31,6 +31,7 @@ export function useExamLifecycle({
   const [isValidatingCode, setIsValidatingCode] = useState(false);
   const [loginTime] = useState(() => new Date().toLocaleTimeString());
   const [startTime, setStartTime] = useState(null);
+  const [reportId, setReportId] = useState("");
 
   const isSubmittingRef = useRef(false);
 
@@ -43,7 +44,7 @@ export function useExamLifecycle({
     if (isBypassMode) return;
 
     setIsSaving(true);
-    await persistExamCompletion({
+    const savedReportId = await persistExamCompletion({
       student,
       customStudentName,
       selectedSection,
@@ -56,6 +57,7 @@ export function useExamLifecycle({
       startTime,
       hintsUsed,
     });
+    if (savedReportId) setReportId(savedReportId);
     setIsSaving(false);
   };
 
@@ -66,7 +68,7 @@ export function useExamLifecycle({
   ) => {
     setIsValidatingCode(true);
     try {
-      await processSessionCodeVerification({
+      return await processSessionCodeVerification({
         code: passedCode || sessionCodeInput,
         section: passedSection || selectedSection,
         isTeacher,
@@ -118,5 +120,6 @@ export function useExamLifecycle({
     handleFinishExam,
     handleVerifyAndStart,
     recordAttemptAndReset,
+    reportId,
   };
 }

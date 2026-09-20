@@ -116,7 +116,7 @@ export default function ActiveExamScreen({ state, navigateTo, adminPanel, themeS
   };
 
   return (
-    <div className="relative flex h-screen flex-col overflow-hidden bg-[var(--app-bg)] text-[var(--app-fg)]">
+    <div className="exam-session-shell relative flex h-screen flex-col overflow-hidden bg-[var(--app-bg)] text-[var(--app-fg)]">
       <header className="flex h-14 shrink-0 items-center justify-between border-b bg-white px-4 shadow-sm">
         <div>
           <h1 className="text-lg font-bold leading-tight text-slate-800">
@@ -216,6 +216,7 @@ export default function ActiveExamScreen({ state, navigateTo, adminPanel, themeS
           handleSubmitQuestion={() => state?.handleSubmitQuestion?.()}
           handleFinishExam={() => setIsModalOpen(true)}
           timeLeft={timeLeft}
+          showExtendedKeys={state?.currentQ?.type === "exponent" || state?.activeActivityType === "classwork"}
         />
       </div>
       </main>

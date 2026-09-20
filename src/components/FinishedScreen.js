@@ -13,6 +13,7 @@ export default function FinishedScreen({
   studentAnswers = [],
   demerits = 0,
   children,
+  reportId = "",
 }) {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-start p-4 md:p-8 font-sans print:bg-white print:p-0">
@@ -23,6 +24,7 @@ export default function FinishedScreen({
         isSaving={isSaving}
         handleReturnHome={handleReturnHome}
         demerits={demerits}
+        reportId={reportId}
       />
 
       <StudentAnswersTable

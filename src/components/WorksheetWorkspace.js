@@ -2,29 +2,61 @@
 
 import { useEffect, useState } from "react";
 import { useWorksheetAttempt } from "../hooks/useWorksheetAttempt";
-import { isWorksheetClosed } from "../utils/worksheetUtils.mjs";
+import { canAdvanceWorksheetQuestion, isWorksheetClosed } from "../utils/worksheetUtils.mjs";
 import MathExpression from "./MathExpression";
 import ThemeToggle from "./ThemeToggle";
 import { useAppTheme } from "../hooks/useAppTheme";
+import { subscribeToStudentConduct, updateStudentConduct } from "../services/liveSyncService";
+import StudentLockOverlay from "./StudentLockOverlay";
+import ExamKeypad from "./ExamKeypad";
+import { normalizeWorksheetParts } from "../utils/worksheetParts.mjs";
 
 export default function WorksheetWorkspace({ worksheet, student, onBack }) {
   const [showSubmit, setShowSubmit] = useState(false);
   const [hint, setHint] = useState("");
-  const attempt = useWorksheetAttempt(worksheet, student);
+  const worksheetModel = normalizeWorksheetParts(worksheet);
+  const attempt = useWorksheetAttempt(worksheetModel, student);
   const themeState = useAppTheme({ studentUid: student.uid });
   const closed = isWorksheetClosed(worksheet.dueDate);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [secondsLeft, setSecondsLeft] = useState(() => Math.max(0, Math.floor((new Date(worksheet.dueDate).getTime() - Date.now()) / 1000)));
-  const currentQuestion = worksheet.questions[currentIndex];
+  const [conduct, setConduct] = useState({ merits: 0, demerits: 0 });
+  const [isLocked, setIsLocked] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const currentQuestion = worksheetModel.questions[currentIndex];
+  const currentPart = worksheetModel.parts.find((part) => part.id === currentQuestion?.partId);
 
   useEffect(() => {
     const timer = setInterval(() => setSecondsLeft(Math.max(0, Math.floor((new Date(worksheet.dueDate).getTime() - Date.now()) / 1000))), 1000);
     return () => clearInterval(timer);
   }, [worksheet.dueDate]);
 
+  useEffect(() => subscribeToStudentConduct(student.uid, setConduct), [student.uid]);
+  useEffect(() => {
+    const enforce = () => {
+      if (!document.fullscreenElement && !isLocked) {
+        setIsLocked(true);
+        updateStudentConduct(student.uid, "demerits").catch(() => {});
+      }
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener("fullscreenchange", enforce);
+    document.addEventListener("visibilitychange", enforce);
+    document.documentElement.requestFullscreen?.().catch(() => {});
+    return () => {
+      document.removeEventListener("fullscreenchange", enforce);
+      document.removeEventListener("visibilitychange", enforce);
+    };
+  }, [isLocked, student.uid]);
+
+  const restoreFullscreen = async () => {
+    await document.documentElement.requestFullscreen?.().catch(() => {});
+    setIsLocked(false);
+  };
+
   if (attempt.status === "submitted") {
     return (
-      <main className="min-h-screen bg-[var(--app-bg)] p-4 text-[var(--app-fg)] sm:p-8">
+      <main className="exam-session-shell min-h-screen bg-[var(--app-bg)] p-4 text-[var(--app-fg)] sm:p-8">
         <div className="mx-auto max-w-3xl rounded-2xl border border-current/20 p-6 text-center">
           <h1 className="text-2xl font-bold">{worksheet.title}</h1>
           <p className="mt-3">Submitted. Score: {attempt.result.score}%</p>
@@ -36,6 +68,11 @@ export default function WorksheetWorkspace({ worksheet, student, onBack }) {
 
   return (
     <main className="min-h-screen bg-[var(--app-bg)] p-4 text-[var(--app-fg)] sm:p-8">
+      <StudentLockOverlay
+        isLocked={isLocked}
+        studentName={student.name}
+        onUnlock={restoreFullscreen}
+      />
       <div className="mx-auto max-w-3xl">
         <button type="button" onClick={onBack} className="mb-4 font-bold underline">← Back to home</button>
         <header className="mb-6 rounded-2xl border border-current/20 p-5">
@@ -43,6 +80,7 @@ export default function WorksheetWorkspace({ worksheet, student, onBack }) {
             <div>
               <h1 className="text-2xl font-bold">{worksheet.title}</h1>
               <p className="text-sm opacity-75">{student.name} · Section {student.section}</p>
+              <p className="text-xs font-semibold text-emerald-600">Merits: {conduct.merits} · Demerits: {conduct.demerits}</p>
             </div>
             <div className="flex items-center gap-3">
               <ThemeToggle theme={themeState.theme} changeTheme={themeState.changeTheme} disabled={themeState.themeLocked} />
@@ -50,6 +88,7 @@ export default function WorksheetWorkspace({ worksheet, student, onBack }) {
                 {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}
               </span>
             </div>
+            {!isFullscreen && <button type="button" onClick={restoreFullscreen} className="mt-3 rounded-lg bg-amber-600 px-3 py-2 text-sm font-bold text-white">Enforce fullscreen</button>}
           </div>
           <p className="mt-2 text-sm opacity-80">{worksheet.instructions}</p>
           <p role="status" aria-live="polite" className="mt-3 text-sm font-semibold">
@@ -61,7 +100,7 @@ export default function WorksheetWorkspace({ worksheet, student, onBack }) {
           <button
             type="button"
             disabled={attempt.hintsUsed >= 4 || attempt.status === "submitting"}
-            onClick={async () => setHint(await attempt.requestHint(worksheet.questions.find((question) => !attempt.answers[question.id])))}
+            onClick={async () => setHint(await attempt.requestHint(worksheetModel.questions.find((question) => !attempt.answers[question.id])))}
             className="rounded-lg bg-indigo-600 px-4 py-2 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
             title={attempt.hintsUsed >= 4 ? "Hint limit reached" : "Get a Socratic hint"}
           >
@@ -70,9 +109,15 @@ export default function WorksheetWorkspace({ worksheet, student, onBack }) {
           {hint && <p role="status" className="mt-2 text-sm">{hint}</p>}
         </div>
         <div className="rounded-2xl border border-current/20 p-5">
+          {currentPart && (
+            <div className="mb-5 rounded-xl border border-blue-300/40 bg-blue-50/60 p-4 text-slate-900">
+              <p className="text-sm font-black uppercase tracking-wide text-blue-800">{currentPart.title}</p>
+              {currentPart.instruction && <p className="mt-1 text-base font-semibold">{currentPart.instruction}</p>}
+            </div>
+          )}
             <label className="block">
               <span className="mb-5 block text-xl font-bold">
-                {currentIndex + 1} of {worksheet.questions.length}. <MathExpression value={currentQuestion.prompt} />
+                Question {currentIndex + 1}. <MathExpression value={currentQuestion.prompt} />
               </span>
               <input
                 aria-label={`Answer question ${currentIndex + 1}`}
@@ -83,9 +128,18 @@ export default function WorksheetWorkspace({ worksheet, student, onBack }) {
                 className="w-full rounded-lg border-2 border-current/30 bg-transparent p-3 text-lg"
               />
             </label>
+          <ExamKeypad
+            handlePadClick={(value) => attempt.saveProgress({ ...attempt.answers, [currentQuestion.id]: `${attempt.answers[currentQuestion.id] || ""}${value}` })}
+            handleBackspace={() => attempt.saveProgress({ ...attempt.answers, [currentQuestion.id]: String(attempt.answers[currentQuestion.id] || "").slice(0, -1) })}
+            handleClear={() => attempt.saveProgress({ ...attempt.answers, [currentQuestion.id]: "" })}
+            handleSubmitQuestion={() => setCurrentIndex((value) => Math.min(value + 1, worksheetModel.questions.length - 1))}
+            handlePassQuestion={() => {}}
+            timeLeft={secondsLeft}
+            showExtendedKeys
+          />
           <div className="mt-5 flex flex-wrap justify-between gap-3">
             <button type="button" disabled={currentIndex === 0} onClick={() => setCurrentIndex((value) => value - 1)} className="rounded-lg border px-4 py-3 font-bold disabled:opacity-40">Previous</button>
-            <button type="button" disabled={currentIndex === worksheet.questions.length - 1} onClick={() => setCurrentIndex((value) => value + 1)} className="rounded-lg bg-blue-600 px-4 py-3 font-bold text-white disabled:opacity-40">Next question</button>
+            <button type="button" disabled={currentIndex === worksheetModel.questions.length - 1 || !canAdvanceWorksheetQuestion(attempt.answers[currentQuestion.id])} onClick={() => setCurrentIndex((value) => value + 1)} className="rounded-lg bg-blue-600 px-4 py-3 font-bold text-white disabled:opacity-40">Next question</button>
           </div>
         </div>
         {showSubmit && (
