@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import GradebookRow from "./gradebook/GradebookRow";
+import { buildDuplicateSubmissionMap } from "../utils/gradebookUtils";
 
 export default function GradebookTable({
   records = [],
@@ -14,6 +15,10 @@ export default function GradebookTable({
   selectedIds = new Set(),
   onToggleSelect,
 }) {
+  const duplicateMap = useMemo(() => {
+    return buildDuplicateSubmissionMap(records);
+  }, [records]);
+
   if (isLoading) {
     return (
       <div className="text-center py-20 text-2xl font-black text-slate-300 animate-pulse">
@@ -48,19 +53,25 @@ export default function GradebookTable({
               </td>
             </tr>
           ) : (
-            records.map((record, index) => (
-              <GradebookRow
-                key={record.id || `${record.section}-${index}`}
-                record={record}
-                index={index}
-                isSelected={Boolean(record.id && selectedIds.has(record.id))}
-                onToggleSelect={onToggleSelect}
-                onViewReport={onViewReport}
-                onSoftDelete={onSoftDelete}
-                onRestoreRecord={onRestoreRecord}
-                onHardDelete={onHardDelete}
-              />
-            ))
+            records.map((record, index) => {
+              const recordKey = record.id || `${record.section}-${index}`;
+              const duplicateInfo = duplicateMap.get(recordKey) || null;
+
+              return (
+                <GradebookRow
+                  key={recordKey}
+                  record={record}
+                  index={index}
+                  isSelected={Boolean(record.id && selectedIds.has(record.id))}
+                  duplicateInfo={duplicateInfo}
+                  onToggleSelect={onToggleSelect}
+                  onViewReport={onViewReport}
+                  onSoftDelete={onSoftDelete}
+                  onRestoreRecord={onRestoreRecord}
+                  onHardDelete={onHardDelete}
+                />
+              );
+            })
           )}
         </tbody>
       </table>
