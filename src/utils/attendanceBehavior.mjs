@@ -30,3 +30,58 @@ export function relativeBehaviorScores(records = []) {
       range === 0 ? 85 : Math.round(70 + ((values[index] - lowest) / range) * 30),
   }));
 }
+
+export function sectionGrade(section = "") {
+  const match = String(section).match(/\d+/);
+  return match ? match[0] : String(section || "Unknown");
+}
+
+export function historicalStudentRows(attendance = [], behavior = [], { dateKey = "", grade = "all" } = {}) {
+  const filtered = (items) =>
+    items.filter((item) => (!dateKey || item.dateKey === dateKey) && (grade === "all" || sectionGrade(item.section) === grade));
+  const rows = new Map();
+  const add = (item) => {
+    const key = `${item.uid || item.studentName || "unknown"}_${item.section || ""}`;
+    const existing = rows.get(key) || {
+      id: key,
+      uid: item.uid,
+      studentName: item.studentName || item.uid || "Unknown student",
+      section: item.section || "Unknown",
+      grade: sectionGrade(item.section),
+      attendanceDays: 0,
+      behaviorScore: null,
+      merits: 0,
+      demerits: 0,
+      dates: [],
+    };
+    rows.set(key, existing);
+    return existing;
+  };
+  filtered(attendance).forEach((item) => {
+    const row = add(item);
+    if (item.qualifiedAtMs || item.status === "present") row.attendanceDays += 1;
+    if (item.dateKey && !row.dates.includes(item.dateKey)) row.dates.push(item.dateKey);
+  });
+  filtered(behavior).forEach((item) => {
+    const row = add(item);
+    row.merits += Number(item.merits || 0);
+    row.demerits += Number(item.demerits || 0);
+    row.behaviorScore = item.behaviorScore ?? row.behaviorScore;
+    if (item.dateKey && !row.dates.includes(item.dateKey)) row.dates.push(item.dateKey);
+  });
+  return [...rows.values()].sort((a, b) => a.studentName.localeCompare(b.studentName));
+}
+
+export function historicalDailyTotals(attendance = [], behavior = [], grade = "all") {
+  const dates = new Set([...attendance, ...behavior].map((item) => item.dateKey).filter(Boolean));
+  return [...dates].sort().map((dateKey) => {
+    const rows = historicalStudentRows(attendance, behavior, { dateKey, grade });
+    return {
+      dateKey,
+      present: rows.filter((row) => row.attendanceDays > 0).length,
+      students: rows.length,
+      merits: rows.reduce((sum, row) => sum + row.merits, 0),
+      demerits: rows.reduce((sum, row) => sum + row.demerits, 0),
+    };
+  });
+}

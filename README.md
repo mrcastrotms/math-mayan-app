@@ -310,6 +310,12 @@ Behavior session records persist merits and demerits beyond the live-session
 document, and the teacher view calculates a relative daily score from 70% to
 100% based on net merits.
 
+Each dashboard book links to **Attendance & Values History**. This complete
+Firestore-backed report loads records across dates, combines attendance days
+with merits, demerits, and relative values scores per student, and supports
+exact-date and grade filters. Its attendance trend graph summarizes qualifying
+students by day so historical reports remain available after the current day.
+
 ## 🛡️ Git Workflow & Branch Protections
 
 - Direct pushes to `develop` and `main` are disabled.

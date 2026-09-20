@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useAttendanceBook } from "../hooks/useAttendanceBook";
 
-export default function AttendanceBook({ availableSections = [] }) {
+export default function AttendanceBook({ availableSections = [], onOpenHistory }) {
   const { records, dateKey, status, error } = useAttendanceBook();
   const [rosterDirectory, setRosterDirectory] = useState({});
   useEffect(() => {
@@ -29,6 +29,7 @@ export default function AttendanceBook({ availableSections = [] }) {
     <section className="w-full max-w-4xl rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-6 text-[var(--app-fg)] shadow-xl" aria-labelledby="attendance-book-title">
       <h2 id="attendance-book-title" className="text-xl font-bold">Attendance Book</h2>
       <p className="mb-4 text-sm opacity-75">Daily presence requires 10 minutes on Student Home. Date: {dateKey}</p>
+      <button type="button" onClick={onOpenHistory} className="mb-4 rounded-lg bg-emerald-600 px-4 py-2 font-bold text-white hover:bg-emerald-500">Open complete attendance history</button>
       {error && <p role="alert" className="mb-3 text-sm text-red-600">{error}</p>}
       <div className="grid gap-3 md:grid-cols-2">
         {rows.map((row) => (
