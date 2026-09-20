@@ -7,6 +7,7 @@ import {
   historicalStudentRows,
   relativeBehaviorScores,
 } from "../src/utils/attendanceBehavior.mjs";
+import { appendAnswerInput } from "../src/utils/answerInput.mjs";
 
 test("marks a student present after ten minutes", () => {
   const joinedAtMs = 1000;
@@ -45,4 +46,11 @@ test("builds historical student rows and daily totals by grade and date", () => 
   ]);
   assert.equal(historicalStudentRows(attendance, behavior, { grade: "4", section: "4B" }).length, 1);
   assert.equal(historicalStudentRows(attendance, behavior, { grade: "4", section: "4A" }).length, 0);
+});
+
+test("appends keypad operations without dropping valid math symbols", () => {
+  assert.equal(appendAnswerInput("4", "^"), "4^");
+  assert.equal(appendAnswerInput("4^", "3"), "4^3");
+  assert.equal(appendAnswerInput("12", "×"), "12×");
+  assert.equal(appendAnswerInput("123456789012345", "+"), "123456789012345");
 });

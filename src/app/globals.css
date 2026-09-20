@@ -8,6 +8,10 @@ body {
   overscroll-behavior-x: none;
 }
 
+.exam-session-shell {
+  touch-action: pan-y pinch-zoom;
+}
+
 :root {
   --app-bg: #f8fafc;
   --app-fg: #0f172a;
