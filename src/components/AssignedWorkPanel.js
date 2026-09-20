@@ -3,6 +3,7 @@
 import { getWorksheetStatus } from "../utils/worksheetUtils.mjs";
 import { useEffect, useState } from "react";
 import { loadWorksheetAttempt } from "../services/worksheetService";
+import MathExpression from "./MathExpression";
 
 export default function AssignedWorkPanel({ works = [], studentId, onOpenWork }) {
   const [attempts, setAttempts] = useState({});
@@ -39,6 +40,7 @@ export default function AssignedWorkPanel({ works = [], studentId, onOpenWork })
                     <h3 className="font-bold">{work.title}</h3>
                     <p className="text-sm opacity-75">{work.instructions || "Complete the assigned questions."}</p>
                   </div>
+                  {work.questions?.[0]?.prompt && <MathExpression value={work.questions[0].prompt} className="mt-2 text-sm" />}
                   <span className="rounded-full border px-2 py-1 text-xs font-bold">{status}</span>
                 </div>
                 <p className="mt-2 text-xs opacity-75">
