@@ -66,7 +66,7 @@ export function useWorksheetAttempt(worksheet, student) {
         status: "submitted",
         submittedAt: new Date(),
       });
-      await saveWorksheetGrade({ student, worksheet, answers, result });
+      await saveWorksheetGrade({ student, worksheet, answers, result, hintsUsed });
       setStatus("submitted");
       return true;
     } catch {
@@ -79,10 +79,15 @@ export function useWorksheetAttempt(worksheet, student) {
   const requestHint = async (question) => {
     if (hintsUsed >= 4 || !question) return "";
     try {
-      const response = await fetch("/api/hint", {
+      const response = await fetch("/api/ai/hint", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: question.prompt, instruction: "Give a Socratic hint without revealing the answer." }),
+        body: JSON.stringify({
+          question: question.prompt,
+          scratchwork: answers[question.id] || "",
+          previousHints: [],
+          hintsUsed,
+        }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);

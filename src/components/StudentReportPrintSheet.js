@@ -4,10 +4,17 @@ import ReportPrintFooter from "./ReportPrintFooter";
 
 export default function StudentReportPrintSheet({ record, baseUrl }) {
   const reportUrl = `${baseUrl}/?report=${record.id}`;
-  const answersList = record.answers || record.studentAnswers || [];
-  const MAX_VISIBLE = 10;
-  const visibleAnswers = answersList.slice(0, MAX_VISIBLE);
-  const remaining = answersList.length - visibleAnswers.length;
+  const rawAnswers = record.answers || record.studentAnswers || [];
+  const answersList = Array.isArray(rawAnswers)
+    ? rawAnswers
+    : Object.entries(rawAnswers).map(([question, studentInput]) => ({
+        question,
+        studentInput,
+        correctAnswer: "—",
+        isCorrect: false,
+      }));
+  const visibleAnswers = answersList;
+  const remaining = 0;
 
   const displayDate = record.timestamp?.toDate
     ? record.timestamp.toDate().toLocaleDateString()
@@ -118,11 +125,9 @@ export default function StudentReportPrintSheet({ record, baseUrl }) {
             </tbody>
           </table>
 
-          {remaining > 0 && (
-            <p className="text-[11px] italic text-slate-500 mt-2">
-              * Showing first {MAX_VISIBLE} problems. Scan QR code below for
-              complete itemized breakdown, full timing telemetry, and correction
-              keys.
+          {record.assignmentTitle && (
+            <p className="mt-2 text-[11px] font-semibold text-slate-500">
+              Assigned classwork: {record.assignmentTitle} · {record.correctAnswers ?? "—"} / {record.totalQuestions ?? answersList.length} correct
             </p>
           )}
         </div>
