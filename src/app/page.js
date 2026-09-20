@@ -10,6 +10,7 @@ import { useLockEnforcement } from "../hooks/useLockEnforcement";
 import { useExamRemoteCommands } from "../hooks/useExamRemoteCommands";
 import { useExamBypass } from "../hooks/useExamBypass";
 import { useGhostKeyBypass } from "../hooks/useGhostKeyBypass";
+import { useAppTheme } from "../hooks/useAppTheme";
 import { handleStudentJoin } from "../utils/studentSessionManager";
 import ExamAppRouter from "../components/ExamAppRouter";
 import StudentLockOverlay from "../components/StudentLockOverlay";
@@ -24,6 +25,7 @@ const ExamGate = dynamic(() => import("../components/ExamGate"), {
 export default function ExamApp() {
   const router = useRouter();
   const state = useExamState();
+  const themeState = useAppTheme({ studentUid: state?.student?.uid });
   const { view, navigateTo } = useViewPersistence("start");
   const { displaySections, isLoading } = useCachedSections(state?.availableSections);
   const mounted = useSyncExternalStore(
@@ -99,6 +101,7 @@ export default function ExamApp() {
           isLoading={isLoading}
           onExamStart={handleGateStart}
           onOpenDashboard={() => setIsTeacherPinOpen(true)}
+          themeState={themeState}
         />
       ) : (
         <ExamAppRouter
@@ -109,6 +112,7 @@ export default function ExamApp() {
           isLoading={isLoading}
           scannedReportId={scannedReportId}
           adminPanel={adminPanel}
+          themeState={themeState}
           onJoin={(name, code, uid, section) =>
             handleStudentJoin({ name, code, uid, section, state, router })
           }

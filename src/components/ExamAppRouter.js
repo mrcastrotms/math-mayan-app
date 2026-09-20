@@ -11,7 +11,7 @@ const FinishedScreen = dynamic(() => import("./FinishedScreen"));
 const LockedScreen = dynamic(() => import("./LockedScreen"));
 
 export default function ExamAppRouter({
-  state, view, navigateTo, displaySections, isLoading, scannedReportId, onJoin, adminPanel
+  state, view, navigateTo, displaySections, isLoading, scannedReportId, onJoin, adminPanel, themeState
 }) {
   const [isTeacherAuth, setIsTeacherAuth] = useState(false);
 
@@ -69,6 +69,7 @@ export default function ExamAppRouter({
         setAvailableSections={state?.setAvailableSections || (() => {})}
         appText={state?.appText || {}}
         setAppText={state?.setAppText || (() => {})}
+        themeState={themeState}
       />
     );
   }
@@ -108,12 +109,13 @@ export default function ExamAppRouter({
             navigateTo("exam");
           } else if (mode === "classwork") navigateTo("classwork");
         }}
+        themeState={themeState}
       />
     );
   }
 
   if (state?.examStarted || state?.isBypassActive || view === "exam") {
-    return <ActiveExamScreen state={state} adminPanel={adminPanel} navigateTo={navigateTo} />;
+    return <ActiveExamScreen state={state} adminPanel={adminPanel} navigateTo={navigateTo} themeState={themeState} />;
   }
 
   return (
@@ -125,6 +127,7 @@ export default function ExamAppRouter({
       availableSections={displaySections}
       isLoading={isLoading}
       onJoinSuccess={onJoin}
+      themeState={themeState}
     >
       {adminPanel}
     </StartScreen>

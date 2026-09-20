@@ -2,8 +2,12 @@ import React, { useState } from "react";
 import YouTubeHubView from "./YouTubeHubView";
 import MayansPortalView from "./MayansPortalView";
 import ZearnHubView from "./ZearnHubView";
+import { useAppTheme } from "../hooks/useAppTheme";
+import ThemeToggle from "./ThemeToggle";
 
-export default function StudentHome({ studentName, section, onSelectMode }) {
+export default function StudentHome({ studentName, section, onSelectMode, themeState }) {
+  const localThemeState = useAppTheme();
+  const activeThemeState = themeState || localThemeState;
   const [currentView, setCurrentView] = useState("menu");
 
   const handleResetSession = () => {
@@ -49,8 +53,20 @@ export default function StudentHome({ studentName, section, onSelectMode }) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-zinc-50 dark:bg-zinc-950">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--app-bg)] text-[var(--app-fg)]">
       <div className="max-w-2xl w-full p-10 bg-white dark:bg-zinc-900 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-800 text-center relative">
+        <div className="absolute top-4 left-4">
+          <ThemeToggle
+            theme={activeThemeState.theme}
+            changeTheme={activeThemeState.changeTheme}
+            disabled={activeThemeState.themeLocked}
+          />
+        </div>
+        {activeThemeState.themeLocked && (
+          <p role="status" className="text-xs font-semibold text-amber-700 mb-3">
+            Theme locked by teacher
+          </p>
+        )}
         <button
           onClick={handleResetSession}
           className="absolute top-4 right-4 text-xs font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/50 px-3 py-1.5 rounded-md border border-red-200 dark:border-red-900/50"
