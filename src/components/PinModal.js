@@ -8,12 +8,12 @@ export default function PinModal({
   title = "Enter PIN",
   description,
   placeholder = "Enter PIN",
-  type = "password",
   confirmColor = "bg-blue-600 hover:bg-blue-700 shadow-blue-200",
   confirmText = "Confirm",
   showInput = true,
 }) {
   const [pin, setPin] = useState("");
+  const [error, setError] = useState("");
   const inputRef = useRef(null);
 
   // Pure side-effect: DOM focus only, no setState calls
@@ -28,14 +28,20 @@ export default function PinModal({
 
   const handleClose = () => {
     setPin("");
+    setError("");
     onClose();
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit(pin);
-    setPin("");
-    onClose();
+    const accepted = await onSubmit(pin);
+    if (accepted !== false) {
+      setPin("");
+      setError("");
+      onClose();
+    } else {
+      setError("Incorrect code. Try again.");
+    }
   };
 
   return (
@@ -51,17 +57,22 @@ export default function PinModal({
           </p>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} autoComplete="off" className="space-y-4">
           {showInput && (
             <input
               ref={inputRef}
-              type={type}
+              type="text"
               value={pin}
               onChange={(e) => setPin(e.target.value)}
               className="w-full p-4 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 text-center text-2xl font-mono tracking-widest text-slate-900"
               placeholder={placeholder}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck="false"
             />
           )}
+          {error && <p role="alert" className="text-sm font-semibold text-red-600">{error}</p>}
 
           <div className="flex gap-3 mt-6">
             <button

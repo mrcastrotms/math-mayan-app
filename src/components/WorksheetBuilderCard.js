@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createWorksheet, publishWorksheet } from "../services/worksheetService";
 import MathExpression from "./MathExpression";
+import { normalizeWorksheetParts } from "../utils/worksheetParts.mjs";
 
 function createQuestions(rawQuestions) {
   return rawQuestions
@@ -31,6 +32,8 @@ export default function WorksheetBuilderCard({ availableSections = [] }) {
   const [isDigitizing, setIsDigitizing] = useState(false);
   const [reviewQuestions, setReviewQuestions] = useState([]);
   const [reviewId, setReviewId] = useState("");
+  const [parts, setParts] = useState([{ id: "part-a", title: "Part A", instruction: "", rawQuestions: "" }]);
+  const [jsonInput, setJsonInput] = useState("");
 
   const handleDigitize = async (event) => {
     const file = event.target.files?.[0];
@@ -71,13 +74,49 @@ export default function WorksheetBuilderCard({ availableSections = [] }) {
 
   const handleCreate = async (event) => {
     event.preventDefault();
-    const questions = reviewQuestions.length ? reviewQuestions : createQuestions(rawQuestions);
+    let importedParts = parts;
+    if (jsonInput.trim()) {
+      try {
+        const parsed = JSON.parse(jsonInput);
+        importedParts = parsed.parts || (Array.isArray(parsed.questions) ? [{ id: "part-a", title: "Part A", instruction: "", questions: parsed.questions }] : []);
+        if (!importedParts.length) throw new Error("JSON must contain parts or questions.");
+        setParts(importedParts.map((part, index) => ({
+          id: part.id || `part-${String.fromCharCode(97 + index)}`,
+          title: part.title || `Part ${String.fromCharCode(65 + index)}`,
+          instruction: part.instruction || "",
+          rawQuestions: (part.questions || []).map((question) => `${question.prompt} | ${question.correctAnswer}`).join("\n"),
+        })));
+      } catch (error) {
+        setStatus(`Invalid worksheet JSON: ${error.message}`);
+        return;
+      }
+    }
+    const partData = importedParts.map((part, index) => ({
+      id: part.id || `part-${String.fromCharCode(97 + index)}`,
+      title: part.title || `Part ${String.fromCharCode(65 + index)}`,
+      instruction: part.instruction || "",
+      questions: part.questions || createQuestions(part.rawQuestions || (index === 0 ? rawQuestions : "")),
+    }));
+    const questions = reviewQuestions.length ? reviewQuestions : partData.flatMap((part) => part.questions);
     if (!title.trim() || !section || !dueDate || questions.length === 0) {
       setStatus("Add a title, section, due date, and at least one question.");
       return;
     }
-    setReviewQuestions(questions);
+    setReviewQuestions(normalizeWorksheetParts({ parts: partData }).questions);
     setStatus("Review every question and answer, then publish.");
+  };
+
+  const updatePart = (id, key, value) => {
+    setParts((current) => current.map((part) => (part.id === id ? { ...part, [key]: value } : part)));
+  };
+
+  const addPart = () => {
+    setParts((current) => [...current, {
+      id: `part-${String.fromCharCode(97 + current.length)}`,
+      title: `Part ${String.fromCharCode(65 + current.length)}`,
+      instruction: "",
+      rawQuestions: "",
+    }]);
   };
 
   const updateReviewQuestion = (id, key, value) => {
@@ -87,7 +126,7 @@ export default function WorksheetBuilderCard({ availableSections = [] }) {
   };
 
   return (
-    <section aria-labelledby="worksheet-builder-title" className="mb-6 w-full max-w-4xl rounded-2xl border border-slate-700 bg-slate-800 p-6 text-white shadow-xl">
+    <section aria-labelledby="worksheet-builder-title" className="w-full max-w-4xl rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-6 text-[var(--app-fg)] shadow-xl">
       <h2 id="worksheet-builder-title" className="mb-2 text-xl font-bold">Assign Classwork</h2>
       <p className="mb-4 text-sm text-slate-300">Create mobile-friendly work. One question per line using <code>prompt | answer</code>.</p>
       <form onSubmit={handleCreate} className="grid gap-4">
@@ -108,7 +147,29 @@ export default function WorksheetBuilderCard({ availableSections = [] }) {
           </label>
         </div>
         <label className="grid gap-1 text-sm font-bold">Questions
-          <textarea required value={rawQuestions} onChange={(event) => setRawQuestions(event.target.value)} rows="5" placeholder={"Write 4^4 as repeated multiplication | 4*4*4*4"} className="rounded-lg bg-slate-900 p-3 text-white" />
+          <textarea value={rawQuestions} onChange={(event) => setRawQuestions(event.target.value)} rows="5" placeholder={"Write 4^4 as repeated multiplication | 4*4*4*4"} className="rounded-lg bg-slate-900 p-3 text-white" />
+        </label>
+        <fieldset className="grid gap-3 rounded-xl border border-cyan-400/50 bg-slate-900 p-4">
+          <legend className="px-2 text-sm font-bold text-cyan-300">Parts / Sections</legend>
+          <p className="text-xs text-slate-300">Give each group its own instruction. Questions use <code>prompt | answer</code>.</p>
+          {parts.map((part, index) => (
+            <div key={part.id} className="grid gap-2 rounded-lg border border-slate-700 p-3">
+              <label className="grid gap-1 text-xs font-bold">Part {index + 1} title
+                <input value={part.title} onChange={(event) => updatePart(part.id, "title", event.target.value)} className="rounded-lg bg-slate-800 p-2 text-white" />
+              </label>
+              <label className="grid gap-1 text-xs font-bold">Part instruction
+                <textarea value={part.instruction} onChange={(event) => updatePart(part.id, "instruction", event.target.value)} rows="2" className="rounded-lg bg-slate-800 p-2 text-white" />
+              </label>
+              <label className="grid gap-1 text-xs font-bold">Part questions
+                <textarea value={part.rawQuestions || ""} onChange={(event) => updatePart(part.id, "rawQuestions", event.target.value)} rows="3" className="rounded-lg bg-slate-800 p-2 text-white" placeholder="Prompt | answer" />
+              </label>
+            </div>
+          ))}
+          <button type="button" onClick={addPart} className="rounded-lg border border-cyan-400 px-3 py-2 font-bold text-cyan-200">New Part/Section</button>
+        </fieldset>
+        <label className="grid gap-1 text-sm font-bold">Optional worksheet JSON
+          <textarea value={jsonInput} onChange={(event) => setJsonInput(event.target.value)} rows="4" className="rounded-lg bg-slate-900 p-3 font-mono text-sm text-white" placeholder={'{"schemaVersion":2,"parts":[{"title":"Part A","instruction":"Write the exponent","questions":[{"prompt":"4^3","correctAnswer":"64","acceptedAnswers":["64"]}]}]}'}/>
+          <span className="text-xs font-normal text-slate-400">Import parts, instructions, questions, and answer keys. Review is still required before publishing.</span>
         </label>
         {reviewQuestions.length > 0 && (
           <fieldset className="grid gap-3 rounded-xl border border-amber-400/50 bg-slate-900 p-4">
@@ -117,6 +178,14 @@ export default function WorksheetBuilderCard({ availableSections = [] }) {
             {reviewQuestions.map((question, index) => (
               <div key={question.id} className="grid gap-2 rounded-lg border border-slate-700 p-3">
                 <p className="text-xs font-bold text-slate-400">Question {index + 1} preview</p>
+                <label className="grid gap-1 text-xs font-bold">Verified prompt / LaTeX
+                  <textarea
+                    value={question.prompt || ""}
+                    onChange={(event) => updateReviewQuestion(question.id, "prompt", event.target.value)}
+                    rows="2"
+                    className="rounded-lg bg-slate-800 p-2 text-white"
+                  />
+                </label>
                 <MathExpression value={question.prompt} className="text-lg" />
                 <label className="grid gap-1 text-xs font-bold">Verified answer
                   <input value={question.correctAnswer || ""} onChange={(event) => updateReviewQuestion(question.id, "correctAnswer", event.target.value)} className="rounded-lg bg-slate-800 p-2 text-white" />
@@ -125,7 +194,18 @@ export default function WorksheetBuilderCard({ availableSections = [] }) {
             ))}
             <button type="button" onClick={async () => {
               try {
-                const worksheetId = reviewId || await createWorksheet({ title, instructions, section, dueDate, questions: reviewQuestions });
+                const reviewedParts = partData.map((part) => ({
+                  ...part,
+                  questions: reviewQuestions.filter((question) => question.partId === part.id),
+                })).filter((part) => part.questions.length > 0);
+                const worksheetId = reviewId || await createWorksheet({
+                  title,
+                  instructions,
+                  section,
+                  dueDate,
+                  questions: reviewQuestions,
+                  parts: reviewedParts,
+                });
                 setReviewId(worksheetId);
                 await publishWorksheet(worksheetId);
                 setTitle("");

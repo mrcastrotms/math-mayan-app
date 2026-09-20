@@ -1,8 +1,10 @@
 export function normalizeWorksheetAnswer(value) {
   return String(value ?? "")
     .toLowerCase()
-    .replace(/x/g, "*")
-    .replace(/[×·]/g, "*")
+    .normalize("NFKC")
+    .replace(/[x×·⋅]/g, "*")
+    .replace(/[÷⁄]/g, "/")
+    .replace(/[−–—]/g, "-")
     .replace(/\s+/g, "")
     .replace(/,/g, "")
     .trim();
@@ -27,6 +29,10 @@ export function getWorksheetStatus(attempt, dueDate, now = Date.now()) {
 
 export function isWorksheetClosed(dueDate, now = Date.now()) {
   return Boolean(dueDate && new Date(dueDate).getTime() <= now);
+}
+
+export function canAdvanceWorksheetQuestion(answer) {
+  return String(answer ?? "").trim().length > 0;
 }
 
 export function scoreWorksheet(questions = [], answers = {}) {

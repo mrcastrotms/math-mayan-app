@@ -114,6 +114,11 @@ export default function TeacherGradebookContainer({
         selectedIds={selectedIds}
         onToggleSelectRecord={handleToggleSelectRecord}
       />
+      {gradebook.gradebookError && (
+        <p role="alert" className="mx-auto mt-4 max-w-3xl rounded-lg bg-red-100 px-4 py-3 text-center font-semibold text-red-800">
+          {gradebook.gradebookError}
+        </p>
+      )}
 
       {gradebook.deleteConfirmation && (
         <PinModal
@@ -124,7 +129,6 @@ export default function TeacherGradebookContainer({
           description={gradebook.deleteConfirmation.description}
           showInput={gradebook.deleteConfirmation.showInput}
           placeholder={gradebook.deleteConfirmation.placeholder}
-          type={gradebook.deleteConfirmation.type}
           confirmColor={gradebook.deleteConfirmation.confirmColor}
           confirmText={gradebook.deleteConfirmation.confirmText}
         />

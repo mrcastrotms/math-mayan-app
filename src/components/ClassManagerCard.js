@@ -4,11 +4,11 @@ export default function ClassManagerCard({
  onDeleteSection,
 }) {
  return (
- <div className="bg-slate-800 p-8 rounded-2xl w-full max-w-4xl shadow-2xl border border-slate-700 mb-8">
+ <div className="w-full max-w-4xl rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-8 text-[var(--app-fg)] shadow-2xl">
  <h2 className="text-2xl font-bold mb-4 text-purple-400">
  Class Sections
  </h2>
- <p className="text-slate-400 mb-6 text-sm">
+ <p className="mb-6 text-sm opacity-75">
  Add or remove class sections
  </p>
  <div className="flex flex-wrap gap-4 items-center">

@@ -24,7 +24,7 @@ export async function saveExamResult(
 ) {
   if (!student) return;
   try {
-    await addDoc(collection(db, "exam_results"), {
+    const resultRef = await addDoc(collection(db, "exam_results"), {
       // Safely pull the typed name, fallback to "Unknown" if missing
       studentName:
         customStudentName?.trim() || student.name || "Unknown Student",
@@ -46,6 +46,7 @@ export async function saveExamResult(
       startTime: startTime || null,
       timestamp: serverTimestamp(),
     });
+    return resultRef.id;
   } catch (e) {
     console.error("Failed to save exam result:", e);
   }
