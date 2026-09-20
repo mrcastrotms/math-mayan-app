@@ -15,6 +15,9 @@ import ClassManagerCard from "./ClassManagerCard";
 import CloudCmsCard from "./CloudCmsCard";
 import QuestionCmsCard from "./QuestionCmsCard";
 import TeacherSectionModals from "./TeacherSectionModals";
+import ThemeToggle from "./ThemeToggle";
+import { useAppTheme } from "../hooks/useAppTheme";
+import { broadcastSectionTheme } from "../services/liveSyncService";
 
 export default function TeacherDashboard({
   setIsAdminMode,
@@ -27,6 +30,8 @@ export default function TeacherDashboard({
   const [selectedReport, setSelectedReport] = useState(null);
   const [showAddSectionModal, setShowAddSectionModal] = useState(false);
   const [sectionToDelete, setSectionToDelete] = useState(null);
+  const [themeMessage, setThemeMessage] = useState("");
+  const themeState = useAppTheme();
 
   const session = useTeacherSession();
   const gradebook = useGradebookData();
@@ -38,6 +43,26 @@ export default function TeacherDashboard({
     activeSection:
       session.selectedSessionSection || availableSections?.[0] || "",
   });
+  const activeSection =
+    session.selectedSessionSection || availableSections?.[0] || "";
+
+  const handleThemeBroadcast = async (locked) => {
+    try {
+      const count = await broadcastSectionTheme(
+        activeSection,
+        themeState.theme,
+        locked,
+      );
+      setThemeMessage(
+        locked
+          ? `${themeState.theme} theme locked for ${count} active student${count === 1 ? "" : "s"}.`
+          : "Student theme choices restored.",
+      );
+    } catch (error) {
+      console.error("Unable to broadcast theme override:", error);
+      setThemeMessage("Unable to update the theme lock.");
+    }
+  };
 
   const handleOpenGradebook = () => {
     setIsViewingGradebook(true);
@@ -89,9 +114,28 @@ export default function TeacherDashboard({
 
       <TeacherJailMonitor
         liveStudents={liveStudents}
-        activeSection={session.selectedSessionSection || availableSections?.[0]}
+        activeSection={activeSection}
         onSendCommand={sendCommand}
       />
+
+      <section className="w-full max-w-4xl bg-slate-800/90 border border-slate-700 rounded-2xl p-6 shadow-xl mb-6" aria-labelledby="theme-controls-title">
+        <h2 id="theme-controls-title" className="text-lg font-bold text-white mb-3">
+          Theme Enforcement
+        </h2>
+        <p className="text-sm text-slate-300 mb-4">
+          Broadcast the selected theme to active students in Section {activeSection || "All"}.
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <ThemeToggle theme={themeState.theme} changeTheme={themeState.changeTheme} />
+          <button type="button" onClick={() => handleThemeBroadcast(true)} className="rounded-lg bg-amber-600 px-4 py-2 font-bold text-white hover:bg-amber-500">
+            Lock Theme
+          </button>
+          <button type="button" onClick={() => handleThemeBroadcast(false)} className="rounded-lg bg-slate-600 px-4 py-2 font-bold text-white hover:bg-slate-500">
+            Release Lock
+          </button>
+        </div>
+        {themeMessage && <p role="status" className="mt-3 text-sm text-emerald-300">{themeMessage}</p>}
+      </section>
 
       <ClassManagerCard
         availableSections={availableSections}
