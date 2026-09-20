@@ -102,12 +102,12 @@ export default function TeacherDashboard({
   }
 
   return (
-    <div className="flex flex-col items-center justify-start pt-16 min-h-screen bg-[var(--app-bg)] text-[var(--app-fg)] p-8 relative font-sans w-full z-50 absolute top-0 left-0 overflow-y-auto">
+    <div className="flex min-h-screen w-full flex-col items-center justify-start gap-6 overflow-y-auto bg-[var(--app-bg)] p-8 pt-16 font-sans text-[var(--app-fg)] relative z-50 absolute top-0 left-0">
       <h1 className="text-4xl font-bold mb-8 text-blue-400">
         Teacher Dashboard
       </h1>
 
-      <div className="flex gap-6 w-full max-w-4xl justify-center mb-6">
+      <div className="flex w-full max-w-4xl flex-wrap justify-center gap-6">
         <SessionGeneratorCard
           generatedCode={session.generatedCode}
           selectedSessionSection={session.selectedSessionSection}
@@ -134,7 +134,7 @@ export default function TeacherDashboard({
       <AttendanceBook availableSections={availableSections} onOpenHistory={() => setIsViewingAttendanceHistory(true)} />
       <BehaviorBook onOpenHistory={() => setIsViewingAttendanceHistory(true)} />
 
-      <section className="w-full max-w-4xl bg-[var(--app-surface)] border border-[var(--app-border)] rounded-2xl p-6 shadow-xl mb-6" aria-labelledby="theme-controls-title">
+      <section className="w-full max-w-4xl rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-xl" aria-labelledby="theme-controls-title">
         <h2 id="theme-controls-title" className="text-lg font-bold mb-3">
           Theme Enforcement
         </h2>

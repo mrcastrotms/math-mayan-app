@@ -316,6 +316,11 @@ with merits, demerits, and relative values scores per student, and supports
 exact-date and grade filters. Its attendance trend graph summarizes qualifying
 students by day so historical reports remain available after the current day.
 
+Teacher Dashboard cards share the active theme surface, border, and foreground
+tokens, and the dashboard uses a consistent gap between every card. The
+historical report is centered in its own responsive page shell; fixed-width
+tables scroll inside the report rather than widening the dashboard.
+
 ## 🛡️ Git Workflow & Branch Protections
 
 - Direct pushes to `develop` and `main` are disabled.
