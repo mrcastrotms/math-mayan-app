@@ -165,6 +165,28 @@ npm run test:unit
 npx playwright test tests/theme-accessibility.spec.js
 ```
 
+### Assigned classwork
+
+Teachers can post section-specific worksheets from **Teacher Dashboard > Assign
+Classwork**. Enter one question per line as `prompt | answer`, choose a due
+date/time, and post it to Firestore's `worksheets` collection. Students see
+matching work in **Assigned Work** on phones and desktop layouts. Answers are
+debounced and saved to `worksheet_attempts/{worksheetId}_{studentId}`, so
+students can leave after any question and resume later on another device using
+the same device identity.
+
+Submitting (or reaching the deadline) scores every question, records partial
+completion, and writes a `Classwork` entry to `exam_results`; the existing
+Gradebook activity filter therefore includes worksheet grades without a second
+grading path. Closed assignments cannot be edited or submitted.
+
+The builder also accepts a phone camera or image upload. The image is sent to
+`/api/worksheets/digitize`, where Gemini Vision returns editable question
+records; teachers must review the generated prompt and answer text before
+posting. Student worksheets provide up to four Socratic hints per saved
+attempt, disable the hint action after the quota, and save the hint count with
+the attempt. The existing `/api/hint` service is used for the hint response.
+
 ## 🛡️ Git Workflow & Branch Protections
 
 - Direct pushes to `develop` and `main` are disabled.
