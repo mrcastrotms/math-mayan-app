@@ -6,6 +6,7 @@ import {
   onSnapshot,
   setDoc,
   updateDoc,
+  deleteDoc,
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../firebase";
@@ -54,4 +55,9 @@ export function subscribeToBehavior(onUpdate, onError) {
     (snapshot) => onUpdate(snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))),
     onError,
   );
+}
+
+export async function deleteBehaviorRecords(records = []) {
+  if (!db) return;
+  await Promise.all(records.filter((record) => record?.id).map((record) => deleteDoc(doc(db, "behavior_records", record.id))));
 }

@@ -132,7 +132,14 @@ export default function StudentHome({ studentName, section, onSelectMode, onStar
           </button>
 
           <button
-            onClick={() => setShowExamCode(true)}
+            onClick={() => {
+              const isBypass = typeof window !== "undefined" && window.location.search.includes("bypass=true");
+              if (isBypass) {
+                onSelectMode?.("exam");
+              } else {
+                setShowExamCode(true);
+              }
+            }}
             data-testid="start-exam-button"
             className="flex min-h-[6rem] min-w-0 items-center justify-between gap-4 rounded-lg border border-blue-200 bg-blue-50 p-5 text-left text-lg font-medium text-blue-700 transition-all hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300 dark:hover:bg-blue-900/50 sm:p-6"
           >

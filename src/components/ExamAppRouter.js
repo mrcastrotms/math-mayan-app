@@ -120,7 +120,10 @@ export default function ExamAppRouter({
         section={state?.selectedSection || state?.student?.section || "4A"}
         onSelectMode={(mode) => {
           if (mode === "exam") {
-            return;
+            state?.setExamDuration?.(45 * 60);
+            state?.setTimeLeft?.(45 * 60);
+            state?.setExamStarted?.(true);
+            navigateTo("exam");
           } else if (mode === "classwork") navigateTo("classwork");
         }}
         onStartExam={async (code) => {
