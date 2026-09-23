@@ -37,6 +37,7 @@ export default function ExamGate({
   const [showCodeField, setShowCodeField] = useState(false);
   const [accessCode, setAccessCode] = useState("");
   const [deviceMeta, setDeviceMeta] = useState({ uuid: "", mdns: "" });
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const lastTapRef = useRef(0);
   const theme = activeThemeState.theme === "default" ? "standard" : activeThemeState.theme;
@@ -59,7 +60,6 @@ export default function ExamGate({
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      const cached = localStorage.getItem("exam_student_name");
       let uuid = localStorage.getItem("exam_device_uuid");
       if (!uuid) {
         uuid = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
@@ -67,10 +67,34 @@ export default function ExamGate({
           : "dev-" + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
         localStorage.setItem("exam_device_uuid", uuid);
       }
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDeviceMeta((prev) => ({ ...prev, uuid }));
+
+      const handleFullscreenChange = () => {
+        setIsFullscreen(Boolean(document.fullscreenElement));
+      };
+      document.addEventListener("fullscreenchange", handleFullscreenChange);
+      return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
     } catch (_) {}
   }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.error(`Error attempting fullscreen: ${err.message}`);
+      });
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  };
+
+  const handleDoubleClick = (e) => {
+    const mainCard = document.getElementById("select-section-card");
+    if (mainCard && !mainCard.contains(e.target)) {
+      toggleFullscreen();
+    }
+  };
 
   const handleLabelInteraction = (e) => {
     e.preventDefault();
@@ -135,28 +159,49 @@ export default function ExamGate({
   };
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: current.bg, color: current.text, display: "flex", flexDirection: "column", alignItems: "center", padding: "24px 16px", fontFamily: "monospace" }}>
-      <div style={{ width: "100%", maxWidth: "520px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", fontSize: "0.85rem" }}>
+    <div 
+      style={{ minHeight: "100vh", backgroundColor: current.bg, color: current.text, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px 16px", fontFamily: "monospace" }}
+      onDoubleClick={handleDoubleClick}
+    >
+      <div style={{ position: "absolute", top: "16px", right: "24px", left: "24px", maxWidth: "520px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.85rem" }}>
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          {[["standard", "Standard"], ["dark", "Dark"], ["sepia", "Sepia"], ["contrast", "High Contrast"]].map(([value, label]) => (
-            <button key={value} type="button" aria-pressed={theme === value} disabled={activeThemeState.themeLocked} onClick={() => activeThemeState.changeTheme(value === "standard" ? "default" : value)} style={{ background: theme === value ? current.border : "transparent", border: `1px solid ${current.border}`, color: current.text, padding: "4px 8px", borderRadius: "4px", cursor: activeThemeState.themeLocked ? "not-allowed" : "pointer", textTransform: "capitalize", opacity: activeThemeState.themeLocked ? 0.6 : 1 }}>
-              {label}
-            </button>
-          ))}
-          {activeThemeState.themeLocked && <span role="status" style={{ color: current.textDim }}>Theme locked by teacher</span>}
+          <select
+            value={theme}
+            disabled={activeThemeState.themeLocked}
+            onChange={(e) => activeThemeState.changeTheme(e.target.value === "standard" ? "default" : e.target.value)}
+            aria-label="Choose theme"
+            style={{ background: current.card, border: `1px solid ${current.border}`, color: current.text, padding: "4px 8px", borderRadius: "4px", cursor: activeThemeState.themeLocked ? "not-allowed" : "pointer", opacity: activeThemeState.themeLocked ? 0.6 : 1, fontFamily: "inherit", fontSize: "inherit" }}
+          >
+            <option value="standard">Standard</option>
+            <option value="dark">Dark</option>
+            <option value="sepia">Sepia</option>
+            <option value="contrast">High Contrast</option>
+          </select>
+
+          {activeThemeState.themeLocked && <span role="status" style={{ color: current.textDim, fontSize: "0.75rem" }}>Locked</span>}
+
           <button type="button" onClick={handleHardReset} style={{ background: "transparent", border: `1px solid ${current.border}`, color: current.textDim, padding: "4px 8px", borderRadius: "4px", cursor: "pointer", fontSize: "0.75rem" }} title="Clear cached session">
             Reset Session
           </button>
+
+          <button type="button" onClick={toggleFullscreen} style={{ background: "transparent", border: `1px solid ${current.border}`, color: current.text, padding: "4px 8px", borderRadius: "4px", cursor: "pointer", fontSize: "0.75rem" }} title="Toggle Fullscreen">
+            {isFullscreen ? "Exit Fullscreen" : "Fullscreen ⛶"}
+          </button>
         </div>
+
         <button type="button" onClick={onOpenDashboard} style={{ background: "transparent", border: "none", cursor: "pointer", color: current.accent, fontWeight: "bold", fontFamily: "inherit", fontSize: "inherit" }}>
           Welcome
         </button>
       </div>
 
-      <div style={{ width: "100%", maxWidth: "520px", background: current.card, border: `1px solid ${current.border}`, borderRadius: "12px", padding: "32px 24px", boxShadow: "0 8px 24px rgba(0,0,0,0.3)" }}>
+      <div 
+        id="select-section-card"
+        style={{ width: "100%", maxWidth: "520px", background: current.card, border: `1px solid ${current.border}`, borderRadius: "12px", padding: "32px 24px", boxShadow: "0 8px 24px rgba(0,0,0,0.3)", marginTop: "40px" }}
+      >
         <div style={{ marginBottom: "20px" }}>
           <span style={{ fontSize: "0.8rem", color: current.textDim, textTransform: "uppercase" }}>mrcastro.vercel.app</span>
           <h2 style={{ fontSize: "1.35rem", fontWeight: 800, marginTop: "4px" }}>Select your section</h2>
+          <p style={{ fontSize: "0.75rem", color: current.textDim, marginTop: "2px" }}>Double-click anywhere outside this card to toggle fullscreen.</p>
         </div>
 
         <form onSubmit={handleStartExam} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
