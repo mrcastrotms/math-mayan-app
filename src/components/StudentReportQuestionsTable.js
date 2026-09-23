@@ -8,7 +8,7 @@ export default function StudentReportQuestionsTable({ answers = [] }) {
     : Object.entries(answers || {}).map(([question, studentInput]) => ({
         question,
         studentInput,
-        correctAnswer: "—",
+        correctAnswer: (ans.correctAnswer ?? ans.question?.correctAnswer ?? ans.correct_answer) ?? ans.question?.correctAnswer ?? ans.correct_answer ?? "—",
         isCorrect: false,
       }));
   return (
@@ -40,12 +40,12 @@ export default function StudentReportQuestionsTable({ answers = [] }) {
                   : String(rawQuestion ?? `Question ${idx + 1}`);
 
               const rawCorrect =
-                typeof ans.correctAnswer === "object" &&
-                ans.correctAnswer !== null
-                  ? ans.correctAnswer.answer ||
-                    ans.correctAnswer.value ||
-                    JSON.stringify(ans.correctAnswer)
-                  : (ans.correctAnswer ?? "—");
+                typeof (ans.correctAnswer ?? ans.question?.correctAnswer ?? ans.correct_answer) === "object" &&
+                (ans.correctAnswer ?? ans.question?.correctAnswer ?? ans.correct_answer) !== null
+                  ? (ans.correctAnswer ?? ans.question?.correctAnswer ?? ans.correct_answer).answer ||
+                    (ans.correctAnswer ?? ans.question?.correctAnswer ?? ans.correct_answer).value ||
+                    JSON.stringify((ans.correctAnswer ?? ans.question?.correctAnswer ?? ans.correct_answer))
+                  : ((ans.correctAnswer ?? ans.question?.correctAnswer ?? ans.correct_answer) ?? "—");
               const displayCorrect = String(rawCorrect);
 
               const rawObs =
