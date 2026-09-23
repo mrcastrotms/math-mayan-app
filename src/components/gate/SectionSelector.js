@@ -17,9 +17,7 @@ export default function SectionSelector({
           marginBottom: "8px",
           color: currentTheme.textDim,
         }}
-      >
-        Select your class section:
-      </label>
+      ></label>
       <div
         style={{
           display: "grid",
