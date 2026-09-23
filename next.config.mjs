@@ -15,14 +15,36 @@ function getDynamicVersion() {
   let commitCount = 0;
   let majorBumps = 0;
 
+  // 1. Try to unshallow if building inside a shallow CI environment
   try {
-    // 1. Total commits count for decimal increments
+    const isShallow = execSync("git rev-parse --is-shallow-repository", { encoding: "utf8" }).trim() === "true";
+    if (isShallow) {
+      execSync("git fetch --unshallow https://github.com/mrcastrotms/math-mayan-app.git develop", { stdio: "ignore" });
+    }
+  } catch (_) {}
+
+  // 2. Count commits from local git history
+  try {
     const countStr = execSync("git rev-list --count HEAD", { encoding: "utf8" }).trim();
     commitCount = parseInt(countStr, 10) || 0;
   } catch (_) {}
 
+  // 3. Fallback for Vercel shallow clones (<= 15): Query GitHub's API Link header for the real total
+  if (commitCount <= 15) {
+    try {
+      const headers = execSync(
+        'curl -sI -H "User-Agent: node-build" "https://api.github.com/repos/mrcastrotms/math-mayan-app/commits?per_page=1"',
+        { encoding: "utf8" }
+      );
+      const match = headers.match(/[?&]page=(\d+)[^>]*>;\s*rel="last"/);
+      if (match && match[1]) {
+        commitCount = parseInt(match[1], 10);
+      }
+    } catch (_) {}
+  }
+
+  // 4. Calculate major version shifts from 3000+ LOC commits
   try {
-    // 2. Inspect git log shortstats for massive shifts (>= 3000 LOC insertions + deletions)
     const logStats = execSync('git log -n 100 --shortstat --oneline', { encoding: "utf8" });
     const lines = logStats.split("\n");
     for (const line of lines) {
@@ -34,15 +56,17 @@ function getDynamicVersion() {
     }
   } catch (_) {}
 
-  // Whole number bumps on 3000+ LOC changes, decimals increment with commits
   const major = baseMajor + majorBumps;
   const minor = baseMinor;
-  const patch = commitCount > 0 ? commitCount : parts[2] || 0;
+  const patch = commitCount > 0 ? commitCount : (parts[2] || 0);
 
   return `v${major}.${minor}.${patch}`;
 }
 
 const appVersion = getDynamicVersion();
+
+// Explicitly bind to process.env for Turbopack & Webpack replacement
+process.env.NEXT_PUBLIC_APP_VERSION = appVersion;
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
