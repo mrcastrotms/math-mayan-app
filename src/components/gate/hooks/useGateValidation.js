@@ -49,11 +49,14 @@ export function useGateValidation({
   const validateAndResolve = async () => {
     const trimmed = (studentName || storedName || "").trim();
     if (!trimmed) {
-      window.alert("Please enter a name.");
-      return null;
+      return {
+        isValid: false,
+        title: "Name Required",
+        error: "Please write your name to get started.",
+      };
     }
 
-    // Secret test bypass: code 00000 allows ANY name to pass as a dummy run
+    // Secret test bypass: code 00000 allows ANY name for dummy run
     const isTester = Boolean(showCodeField && accessCode === "00000");
 
     if (isTester) {
@@ -64,16 +67,22 @@ export function useGateValidation({
       };
     }
 
-    // Normal student flow: enforce roster match
+    // Normal student flow: roster match validation
     if (sectionRoster.length === 0) {
-      window.alert("Roster is still loading. Please wait a moment and try again.");
-      return null;
+      return {
+        isValid: false,
+        title: "Loading Roster",
+        error: "The roster is still loading. Please wait a moment and try again.",
+      };
     }
 
     const match = matchStudentToRoster(trimmed, sectionRoster);
     if (!match?.matched || !match.officialName) {
-      window.alert("Name not found in this section's official roster. Please select your correct name.");
-      return null;
+      return {
+        isValid: false,
+        title: "Name Not Found",
+        error: "Please write your name correctly as it appears on your section's official roster.",
+      };
     }
 
     return {
