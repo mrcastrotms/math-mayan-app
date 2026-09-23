@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 
 export default function ReleaseHistoryModal({
   isOpen,
@@ -15,53 +15,38 @@ export default function ReleaseHistoryModal({
   const [commits, setCommits] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (!isOpen) {
-      setPin("");
-      setIsUnlocked(false);
-      setErrorMsg("");
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isUnlocked) return;
-    let isCancelled = false;
-
-    async function fetchHistory() {
-      setLoading(true);
-      try {
-        const res = await fetch(
-          "https://api.github.com/repos/mrcastrotms/math-mayan-app/commits?per_page=10"
-        );
-        if (!res.ok) throw new Error("Failed to fetch commit log");
-        const data = await res.json();
-        if (!isCancelled) {
-          setCommits(data || []);
-        }
-      } catch (err) {
-        if (!isCancelled) {
-          setErrorMsg("Could not load release history from GitHub.");
-        }
-      } finally {
-        if (!isCancelled) setLoading(false);
-      }
-    }
-
-    fetchHistory();
-    return () => {
-      isCancelled = true;
-    };
-  }, [isUnlocked]);
-
   if (!isOpen) return null;
 
-  const handleVerify = (e) => {
+  const handleClose = () => {
+    setPin("");
+    setIsUnlocked(false);
+    setErrorMsg("");
+    setCommits([]);
+    onClose();
+  };
+
+  const handleVerify = async (e) => {
     e.preventDefault();
-    if (pin.trim() === "00000") {
-      setIsUnlocked(true);
-      setErrorMsg("");
-    } else {
+    if (pin.trim() !== "00000") {
       setErrorMsg("Invalid authorization code.");
+      return;
+    }
+
+    setIsUnlocked(true);
+    setErrorMsg("");
+    setLoading(true);
+
+    try {
+      const res = await fetch(
+        "https://api.github.com/repos/mrcastrotms/math-mayan-app/commits?per_page=10"
+      );
+      if (!res.ok) throw new Error("Failed to fetch commit log");
+      const data = await res.json();
+      setCommits(data || []);
+    } catch (_) {
+      setErrorMsg("Could not load release history from GitHub.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -79,7 +64,7 @@ export default function ReleaseHistoryModal({
         zIndex: 110,
         fontFamily: "monospace",
       }}
-      onClick={onClose}
+      onClick={handleClose}
     >
       <div
         style={{
@@ -107,7 +92,7 @@ export default function ReleaseHistoryModal({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             style={{
               background: "transparent",
               border: `1px solid ${currentTheme.border}`,

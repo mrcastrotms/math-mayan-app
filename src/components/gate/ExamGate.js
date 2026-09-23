@@ -39,7 +39,24 @@ export default function ExamGate({
   const activeThemeState = themeState || localThemeState;
   const [showCodeField, setShowCodeField] = useState(false);
   const [accessCode, setAccessCode] = useState("");
-  const [deviceMeta, setDeviceMeta] = useState({ uuid: "", mdns: "" });
+  
+  // Lazy initialize device UUID without triggering synchronous setState in useEffect
+  const [deviceMeta] = useState(() => {
+    if (typeof window === "undefined") return { uuid: "", mdns: "" };
+    try {
+      let uuid = localStorage.getItem("exam_device_uuid");
+      if (!uuid) {
+        uuid = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : "dev-" + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+        localStorage.setItem("exam_device_uuid", uuid);
+      }
+      return { uuid, mdns: "" };
+    } catch (_) {
+      return { uuid: "", mdns: "" };
+    }
+  });
+
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [modalState, setModalState] = useState({ isOpen: false, title: "", message: "" });
   const [isReleaseModalOpen, setIsReleaseModalOpen] = useState(false);
@@ -64,13 +81,14 @@ export default function ExamGate({
   const displayGreetingName = resolvedOfficialName || storedName;
 
   useEffect(() => {
+    let isCancelled = false;
     async function checkCiHealth() {
       try {
         const res = await fetch("https://api.github.com/repos/mrcastrotms/math-mayan-app/actions/runs?per_page=1");
         if (!res.ok) return;
         const data = await res.json();
         const latestRun = data?.workflow_runs?.[0];
-        if (latestRun) {
+        if (!isCancelled && latestRun) {
           if (latestRun.conclusion === "failure") {
             setCiStatus("failure");
           } else if (latestRun.conclusion === "success") {
@@ -82,26 +100,18 @@ export default function ExamGate({
       } catch (_) {}
     }
     checkCiHealth();
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    try {
-      let uuid = localStorage.getItem("exam_device_uuid");
-      if (!uuid) {
-        uuid = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-          ? crypto.randomUUID()
-          : "dev-" + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
-        localStorage.setItem("exam_device_uuid", uuid);
-      }
-      setDeviceMeta((prev) => ({ ...prev, uuid }));
-
-      const handleFullscreenChange = () => {
-        setIsFullscreen(Boolean(document.fullscreenElement));
-      };
-      document.addEventListener("fullscreenchange", handleFullscreenChange);
-      return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
-    } catch (_) {}
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
 
   const toggleFullscreen = () => {
@@ -231,7 +241,6 @@ export default function ExamGate({
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span style={{ fontSize: "0.8rem", color: current.textDim, textTransform: "uppercase" }}>mrcastro.vercel.app</span>
               
-              {/* Release Badge: Double-click to inspect release history */}
               <span 
                 onDoubleClick={(e) => {
                   e.stopPropagation();
@@ -288,13 +297,15 @@ export default function ExamGate({
         currentTheme={current}
       />
 
-      <ReleaseHistoryModal
-        isOpen={isReleaseModalOpen}
-        onClose={() => setIsReleaseModalOpen(false)}
-        currentTheme={current}
-        currentSha={commitSha}
-        currentVersion={appVersion}
-      />
+      {isReleaseModalOpen && (
+        <ReleaseHistoryModal
+          isOpen={isReleaseModalOpen}
+          onClose={() => setIsReleaseModalOpen(false)}
+          currentTheme={current}
+          currentSha={commitSha}
+          currentVersion={appVersion}
+        />
+      )}
     </div>
   );
 }
