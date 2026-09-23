@@ -95,7 +95,7 @@ export default function ExamAppRouter({
       <FinishedScreen
         student={state?.student}
         selectedSection={state?.selectedSection || state?.student?.section}
-        finalScore={state?.calculateFinalScore ? state.calculateFinalScore() : 70}
+        finalScore={(() => { try { return state?.calculateFinalScore ? state.calculateFinalScore() : 70; } catch(e) { return 0; } })()}
         isSaving={state?.isSaving}
         handleReturnHome={() => {
           state?.setExamFinished?.(false);
