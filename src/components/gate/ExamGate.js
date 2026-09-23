@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import SectionSelector from "./SectionSelector";
 import StudentRosterInput from "./StudentRosterInput";
 import TeacherPinGate from "./TeacherPinGate";
+import ExamHeaderControls from "./ExamHeaderControls";
 import { useGateValidation } from "./hooks/useGateValidation";
 import { useAppTheme } from "../../hooks/useAppTheme";
 
@@ -77,22 +78,22 @@ export default function ExamGate({
     } catch (_) {}
   }, []);
 
+  // One-way fullscreen toggle (only enters, never exits via UI)
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch((err) => {
         console.error(`Error attempting fullscreen: ${err.message}`);
       });
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      }
     }
   };
 
+  // Double-click outside main card triggers fullscreen entry only
   const handleDoubleClick = (e) => {
     const mainCard = document.getElementById("select-section-card");
     if (mainCard && !mainCard.contains(e.target)) {
-      toggleFullscreen();
+      if (!document.fullscreenElement) {
+        toggleFullscreen();
+      }
     }
   };
 
@@ -163,36 +164,15 @@ export default function ExamGate({
       style={{ minHeight: "100vh", backgroundColor: current.bg, color: current.text, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px 16px", fontFamily: "monospace" }}
       onDoubleClick={handleDoubleClick}
     >
-      <div style={{ position: "absolute", top: "16px", right: "24px", left: "24px", maxWidth: "520px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.85rem" }}>
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          <select
-            value={theme}
-            disabled={activeThemeState.themeLocked}
-            onChange={(e) => activeThemeState.changeTheme(e.target.value === "standard" ? "default" : e.target.value)}
-            aria-label="Choose theme"
-            style={{ background: current.card, border: `1px solid ${current.border}`, color: current.text, padding: "4px 8px", borderRadius: "4px", cursor: activeThemeState.themeLocked ? "not-allowed" : "pointer", opacity: activeThemeState.themeLocked ? 0.6 : 1, fontFamily: "inherit", fontSize: "inherit" }}
-          >
-            <option value="standard">Standard</option>
-            <option value="dark">Dark</option>
-            <option value="sepia">Sepia</option>
-            <option value="contrast">High Contrast</option>
-          </select>
-
-          {activeThemeState.themeLocked && <span role="status" style={{ color: current.textDim, fontSize: "0.75rem" }}>Locked</span>}
-
-          <button type="button" onClick={handleHardReset} style={{ background: "transparent", border: `1px solid ${current.border}`, color: current.textDim, padding: "4px 8px", borderRadius: "4px", cursor: "pointer", fontSize: "0.75rem" }} title="Clear cached session">
-            Reset Session
-          </button>
-
-          <button type="button" onClick={toggleFullscreen} style={{ background: "transparent", border: `1px solid ${current.border}`, color: current.text, padding: "4px 8px", borderRadius: "4px", cursor: "pointer", fontSize: "0.75rem" }} title="Toggle Fullscreen">
-            {isFullscreen ? "Exit Fullscreen" : "Fullscreen ⛶"}
-          </button>
-        </div>
-
-        <button type="button" onClick={onOpenDashboard} style={{ background: "transparent", border: "none", cursor: "pointer", color: current.accent, fontWeight: "bold", fontFamily: "inherit", fontSize: "inherit" }}>
-          Welcome
-        </button>
-      </div>
+      <ExamHeaderControls
+        theme={theme}
+        activeThemeState={activeThemeState}
+        current={current}
+        onHardReset={handleHardReset}
+        isFullscreen={isFullscreen}
+        toggleFullscreen={toggleFullscreen}
+        onOpenDashboard={onOpenDashboard}
+      />
 
       <div 
         id="select-section-card"
@@ -201,7 +181,7 @@ export default function ExamGate({
         <div style={{ marginBottom: "20px" }}>
           <span style={{ fontSize: "0.8rem", color: current.textDim, textTransform: "uppercase" }}>mrcastro.vercel.app</span>
           <h2 style={{ fontSize: "1.35rem", fontWeight: 800, marginTop: "4px" }}>Select your section</h2>
-          <p style={{ fontSize: "0.75rem", color: current.textDim, marginTop: "2px" }}>Double-click anywhere outside this card to toggle fullscreen.</p>
+          <p style={{ fontSize: "0.75rem", color: current.textDim, marginTop: "2px" }}>Double-click anywhere outside this card to enter fullscreen.</p>
         </div>
 
         <form onSubmit={handleStartExam} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
