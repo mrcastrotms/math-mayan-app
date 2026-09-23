@@ -26,7 +26,10 @@ export function useExamRemoteCommands({ stateRef, student, currentQuestionIndex 
         curr?.setMerits?.((prev) => (prev || 0) + 1);
       },
       FORCE_FINISH: () => {
-        stateRef.current?.handleFinishExam?.();
+        const curr = stateRef.current;
+        if (curr?.examFinished || curr?.isSubmitting || curr?.hasForceFinished) return;
+        if (curr) curr.hasForceFinished = true;
+        curr?.handleFinishExam?.();
       },
       FORCE_FULLSCREEN: () => {
         if (!document.fullscreenElement) {
