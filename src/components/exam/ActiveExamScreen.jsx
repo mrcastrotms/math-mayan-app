@@ -79,7 +79,7 @@ export default function ActiveExamScreen({ state, navigateTo, adminPanel, themeS
     if (typeof state?.handleFinishExam === "function") {
       await state.handleFinishExam();
     }
-    navigateTo("student-home");
+    // navigateTo("student-home");
   };
 
   const handleTimerDoubleClick = () => {
@@ -196,7 +196,7 @@ export default function ActiveExamScreen({ state, navigateTo, adminPanel, themeS
           )}
         </div>
 
-        <div className="flex w-72 shrink-0 flex-col gap-3">
+        <div className="flex w-80 shrink-0 flex-col gap-3">
         <div className="shrink-0 rounded-xl border border-slate-200 bg-white p-3 text-center shadow-sm">
           <div className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-400">
             Answer
