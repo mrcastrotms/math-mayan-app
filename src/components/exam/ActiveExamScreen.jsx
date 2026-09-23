@@ -75,7 +75,7 @@ export default function ActiveExamScreen({ state, navigateTo, adminPanel }) {
     if (typeof state?.handleFinishExam === "function") {
       await state.handleFinishExam();
     }
-    navigateTo("student-home");
+    // navigateTo("student-home");
   };
 
   const handleTimerDoubleClick = () => {
