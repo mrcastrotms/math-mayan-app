@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import CommandModal from "./CommandModal";
+import StudentProgressModal from "./StudentProgressModal";
 
 export default function StudentCard({ student, onSendCommand }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isProgressOpen, setIsProgressOpen] = useState(false);
 
   return (
     <>
@@ -15,7 +17,7 @@ export default function StudentCard({ student, onSendCommand }) {
             : "bg-slate-900/80 border-slate-700 text-slate-200"
         }`}
       >
-        <div className="flex items-start justify-between gap-2 mb-3">
+        <div className="flex items-start justify-between gap-2 mb-3 cursor-pointer hover:bg-white/10 p-1.5 -m-1.5 rounded-lg transition" title="Click to view live exam progress" onClick={() => setIsProgressOpen(true)}>
           <div>
             <div className="font-bold text-sm text-white leading-tight">
               {student.name}
@@ -118,6 +120,7 @@ export default function StudentCard({ student, onSendCommand }) {
         onClose={() => setIsModalOpen(false)}
         onSendCommand={onSendCommand}
       />
+      <StudentProgressModal student={student} isOpen={isProgressOpen} onClose={() => setIsProgressOpen(false)} />
     </>
   );
 }
