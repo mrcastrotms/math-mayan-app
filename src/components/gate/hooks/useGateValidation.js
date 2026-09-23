@@ -39,16 +39,6 @@ export function useGateValidation({
     };
   }, [selectedSection]);
 
-  const isMrCastro = (name) => {
-    const normalized = (name || "").trim().toLowerCase();
-    return (
-      normalized === "mr. castro" ||
-      normalized === "mr castro" ||
-      normalized === "césar castro" ||
-      normalized === "cesar castro"
-    );
-  };
-
   const resolvedOfficialName = useMemo(() => {
     const target = studentName || storedName;
     if (!target || sectionRoster.length === 0) return "";
@@ -57,25 +47,49 @@ export function useGateValidation({
   }, [studentName, storedName, sectionRoster]);
 
   const validateAndResolve = async () => {
-    const trimmed = (studentName || "").trim();
-    if (!trimmed) return null;
+    const trimmed = (studentName || storedName || "").trim();
+    if (!trimmed) {
+      return {
+        isValid: false,
+        title: "Name Required",
+        error: "Please write your name to get started.",
+      };
+    }
 
-    const isTester = Boolean(
-      showCodeField && accessCode === "00000" && isMrCastro(trimmed),
-    );
+    // Secret test bypass: code 00000 allows ANY name for dummy run
+    const isTester = Boolean(showCodeField && accessCode === "00000");
 
-    let finalStudentName = trimmed;
-    if (!isTester && sectionRoster.length > 0) {
-      const match = matchStudentToRoster(trimmed, sectionRoster);
-      if (match?.matched && match.officialName) {
-        finalStudentName = match.officialName;
-      }
+    if (isTester) {
+      return {
+        isValid: true,
+        finalStudentName: trimmed,
+        isTester: true,
+      };
+    }
+
+    // Normal student flow: roster match validation
+    if (sectionRoster.length === 0) {
+      return {
+        isValid: false,
+        title: "Loading Roster",
+        error:
+          "The roster is still loading. Please wait a moment and try again.",
+      };
+    }
+
+    const match = matchStudentToRoster(trimmed, sectionRoster);
+    if (!match?.matched || !match.officialName) {
+      return {
+        isValid: false,
+        title: "Name Not Found",
+        error: "Please write your name correctly",
+      };
     }
 
     return {
       isValid: true,
-      finalStudentName,
-      isTester,
+      finalStudentName: match.officialName,
+      isTester: false,
     };
   };
 
