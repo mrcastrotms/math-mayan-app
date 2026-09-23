@@ -84,7 +84,11 @@ export default function ExamGate({
     let isCancelled = false;
     async function checkCiHealth() {
       try {
-        const res = await fetch("https://api.github.com/repos/mrcastrotms/math-mayan-app/actions/runs?per_page=1");
+        const fullSha = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || "";
+        const shaParam = fullSha ? "&head_sha=" + fullSha : "&branch=develop";
+        const res = await fetch(
+          "https://api.github.com/repos/mrcastrotms/math-mayan-app/actions/runs?per_page=1&event=push" + shaParam
+        );
         if (!res.ok) return;
         const data = await res.json();
         const latestRun = data?.workflow_runs?.[0];
@@ -257,8 +261,7 @@ export default function ExamGate({
                   alignItems: "center",
                   gap: "5px",
                   cursor: "pointer",
-                  userSelect: "none",
-                  border: `1px solid ${activeCi.border}`,
+                                    border: `1px solid ${activeCi.border}`,
                   backgroundColor: activeCi.bg,
                   color: activeCi.text,
                 }}
