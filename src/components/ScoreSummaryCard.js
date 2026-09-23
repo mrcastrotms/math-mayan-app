@@ -8,6 +8,7 @@ export default function ScoreSummaryCard({
   isSaving,
   handleReturnHome,
   demerits = 0,
+  reportId = "",
 }) {
   const handleEmailReport = () => {
     const studentName = student?.name || "Your student";
@@ -16,7 +17,12 @@ export default function ScoreSummaryCard({
     let bodyText = `Hello!\n\n${studentName} just finished their Math Assessment for Section ${selectedSection}.\n\n`;
     bodyText += `Final Score: ${finalScore}%\n`;
     if (demerits > 0) bodyText += `Demerits: ${demerits} (-${demerits * 5}%)\n`;
-    bodyText += `\nMr. Castro has the full detailed report saved in the Gradebook.\n\n- The Mayan School Math App`;
+    const reportUrl = reportId
+      ? `${window.location.origin}/?report=${encodeURIComponent(reportId)}`
+      : "";
+    bodyText += reportUrl
+      ? `\nView the complete report, itemized assessment, timing telemetry, and correction keys:\n${reportUrl}\n\n- The Mayan School Math App`
+      : `\nMr. Castro has the full detailed report saved in the Gradebook.\n\n- The Mayan School Math App`;
 
     const body = encodeURIComponent(bodyText);
     const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&su=${subject}&body=${body}`;
