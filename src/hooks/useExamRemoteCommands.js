@@ -21,6 +21,10 @@ export function useExamRemoteCommands({ stateRef, student, currentQuestionIndex 
           curr.setDemerits((prev) => (prev || 0) + 1);
         }
       },
+      ADD_MERIT: () => {
+        const curr = stateRef.current;
+        curr?.setMerits?.((prev) => (prev || 0) + 1);
+      },
       FORCE_FINISH: () => {
         stateRef.current?.handleFinishExam?.();
       },

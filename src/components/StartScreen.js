@@ -16,9 +16,12 @@ export default function StartScreen({
   availableSections = ["4A", "4B", "4C", "4D", "4E", "5B"],
   isLoading = false,
   children,
+  themeState,
 }) {
   const [showTeacherModal, setShowTeacherModal] = useState(false);
-  const { theme, changeTheme, getThemeClasses } = useAppTheme();
+  const localThemeState = useAppTheme();
+  const { theme, changeTheme, getThemeClasses, themeLocked } =
+    themeState || localThemeState;
 
   const styles = getThemeClasses() || {};
   const bgClass = styles.bg || "bg-slate-900 text-white";
@@ -88,7 +91,10 @@ export default function StartScreen({
       />
 
       <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
-        <ThemeToggle theme={theme} changeTheme={changeTheme} />
+        <ThemeToggle theme={theme} changeTheme={changeTheme} disabled={themeLocked} />
+        {themeLocked && (
+          <span role="status" className="sr-only">Theme locked by teacher</span>
+        )}
         <button
           type="button"
           onClick={() => {

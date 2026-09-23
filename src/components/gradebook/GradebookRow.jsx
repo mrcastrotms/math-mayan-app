@@ -12,6 +12,7 @@ export default function GradebookRow({
   record,
   index,
   isSelected,
+  duplicateInfo,
   onToggleSelect,
   onViewReport,
   onSoftDelete,
@@ -34,6 +35,22 @@ export default function GradebookRow({
     record.rawTypedName.trim().toLowerCase() !==
       displayName.trim().toLowerCase();
 
+  const getRowBackground = () => {
+    if (isSelected) {
+      return "bg-red-50/90 border-l-4 border-l-red-500";
+    }
+    if (duplicateInfo?.isDuplicate) {
+      if (duplicateInfo.isEarliest) {
+        return "bg-emerald-50/75 border-l-4 border-l-emerald-500 hover:bg-emerald-100/60 print:bg-transparent print:border-l-0";
+      }
+      return "bg-teal-50/90 border-l-4 border-l-teal-700 hover:bg-teal-100/70 print:bg-transparent print:border-l-0";
+    }
+    if (hasAttempt) {
+      return "hover:bg-slate-50";
+    }
+    return "bg-slate-50/40 text-slate-400 hover:bg-slate-100/50";
+  };
+
   return (
     <tr
       onDoubleClick={() => {
@@ -41,16 +58,10 @@ export default function GradebookRow({
           onToggleSelect?.(record.id);
         }
       }}
-      className={`border-b border-slate-100 transition-colors select-none cursor-pointer ${
-        isSelected
-          ? "bg-red-50/90 border-l-4 border-l-red-500"
-          : hasAttempt
-            ? "hover:bg-slate-50"
-            : "bg-slate-50/40 text-slate-400 hover:bg-slate-100/50"
-      }`}
+      className={`border-b border-slate-100 transition-colors select-none cursor-pointer ${getRowBackground()}`}
     >
       <td className="p-5 font-bold text-slate-800 text-lg">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-slate-400 font-medium">{index + 1}.</span>
           <span
             className={
@@ -64,6 +75,17 @@ export default function GradebookRow({
           {isSelected && (
             <span className="rounded bg-red-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
               Selected
+            </span>
+          )}
+          {duplicateInfo?.isDuplicate && (
+            <span
+              className={`print:hidden rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider border ${
+                duplicateInfo.isEarliest
+                  ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                  : "bg-teal-800 text-white border-teal-900 shadow-sm"
+              }`}
+            >
+              {duplicateInfo.badgeText}
             </span>
           )}
         </div>

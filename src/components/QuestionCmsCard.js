@@ -7,12 +7,12 @@ export default function QuestionCmsCard({
   onSyncCloud,
 }) {
   return (
-    <div className="bg-slate-800 p-8 rounded-2xl w-full max-w-4xl shadow-2xl border border-slate-700 mb-8 flex justify-between items-center flex-wrap gap-4">
+    <div className="flex w-full max-w-4xl flex-wrap items-center justify-between gap-4 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-8 text-[var(--app-fg)] shadow-2xl">
       <div>
         <h2 className="text-2xl font-bold mb-2 text-indigo-400">
           Question Bank
         </h2>
-        <p className="text-slate-400 text-sm">
+        <p className="text-sm opacity-75">
           Generate adaptive problems with Gemini
         </p>
       </div>

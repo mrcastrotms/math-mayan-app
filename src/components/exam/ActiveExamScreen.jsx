@@ -6,8 +6,12 @@ import AiHintModal from "../AiHintModal";
 import { useState } from "react";
 import ConfirmSubmitModal from "../ui/ConfirmSubmitModal";
 import TapeDiagramManipulative from "../manipulatives/TapeDiagramManipulative";
+import { useAppTheme } from "../../hooks/useAppTheme";
+import ThemeToggle from "../ThemeToggle";
 
-export default function ActiveExamScreen({ state, navigateTo, adminPanel }) {
+export default function ActiveExamScreen({ state, navigateTo, adminPanel, themeState }) {
+  const localThemeState = useAppTheme();
+  const activeThemeState = themeState || localThemeState;
   const [showAiHint, setShowAiHint] = useState(false);
   const [currentHintText, setCurrentHintText] = useState("");
   const [isHintLoading, setIsHintLoading] = useState(false);
@@ -112,7 +116,7 @@ export default function ActiveExamScreen({ state, navigateTo, adminPanel }) {
   };
 
   return (
-    <div className="relative flex h-screen flex-col overflow-hidden bg-slate-50">
+    <div className="exam-session-shell relative flex h-screen flex-col overflow-hidden bg-[var(--app-bg)] text-[var(--app-fg)]">
       <header className="flex h-14 shrink-0 items-center justify-between border-b bg-white px-4 shadow-sm">
         <div>
           <h1 className="text-lg font-bold leading-tight text-slate-800">
@@ -144,12 +148,24 @@ export default function ActiveExamScreen({ state, navigateTo, adminPanel }) {
           </p>
         </div>
 
+        <div className="flex items-center gap-3">
+        <ThemeToggle
+          theme={activeThemeState.theme}
+          changeTheme={activeThemeState.changeTheme}
+          disabled={activeThemeState.themeLocked}
+        />
+        {activeThemeState.themeLocked && (
+          <span role="status" className="text-xs font-semibold text-amber-700">
+            Theme locked by teacher
+          </span>
+        )}
         <button
           onClick={() => setIsModalOpen(true)}
           className="touch-manipulation rounded bg-green-600 px-4 py-1.5 text-sm font-bold text-white shadow-sm hover:bg-green-700 active:bg-green-800"
         >
           Finish Exam
         </button>
+        </div>
       </header>
 
       <main className="mx-auto flex w-full max-w-5xl flex-1 gap-4 overflow-hidden p-4">
@@ -200,6 +216,7 @@ export default function ActiveExamScreen({ state, navigateTo, adminPanel }) {
           handleSubmitQuestion={() => state?.handleSubmitQuestion?.()}
           handleFinishExam={() => setIsModalOpen(true)}
           timeLeft={timeLeft}
+          showExtendedKeys={state?.currentQ?.type === "exponent" || state?.activeActivityType === "classwork"}
         />
       </div>
       </main>

@@ -5,12 +5,14 @@ import SectionSelector from "./SectionSelector";
 import StudentRosterInput from "./StudentRosterInput";
 import TeacherPinGate from "./TeacherPinGate";
 import { useGateValidation } from "./hooks/useGateValidation";
+import { useAppTheme } from "../../hooks/useAppTheme";
 
 const DEFAULT_SECTIONS = ["4A", "4B", "4C", "4D", "4E", "5B"];
 
 const THEMES = {
   standard: { bg: "#f8fafc", card: "#ffffff", border: "#e2e8f0", text: "#0f172a", textDim: "#64748b", accent: "#2563eb" },
   sepia: { bg: "#fbf0d9", card: "#f4ecd8", border: "#d3c4a5", text: "#433422", textDim: "#79664f", accent: "#8f5922" },
+  dark: { bg: "#020617", card: "#0f172a", border: "#475569", text: "#f8fafc", textDim: "#cbd5e1", accent: "#60a5fa" },
   contrast: { bg: "#000000", card: "#0a0a0a", border: "#ffff00", text: "#ffffff", textDim: "#ffff00", accent: "#00ffff" },
 };
 
@@ -19,6 +21,7 @@ export default function ExamGate({
   isLoading = false,
   onExamStart,
   onOpenDashboard,
+  themeState,
 }) {
   const sections = availableSections.length > 0 ? availableSections : DEFAULT_SECTIONS;
 
@@ -29,19 +32,21 @@ export default function ExamGate({
     typeof window !== "undefined" ? localStorage.getItem("exam_student_name") || "" : ""
   ));
   const [selectedSectionState, setSelectedSection] = useState(sections[0] || "4A");
-  const [theme, setTheme] = useState("standard");
+  const localThemeState = useAppTheme();
+  const activeThemeState = themeState || localThemeState;
   const [showCodeField, setShowCodeField] = useState(false);
   const [accessCode, setAccessCode] = useState("");
   const [deviceMeta, setDeviceMeta] = useState({ uuid: "", mdns: "" });
 
   const lastTapRef = useRef(0);
+  const theme = activeThemeState.theme === "default" ? "standard" : activeThemeState.theme;
   const current = THEMES[theme] || THEMES.standard;
 
   const selectedSection = sections.includes(selectedSectionState)
     ? selectedSectionState
     : sections[0] || "4A";
 
-  const { rosterOptions, resolvedOfficialName, validateAndResolve } = useGateValidation({
+  const { resolvedOfficialName, validateAndResolve } = useGateValidation({
     studentName,
     storedName,
     selectedSection,
@@ -83,18 +88,29 @@ export default function ExamGate({
   };
 
   const handleHardReset = () => {
+    const resetCount = Number(sessionStorage.getItem("session_resets") || 0);
+    if (resetCount >= 2) {
+      const override = window.prompt("Reset limit reached. Enter teacher PIN:");
+      if (!["0801", "2026"].includes(override)) {
+        if (override !== null) window.alert("Incorrect PIN.");
+        return;
+      }
+    }
     try {
       if (typeof sessionStorage !== "undefined") sessionStorage.clear();
       if (typeof localStorage !== "undefined") {
         ["math_mayan_teacher", "exam_active_view", "activeExamSession", "exam_student_name"].forEach((k) => localStorage.removeItem(k));
       }
     } catch (_) {}
-    if (typeof window !== "undefined") window.location.href = window.location.pathname;
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("session_resets", String(resetCount + 1));
+      window.location.href = window.location.pathname;
+    }
   };
 
   const handleStartExam = async (e) => {
     e.preventDefault();
-    const result = validateAndResolve();
+    const result = await validateAndResolve();
     if (!result) return;
 
     try {
@@ -122,11 +138,12 @@ export default function ExamGate({
     <div style={{ minHeight: "100vh", backgroundColor: current.bg, color: current.text, display: "flex", flexDirection: "column", alignItems: "center", padding: "24px 16px", fontFamily: "monospace" }}>
       <div style={{ width: "100%", maxWidth: "520px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", fontSize: "0.85rem" }}>
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          {["standard", "sepia", "contrast"].map((t) => (
-            <button key={t} type="button" onClick={() => setTheme(t)} style={{ background: theme === t ? current.border : "transparent", border: `1px solid ${current.border}`, color: current.text, padding: "4px 8px", borderRadius: "4px", cursor: "pointer", textTransform: "capitalize" }}>
-              {t}
+          {[["standard", "Standard"], ["dark", "Dark"], ["sepia", "Sepia"], ["contrast", "High Contrast"]].map(([value, label]) => (
+            <button key={value} type="button" aria-pressed={theme === value} disabled={activeThemeState.themeLocked} onClick={() => activeThemeState.changeTheme(value === "standard" ? "default" : value)} style={{ background: theme === value ? current.border : "transparent", border: `1px solid ${current.border}`, color: current.text, padding: "4px 8px", borderRadius: "4px", cursor: activeThemeState.themeLocked ? "not-allowed" : "pointer", textTransform: "capitalize", opacity: activeThemeState.themeLocked ? 0.6 : 1 }}>
+              {label}
             </button>
           ))}
+          {activeThemeState.themeLocked && <span role="status" style={{ color: current.textDim }}>Theme locked by teacher</span>}
           <button type="button" onClick={handleHardReset} style={{ background: "transparent", border: `1px solid ${current.border}`, color: current.textDim, padding: "4px 8px", borderRadius: "4px", cursor: "pointer", fontSize: "0.75rem" }} title="Clear cached session">
             Reset Session
           </button>
@@ -144,7 +161,7 @@ export default function ExamGate({
 
         <form onSubmit={handleStartExam} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           <SectionSelector sections={sections} selectedSection={selectedSection} onSelectSection={setSelectedSection} currentTheme={current} />
-          <StudentRosterInput studentName={studentName} onChangeName={setStudentName} rosterOptions={rosterOptions} displayGreetingName={displayGreetingName} onResetUser={handleResetUser} onLabelInteraction={handleLabelInteraction} currentTheme={current} />
+          <StudentRosterInput studentName={studentName} onChangeName={setStudentName} displayGreetingName={displayGreetingName} onResetUser={handleResetUser} onLabelInteraction={handleLabelInteraction} currentTheme={current} />
           <TeacherPinGate showCodeField={showCodeField} accessCode={accessCode} onChangeAccessCode={setAccessCode} currentTheme={current} />
 
           <button type="submit" disabled={isLoading} style={{ padding: "16px", background: current.accent, color: "#ffffff", fontWeight: 800, fontSize: "1.1rem", letterSpacing: "1px", borderRadius: "8px", border: "none", cursor: isLoading ? "not-allowed" : "pointer", marginTop: "8px", opacity: isLoading ? 0.7 : 1 }}>

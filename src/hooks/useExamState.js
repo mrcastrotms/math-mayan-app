@@ -28,6 +28,7 @@ export function useExamState() {
     setAvailableSections,
   } = useAppConfig();
   const { isAdminMode, setIsAdminMode } = useAdminState();
+  const [merits, setMerits] = useState(0);
 
   const isTeacher =
     isAdminMode ||
@@ -126,6 +127,8 @@ export function useExamState() {
     ...form,
     isAdminMode,
     setIsAdminMode,
+    merits,
+    setMerits,
     isLocked,
     setIsLocked,
     overrideCode,
@@ -137,9 +140,12 @@ export function useExamState() {
     setAppText,
     examQuestions,
     handleUnlock,
-    handleVerifyAndStart: (code, sec) =>
-      lifecycle.handleVerifyAndStart(code, sec, (dur) =>
-        timer.setTimeLeft(dur),
+    handleVerifyAndStart: (code, sec, overrideStudent) =>
+      lifecycle.handleVerifyAndStart(
+        code,
+        sec,
+        (dur) => timer.setTimeLeft(dur),
+        overrideStudent,
       ),
     handleTryAgain: () =>
       lifecycle.recordAttemptAndReset((dur) => {

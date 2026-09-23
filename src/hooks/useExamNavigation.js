@@ -3,6 +3,7 @@ import { useState, useCallback } from "react";
 import { createAnswerRecord } from "../utils/navigationUtils";
 import { useExamKeyboard } from "./useExamKeyboard";
 import { useExamLocalStorage } from "./useExamLocalStorage";
+import { appendAnswerInput } from "../utils/answerInput.mjs";
 
 export function useExamNavigation(questions = [], appText, student) {
   const {
@@ -27,7 +28,7 @@ export function useExamNavigation(questions = [], appText, student) {
   const showEndExamButton = currentQuestionIndex >= questions.length;
 
   const handlePadClick = useCallback((val) => {
-    setCurrentInput((prev) => (prev.length >= 15 ? prev : prev + val));
+    setCurrentInput((prev) => appendAnswerInput(prev, val));
   }, []);
 
   const handleBackspace = useCallback(

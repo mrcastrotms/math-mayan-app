@@ -1,28 +1,30 @@
 "use client";
-export default function ThemeToggle({ theme, changeTheme }) {
+export default function ThemeToggle({ theme, changeTheme, disabled = false }) {
+  const themes = [
+    ["default", "Standard"],
+    ["dark", "Dark"],
+    ["sepia", "Sepia"],
+    ["contrast", "High Contrast"],
+  ];
+
   return (
-    <div className="flex gap-2 bg-white/80 dark:bg-slate-800/80 p-1.5 rounded-xl shadow-sm border border-slate-200 backdrop-blur-sm">
+    <div
+      className="flex flex-wrap gap-2 bg-[var(--app-surface)] p-1.5 rounded-xl shadow-sm border border-[var(--app-border)]"
+      aria-label={disabled ? "Theme locked by teacher" : "Choose theme"}
+    >
+      {themes.map(([value, label]) => (
       <button
+        key={value}
         type="button"
-        onClick={() => changeTheme("default")}
-        className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${theme === "default" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-100"}`}
+        disabled={disabled}
+        aria-pressed={theme === value}
+        onClick={() => changeTheme(value)}
+        className={`px-3 py-1.5 text-xs font-bold rounded-lg transition disabled:cursor-not-allowed disabled:opacity-60 ${theme === value ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-100"}`}
       >
-        Standard
+        {label}
       </button>
-      <button
-        type="button"
-        onClick={() => changeTheme("sepia")}
-        className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${theme === "sepia" ? "bg-amber-700 text-amber-50" : "text-amber-900 hover:bg-amber-100"}`}
-      >
-        Sepia
-      </button>
-      <button
-        type="button"
-        onClick={() => changeTheme("contrast")}
-        className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${theme === "contrast" ? "bg-white text-black" : "text-slate-300 hover:bg-slate-800"}`}
-      >
-        High Contrast
-      </button>
+      ))}
+      {disabled && <span className="sr-only">Theme locked by teacher</span>}
     </div>
   );
 }

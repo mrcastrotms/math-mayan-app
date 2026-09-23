@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { doc, updateDoc, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
+import { recordBehaviorChange } from "../services/behaviorService";
 
 export function useExamLock({
   examStarted,
@@ -12,9 +13,15 @@ export function useExamLock({
   student,
   onLockBreach,
 }) {
-  const [isLocked, setIsLocked] = useState(false);
+  const [isLocked, setIsLocked] = useState(() =>
+    typeof window !== "undefined" && sessionStorage.getItem("exam_is_locked") === "true",
+  );
   const [overrideCode, setOverrideCode] = useState("");
   const studentUid = student?.uid;
+  const studentName = student?.name;
+  const studentSection = student?.section;
+  const studentCode = student?.code;
+  const studentSessionStartedAt = student?.sessionStartedAt;
 
   const triggerLock = useCallback(
     (reason = "left_tab") => {
@@ -31,9 +38,17 @@ export function useExamLock({
           isLocked: true,
           lockReason: reason,
         }).catch(() => {});
+        recordBehaviorChange({
+          uid: studentUid,
+          studentName,
+          section: studentSection,
+          sessionCode: studentCode || "",
+          sessionStartedAt: studentSessionStartedAt || "",
+          field: "demerits",
+        }).catch((error) => console.error("Unable to record lock behavior:", error));
       }
     },
-    [examStarted, examFinished, isTeacher, studentUid, onLockBreach],
+    [examStarted, examFinished, isTeacher, studentUid, onLockBreach, studentName, studentSection, studentCode, studentSessionStartedAt],
   );
 
   // Tab switch, blur, and fullscreen detection
@@ -90,6 +105,12 @@ export function useExamLock({
       alert("Incorrect PIN");
     }
   };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (isLocked) sessionStorage.setItem("exam_is_locked", "true");
+    else sessionStorage.removeItem("exam_is_locked");
+  }, [isLocked]);
 
   return { isLocked, setIsLocked, overrideCode, setOverrideCode, handleUnlock };
 }
