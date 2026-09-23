@@ -12,10 +12,38 @@ import { useAppTheme } from "../../hooks/useAppTheme";
 const DEFAULT_SECTIONS = ["4A", "4B", "4C", "4D", "4E", "5B"];
 
 const THEMES = {
-  standard: { bg: "#f8fafc", card: "#ffffff", border: "#e2e8f0", text: "#0f172a", textDim: "#64748b", accent: "#2563eb" },
-  sepia: { bg: "#fbf0d9", card: "#f4ecd8", border: "#d3c4a5", text: "#433422", textDim: "#79664f", accent: "#8f5922" },
-  dark: { bg: "#020617", card: "#0f172a", border: "#475569", text: "#f8fafc", textDim: "#cbd5e1", accent: "#60a5fa" },
-  contrast: { bg: "#000000", card: "#0a0a0a", border: "#ffff00", text: "#ffffff", textDim: "#ffff00", accent: "#00ffff" },
+  standard: {
+    bg: "#f8fafc",
+    card: "#ffffff",
+    border: "#e2e8f0",
+    text: "#0f172a",
+    textDim: "#64748b",
+    accent: "#2563eb",
+  },
+  sepia: {
+    bg: "#fbf0d9",
+    card: "#f4ecd8",
+    border: "#d3c4a5",
+    text: "#433422",
+    textDim: "#79664f",
+    accent: "#8f5922",
+  },
+  dark: {
+    bg: "#020617",
+    card: "#0f172a",
+    border: "#475569",
+    text: "#f8fafc",
+    textDim: "#cbd5e1",
+    accent: "#60a5fa",
+  },
+  contrast: {
+    bg: "#000000",
+    card: "#0a0a0a",
+    border: "#ffff00",
+    text: "#ffffff",
+    textDim: "#ffff00",
+    accent: "#00ffff",
+  },
 };
 
 export default function ExamGate({
@@ -25,25 +53,37 @@ export default function ExamGate({
   onOpenDashboard,
   themeState,
 }) {
-  const sections = availableSections.length > 0 ? availableSections : DEFAULT_SECTIONS;
+  const sections =
+    availableSections.length > 0 ? availableSections : DEFAULT_SECTIONS;
 
-  const [studentName, setStudentName] = useState(() => (
-    typeof window !== "undefined" ? localStorage.getItem("exam_student_name") || "" : ""
-  ));
-  const [storedName, setStoredName] = useState(() => (
-    typeof window !== "undefined" ? localStorage.getItem("exam_student_name") || "" : ""
-  ));
-  const [selectedSectionState, setSelectedSection] = useState(sections[0] || "4A");
+  const [studentName, setStudentName] = useState(() =>
+    typeof window !== "undefined"
+      ? localStorage.getItem("exam_student_name") || ""
+      : "",
+  );
+  const [storedName, setStoredName] = useState(() =>
+    typeof window !== "undefined"
+      ? localStorage.getItem("exam_student_name") || ""
+      : "",
+  );
+  const [selectedSectionState, setSelectedSection] = useState(
+    sections[0] || "4A",
+  );
   const localThemeState = useAppTheme();
   const activeThemeState = themeState || localThemeState;
   const [showCodeField, setShowCodeField] = useState(false);
   const [accessCode, setAccessCode] = useState("");
   const [deviceMeta, setDeviceMeta] = useState({ uuid: "", mdns: "" });
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [modalState, setModalState] = useState({ isOpen: false, title: "", message: "" });
+  const [modalState, setModalState] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+  });
 
   const lastTapRef = useRef(0);
-  const theme = activeThemeState.theme === "default" ? "standard" : activeThemeState.theme;
+  const theme =
+    activeThemeState.theme === "default" ? "standard" : activeThemeState.theme;
   const current = THEMES[theme] || THEMES.standard;
 
   const selectedSection = sections.includes(selectedSectionState)
@@ -65,9 +105,13 @@ export default function ExamGate({
     try {
       let uuid = localStorage.getItem("exam_device_uuid");
       if (!uuid) {
-        uuid = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-          ? crypto.randomUUID()
-          : "dev-" + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+        uuid =
+          typeof crypto !== "undefined" &&
+          typeof crypto.randomUUID === "function"
+            ? crypto.randomUUID()
+            : "dev-" +
+              Math.random().toString(36).substring(2, 10) +
+              Date.now().toString(36);
         localStorage.setItem("exam_device_uuid", uuid);
       }
       setDeviceMeta((prev) => ({ ...prev, uuid }));
@@ -76,7 +120,11 @@ export default function ExamGate({
         setIsFullscreen(Boolean(document.fullscreenElement));
       };
       document.addEventListener("fullscreenchange", handleFullscreenChange);
-      return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      return () =>
+        document.removeEventListener(
+          "fullscreenchange",
+          handleFullscreenChange,
+        );
     } catch (_) {}
   }, []);
 
@@ -107,7 +155,9 @@ export default function ExamGate({
   };
 
   const handleResetUser = () => {
-    try { localStorage.removeItem("exam_student_name"); } catch (_) {}
+    try {
+      localStorage.removeItem("exam_student_name");
+    } catch (_) {}
     setStoredName("");
     setStudentName("");
   };
@@ -124,7 +174,12 @@ export default function ExamGate({
     try {
       if (typeof sessionStorage !== "undefined") sessionStorage.clear();
       if (typeof localStorage !== "undefined") {
-        ["math_mayan_teacher", "exam_active_view", "activeExamSession", "exam_student_name"].forEach((k) => localStorage.removeItem(k));
+        [
+          "math_mayan_teacher",
+          "exam_active_view",
+          "activeExamSession",
+          "exam_student_name",
+        ].forEach((k) => localStorage.removeItem(k));
       }
     } catch (_) {}
     if (typeof window !== "undefined") {
@@ -149,12 +204,19 @@ export default function ExamGate({
 
     try {
       localStorage.setItem("exam_student_name", result.finalStudentName);
-      if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+      if (
+        !document.fullscreenElement &&
+        document.documentElement.requestFullscreen
+      ) {
         await document.documentElement.requestFullscreen();
       }
     } catch (_) {}
 
-    const currentUuid = deviceMeta.uuid || (typeof localStorage !== "undefined" ? localStorage.getItem("exam_device_uuid") : "dev_anon");
+    const currentUuid =
+      deviceMeta.uuid ||
+      (typeof localStorage !== "undefined"
+        ? localStorage.getItem("exam_device_uuid")
+        : "dev_anon");
 
     if (typeof onExamStart === "function") {
       onExamStart({
@@ -172,12 +234,26 @@ export default function ExamGate({
   const commitSha = rawSha ? rawSha.substring(0, 7) : "local";
   const rawTime = process.env.NEXT_PUBLIC_BUILD_TIME;
   const buildTime = rawTime
-    ? new Date(rawTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    ? new Date(rawTime).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      })
     : "Live";
 
   return (
-    <div 
-      style={{ minHeight: "100vh", backgroundColor: current.bg, color: current.text, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px 16px", fontFamily: "monospace" }}
+    <div
+      style={{
+        minHeight: "100vh",
+        backgroundColor: current.bg,
+        color: current.text,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "24px 16px",
+        fontFamily: "monospace",
+      }}
       onDoubleClick={handleDoubleClick}
     >
       <ExamHeaderControls
@@ -190,28 +266,112 @@ export default function ExamGate({
         onOpenDashboard={onOpenDashboard}
       />
 
-      <div 
+      <div
         id="select-section-card"
-        style={{ width: "100%", maxWidth: "520px", background: current.card, border: `1px solid ${current.border}`, borderRadius: "12px", padding: "32px 24px", boxShadow: "0 8px 24px rgba(0,0,0,0.3)", marginTop: "40px" }}
+        style={{
+          width: "100%",
+          maxWidth: "520px",
+          background: current.card,
+          border: `1px solid ${current.border}`,
+          borderRadius: "12px",
+          padding: "32px 24px",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+          marginTop: "40px",
+        }}
       >
-        <div style={{ marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+        <div
+          style={{
+            marginBottom: "20px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            gap: "12px",
+          }}
+        >
           <div>
-            <span style={{ fontSize: "0.8rem", color: current.textDim, textTransform: "uppercase" }}>mrcastro.vercel.app</span>
-            <h2 style={{ fontSize: "1.35rem", fontWeight: 800, marginTop: "4px" }}>Select your section</h2>
-            <p style={{ fontSize: "0.75rem", color: current.textDim, marginTop: "2px" }}>Double-click anywhere outside this card to enter fullscreen.</p>
+            <span
+              style={{
+                fontSize: "0.8rem",
+                color: current.textDim,
+                textTransform: "uppercase",
+              }}
+            >
+              mrcastro.vercel.app
+            </span>
+            <h2
+              style={{ fontSize: "1.35rem", fontWeight: 800, marginTop: "4px" }}
+            >
+              Select your section
+            </h2>
+            <p
+              style={{
+                fontSize: "0.75rem",
+                color: current.textDim,
+                marginTop: "2px",
+              }}
+            ></p>
           </div>
-          <div style={{ textAlign: "right", fontSize: "0.7rem", background: current.bg, border: `1px solid ${current.border}`, padding: "6px 10px", borderRadius: "6px", color: current.textDim, flexShrink: 0 }}>
-            <div style={{ fontWeight: "bold", color: current.text }}>SHA: {commitSha}</div>
+          <div
+            style={{
+              textAlign: "right",
+              fontSize: "0.7rem",
+              background: current.bg,
+              border: `1px solid ${current.border}`,
+              padding: "6px 10px",
+              borderRadius: "6px",
+              color: current.textDim,
+              flexShrink: 0,
+            }}
+          >
+            <div style={{ fontWeight: "bold", color: current.text }}>
+              SHA: {commitSha}
+            </div>
             <div>Built: {buildTime}</div>
           </div>
         </div>
 
-        <form onSubmit={handleStartExam} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <SectionSelector sections={sections} selectedSection={selectedSection} onSelectSection={setSelectedSection} currentTheme={current} />
-          <StudentRosterInput studentName={studentName} onChangeName={setStudentName} displayGreetingName={displayGreetingName} onResetUser={handleResetUser} onLabelInteraction={handleLabelInteraction} currentTheme={current} />
-          <TeacherPinGate showCodeField={showCodeField} accessCode={accessCode} onChangeAccessCode={setAccessCode} currentTheme={current} />
+        <form
+          onSubmit={handleStartExam}
+          style={{ display: "flex", flexDirection: "column", gap: "20px" }}
+        >
+          <SectionSelector
+            sections={sections}
+            selectedSection={selectedSection}
+            onSelectSection={setSelectedSection}
+            currentTheme={current}
+          />
+          <StudentRosterInput
+            studentName={studentName}
+            onChangeName={setStudentName}
+            displayGreetingName={displayGreetingName}
+            onResetUser={handleResetUser}
+            onLabelInteraction={handleLabelInteraction}
+            currentTheme={current}
+          />
+          <TeacherPinGate
+            showCodeField={showCodeField}
+            accessCode={accessCode}
+            onChangeAccessCode={setAccessCode}
+            currentTheme={current}
+          />
 
-          <button type="submit" disabled={isLoading} style={{ padding: "16px", background: current.accent, color: "#ffffff", fontWeight: 800, fontSize: "1.1rem", letterSpacing: "1px", borderRadius: "8px", border: "none", cursor: isLoading ? "not-allowed" : "pointer", marginTop: "8px", opacity: isLoading ? 0.7 : 1 }}>
+          <button
+            type="submit"
+            disabled={isLoading}
+            style={{
+              padding: "16px",
+              background: current.accent,
+              color: "#ffffff",
+              fontWeight: 800,
+              fontSize: "1.1rem",
+              letterSpacing: "1px",
+              borderRadius: "8px",
+              border: "none",
+              cursor: isLoading ? "not-allowed" : "pointer",
+              marginTop: "8px",
+              opacity: isLoading ? 0.7 : 1,
+            }}
+          >
             START
           </button>
         </form>
