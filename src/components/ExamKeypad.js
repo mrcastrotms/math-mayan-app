@@ -41,13 +41,13 @@ export default function ExamKeypad({
   return (
     <>
       {/* 3x4 Number Grid with Comma */}
-      <div className="grid grid-cols-3 gap-3 max-w-xs mx-auto mb-4">
+      <div className="grid grid-cols-3 gap-3 w-full mb-4">
         {["1", "2", "3", "4", "5", "6", "7", "8", "9", ",", "0"].map((item) => (
           <button
             key={item}
             type="button"
             onClick={() => handlePadClick?.(item)}
-            className="bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xl py-3 rounded-xl hover:bg-slate-100 transition active:scale-95 shadow-sm"
+            className="bg-slate-50 border border-slate-200 text-slate-700 font-bold text-3xl min-h-[64px] rounded-xl hover:bg-slate-100 transition active:scale-95 shadow-sm touch-manipulation"
           >
             {item}
           </button>
@@ -55,36 +55,36 @@ export default function ExamKeypad({
         <button
           type="button"
           onClick={handleBackspace}
-          className="bg-amber-50 border border-amber-200 text-amber-700 font-bold text-lg py-3 rounded-xl hover:bg-amber-100 transition active:scale-95 shadow-sm"
+          className="bg-amber-50 border border-amber-200 text-amber-700 font-bold text-xl min-h-[64px] rounded-xl hover:bg-amber-100 transition active:scale-95 shadow-sm touch-manipulation"
         >
           ㅤDelㅤ
         </button>
       </div>
 
       {/* Clear Button */}
-      <div className="max-w-xs mx-auto mb-5">
+      <div className="w-full mb-5">
         <button
           type="button"
           onClick={handleClear}
-          className="w-full bg-rose-50 border border-rose-200 text-rose-700 font-bold text-sm py-2 rounded-xl hover:bg-rose-100 transition shadow-sm"
+          className="w-full bg-rose-50 border border-rose-200 text-rose-700 font-bold text-lg min-h-[56px] rounded-xl hover:bg-rose-100 transition shadow-sm touch-manipulation"
         >
           ㅤㅤClearㅤㅤ
         </button>
       </div>
 
       {/* AI Hint & Submit Answer */}
-      <div className="flex gap-3 justify-center mb-4">
+      <div className="flex gap-3 w-full mb-6">
         <button
           type="button"
           onClick={handlePassQuestion}
-          className="px-6 py-3 bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold rounded-xl hover:bg-indigo-100 transition active:scale-95 shadow-sm"
+          className="flex-1 min-h-[56px] bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold text-lg rounded-xl hover:bg-indigo-100 transition active:scale-95 shadow-sm touch-manipulation"
         >
           Hint
         </button>
         <button
           type="button"
           onClick={handleSubmitQuestion}
-          className="px-8 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition active:scale-95"
+          className="flex-[2] min-h-[56px] bg-emerald-600 text-white font-bold text-lg rounded-xl hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition active:scale-95 touch-manipulation"
         >
           Submit
         </button>
