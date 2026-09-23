@@ -72,7 +72,8 @@ export function useGateValidation({
       return {
         isValid: false,
         title: "Loading Roster",
-        error: "The roster is still loading. Please wait a moment and try again.",
+        error:
+          "The roster is still loading. Please wait a moment and try again.",
       };
     }
 
@@ -81,7 +82,7 @@ export function useGateValidation({
       return {
         isValid: false,
         title: "Name Not Found",
-        error: "Please write your name correctly as it appears on your section's official roster.",
+        error: "Please write your name correctly",
       };
     }
 
