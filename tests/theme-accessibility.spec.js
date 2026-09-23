@@ -4,9 +4,9 @@ test.describe("system theme and teacher enforcement controls", () => {
   test("applies and persists the dark theme from the welcome screen", async ({ page }) => {
     await page.goto("/");
 
-    const darkButton = page.getByRole("button", { name: "Dark", exact: true });
-    await expect(darkButton).toBeVisible();
-    await darkButton.click();
+    const themeSelect = page.getByLabel("Choose theme");
+    await expect(themeSelect).toBeVisible();
+    await themeSelect.selectOption("dark");
 
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     await page.reload();

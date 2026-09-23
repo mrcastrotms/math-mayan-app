@@ -4,6 +4,9 @@ import React, { useState, useEffect, useRef } from "react";
 import SectionSelector from "./SectionSelector";
 import StudentRosterInput from "./StudentRosterInput";
 import TeacherPinGate from "./TeacherPinGate";
+import ExamHeaderControls from "./ExamHeaderControls";
+import GateErrorModal from "./GateErrorModal";
+import ReleaseHistoryModal from "./ReleaseHistoryModal";
 import { useGateValidation } from "./hooks/useGateValidation";
 import { useAppTheme } from "../../hooks/useAppTheme";
 
@@ -36,7 +39,28 @@ export default function ExamGate({
   const activeThemeState = themeState || localThemeState;
   const [showCodeField, setShowCodeField] = useState(false);
   const [accessCode, setAccessCode] = useState("");
-  const [deviceMeta, setDeviceMeta] = useState({ uuid: "", mdns: "" });
+  
+  // Lazy initialize device UUID without triggering synchronous setState in useEffect
+  const [deviceMeta] = useState(() => {
+    if (typeof window === "undefined") return { uuid: "", mdns: "" };
+    try {
+      let uuid = localStorage.getItem("exam_device_uuid");
+      if (!uuid) {
+        uuid = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : "dev-" + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+        localStorage.setItem("exam_device_uuid", uuid);
+      }
+      return { uuid, mdns: "" };
+    } catch (_) {
+      return { uuid: "", mdns: "" };
+    }
+  });
+
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [modalState, setModalState] = useState({ isOpen: false, title: "", message: "" });
+  const [isReleaseModalOpen, setIsReleaseModalOpen] = useState(false);
+  const [ciStatus, setCiStatus] = useState("success");
 
   const lastTapRef = useRef(0);
   const theme = activeThemeState.theme === "default" ? "standard" : activeThemeState.theme;
@@ -57,20 +81,55 @@ export default function ExamGate({
   const displayGreetingName = resolvedOfficialName || storedName;
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const cached = localStorage.getItem("exam_student_name");
-      let uuid = localStorage.getItem("exam_device_uuid");
-      if (!uuid) {
-        uuid = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-          ? crypto.randomUUID()
-          : "dev-" + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
-        localStorage.setItem("exam_device_uuid", uuid);
-      }
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setDeviceMeta((prev) => ({ ...prev, uuid }));
-    } catch (_) {}
+    let isCancelled = false;
+    async function checkCiHealth() {
+      try {
+        const res = await fetch("https://api.github.com/repos/mrcastrotms/math-mayan-app/actions/runs?per_page=1");
+        if (!res.ok) return;
+        const data = await res.json();
+        const latestRun = data?.workflow_runs?.[0];
+        if (!isCancelled && latestRun) {
+          if (latestRun.conclusion === "failure") {
+            setCiStatus("failure");
+          } else if (latestRun.conclusion === "success") {
+            setCiStatus("success");
+          } else if (latestRun.status === "in_progress" || latestRun.status === "queued") {
+            setCiStatus("running");
+          }
+        }
+      } catch (_) {}
+    }
+    checkCiHealth();
+    return () => {
+      isCancelled = true;
+    };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.error(`Error attempting fullscreen: ${err.message}`);
+      });
+    }
+  };
+
+  const handleDoubleClick = (e) => {
+    const mainCard = document.getElementById("select-section-card");
+    if (mainCard && !mainCard.contains(e.target)) {
+      if (!document.fullscreenElement) {
+        toggleFullscreen();
+      }
+    }
+  };
 
   const handleLabelInteraction = (e) => {
     e.preventDefault();
@@ -111,7 +170,16 @@ export default function ExamGate({
   const handleStartExam = async (e) => {
     e.preventDefault();
     const result = await validateAndResolve();
-    if (!result) return;
+    if (!result || !result.isValid) {
+      if (result?.error) {
+        setModalState({
+          isOpen: true,
+          title: result.title || "Check Your Name",
+          message: result.error,
+        });
+      }
+      return;
+    }
 
     try {
       localStorage.setItem("exam_student_name", result.finalStudentName);
@@ -134,29 +202,80 @@ export default function ExamGate({
     }
   };
 
-  return (
-    <div style={{ minHeight: "100vh", backgroundColor: current.bg, color: current.text, display: "flex", flexDirection: "column", alignItems: "center", padding: "24px 16px", fontFamily: "monospace" }}>
-      <div style={{ width: "100%", maxWidth: "520px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", fontSize: "0.85rem" }}>
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          {[["standard", "Standard"], ["dark", "Dark"], ["sepia", "Sepia"], ["contrast", "High Contrast"]].map(([value, label]) => (
-            <button key={value} type="button" aria-pressed={theme === value} disabled={activeThemeState.themeLocked} onClick={() => activeThemeState.changeTheme(value === "standard" ? "default" : value)} style={{ background: theme === value ? current.border : "transparent", border: `1px solid ${current.border}`, color: current.text, padding: "4px 8px", borderRadius: "4px", cursor: activeThemeState.themeLocked ? "not-allowed" : "pointer", textTransform: "capitalize", opacity: activeThemeState.themeLocked ? 0.6 : 1 }}>
-              {label}
-            </button>
-          ))}
-          {activeThemeState.themeLocked && <span role="status" style={{ color: current.textDim }}>Theme locked by teacher</span>}
-          <button type="button" onClick={handleHardReset} style={{ background: "transparent", border: `1px solid ${current.border}`, color: current.textDim, padding: "4px 8px", borderRadius: "4px", cursor: "pointer", fontSize: "0.75rem" }} title="Clear cached session">
-            Reset Session
-          </button>
-        </div>
-        <button type="button" onClick={onOpenDashboard} style={{ background: "transparent", border: "none", cursor: "pointer", color: current.accent, fontWeight: "bold", fontFamily: "inherit", fontSize: "inherit" }}>
-          Welcome
-        </button>
-      </div>
+  const rawSha = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || "";
+  const commitSha = rawSha ? rawSha.substring(0, 7) : "local";
+  const rawTime = process.env.NEXT_PUBLIC_BUILD_TIME;
+  const buildTime = rawTime
+    ? new Date(rawTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    : "Live";
+  const appVersion = process.env.NEXT_PUBLIC_APP_VERSION || "v3.4";
 
-      <div style={{ width: "100%", maxWidth: "520px", background: current.card, border: `1px solid ${current.border}`, borderRadius: "12px", padding: "32px 24px", boxShadow: "0 8px 24px rgba(0,0,0,0.3)" }}>
-        <div style={{ marginBottom: "20px" }}>
-          <span style={{ fontSize: "0.8rem", color: current.textDim, textTransform: "uppercase" }}>mrcastro.vercel.app</span>
-          <h2 style={{ fontSize: "1.35rem", fontWeight: 800, marginTop: "4px" }}>Select your section</h2>
+  const ciColors = {
+    success: { bg: "rgba(16, 185, 129, 0.12)", border: "#10b981", text: "#10b981", dot: "#10b981" },
+    failure: { bg: "rgba(239, 68, 68, 0.12)", border: "#ef4444", text: "#ef4444", dot: "#ef4444" },
+    running: { bg: "rgba(245, 158, 11, 0.12)", border: "#f59e0b", text: "#f59e0b", dot: "#f59e0b" },
+  };
+  const activeCi = ciColors[ciStatus] || ciColors.success;
+
+  return (
+    <div 
+      style={{ minHeight: "100vh", backgroundColor: current.bg, color: current.text, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px 16px", fontFamily: "monospace" }}
+      onDoubleClick={handleDoubleClick}
+    >
+      <ExamHeaderControls
+        theme={theme}
+        activeThemeState={activeThemeState}
+        current={current}
+        onHardReset={handleHardReset}
+        isFullscreen={isFullscreen}
+        toggleFullscreen={toggleFullscreen}
+        onOpenDashboard={onOpenDashboard}
+      />
+
+      <div 
+        id="select-section-card"
+        style={{ width: "100%", maxWidth: "520px", background: current.card, border: `1px solid ${current.border}`, borderRadius: "12px", padding: "32px 24px", boxShadow: "0 8px 24px rgba(0,0,0,0.3)", marginTop: "40px" }}
+      >
+        <div style={{ marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontSize: "0.8rem", color: current.textDim, textTransform: "uppercase" }}>mrcastro.vercel.app</span>
+              
+              <span 
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  setIsReleaseModalOpen(true);
+                }}
+                title="Double-click with master PIN to view recent deployments"
+                style={{
+                  fontSize: "0.68rem",
+                  fontWeight: 800,
+                  padding: "2px 7px",
+                  borderRadius: "9999px",
+                  letterSpacing: "0.5px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  cursor: "pointer",
+                  userSelect: "none",
+                  border: `1px solid ${activeCi.border}`,
+                  backgroundColor: activeCi.bg,
+                  color: activeCi.text,
+                }}
+              >
+                <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: activeCi.dot, boxShadow: `0 0 6px ${activeCi.dot}` }} />
+                {appVersion}
+              </span>
+            </div>
+
+            <h2 style={{ fontSize: "1.35rem", fontWeight: 800, marginTop: "6px" }}>Select your section</h2>
+            <p style={{ fontSize: "0.75rem", color: current.textDim, marginTop: "2px" }}>Double-click anywhere outside this card to enter fullscreen.</p>
+          </div>
+
+          <div style={{ textAlign: "right", fontSize: "0.7rem", background: current.bg, border: `1px solid ${current.border}`, padding: "6px 10px", borderRadius: "6px", color: current.textDim, flexShrink: 0 }}>
+            <div style={{ fontWeight: "bold", color: current.text }}>SHA: {commitSha}</div>
+            <div>Built: {buildTime}</div>
+          </div>
         </div>
 
         <form onSubmit={handleStartExam} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -169,6 +288,24 @@ export default function ExamGate({
           </button>
         </form>
       </div>
+
+      <GateErrorModal
+        isOpen={modalState.isOpen}
+        onClose={() => setModalState((prev) => ({ ...prev, isOpen: false }))}
+        title={modalState.title}
+        message={modalState.message}
+        currentTheme={current}
+      />
+
+      {isReleaseModalOpen && (
+        <ReleaseHistoryModal
+          isOpen={isReleaseModalOpen}
+          onClose={() => setIsReleaseModalOpen(false)}
+          currentTheme={current}
+          currentSha={commitSha}
+          currentVersion={appVersion}
+        />
+      )}
     </div>
   );
 }
