@@ -36,6 +36,7 @@ export function useExamLifecycle({
   const isSubmittingRef = useRef(false);
 
   const handleFinishExam = async () => {
+    setIsLocked?.(false); try { sessionStorage.removeItem("exam_is_locked"); } catch(_){}
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
     if (!isTeacher) await exitFullscreenSafely();
