@@ -41,7 +41,7 @@ export default function StudentAnswersTable({
  </tr>
  </thead>
  <tbody>
- {studentAnswers.length === 0 ? (
+ {(!Array.isArray(studentAnswers) || studentAnswers.length === 0) ? (
  <tr>
  <td
  colSpan="4"
@@ -51,30 +51,30 @@ export default function StudentAnswersTable({
  </td>
  </tr>
  ) : (
- studentAnswers.map((ans, index) => (
+ (Array.isArray(studentAnswers) ? studentAnswers : []).map((ans, index) => (
  <tr
  key={index}
  className="border-b border-slate-100 print:border-slate-300"
  >
  <td className="p-4 font-bold text-slate-400">{index + 1}</td>
  <td className="p-4 text-slate-800 font-medium">
- {ans.question?.text || ans.question || "Unknown Question"}
+ {ans?.question?.text || ans?.question?.prompt || ans?.question || "Unknown Question"}
  </td>
  <td className="p-4">
  <span
  className={`font-bold px-3 py-1 rounded-lg ${
- ans.isCorrect
+ ans?.isCorrect
  ? "bg-green-100 text-green-700 print:bg-transparent print:text-black"
  : "bg-red-100 text-red-700 print:bg-transparent print:text-black"
  }`}
  >
- {ans.studentInput || "Skipped"}
+ {ans?.studentInput || "Skipped"}
  {!ans.isCorrect && " "}
  {ans.isCorrect && " "}
  </span>
  </td>
  <td className="p-4 font-bold text-slate-600">
- {ans.correctAnswer}
+ {ans?.correctAnswer || ""}
  </td>
  </tr>
  ))
