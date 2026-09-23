@@ -6,6 +6,7 @@ import StudentRosterInput from "./StudentRosterInput";
 import TeacherPinGate from "./TeacherPinGate";
 import ExamHeaderControls from "./ExamHeaderControls";
 import GateErrorModal from "./GateErrorModal";
+import ReleaseHistoryModal from "./ReleaseHistoryModal";
 import { useGateValidation } from "./hooks/useGateValidation";
 import { useAppTheme } from "../../hooks/useAppTheme";
 
@@ -41,6 +42,7 @@ export default function ExamGate({
   const [deviceMeta, setDeviceMeta] = useState({ uuid: "", mdns: "" });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [modalState, setModalState] = useState({ isOpen: false, title: "", message: "" });
+  const [isReleaseModalOpen, setIsReleaseModalOpen] = useState(false);
   const [ciStatus, setCiStatus] = useState("success");
 
   const lastTapRef = useRef(0);
@@ -61,7 +63,6 @@ export default function ExamGate({
 
   const displayGreetingName = resolvedOfficialName || storedName;
 
-  // Poll latest GitHub Actions workflow test status for mrcastrotms/math-mayan-app
   useEffect(() => {
     async function checkCiHealth() {
       try {
@@ -199,7 +200,6 @@ export default function ExamGate({
     : "Live";
   const appVersion = process.env.NEXT_PUBLIC_APP_VERSION || "v3.4";
 
-  // CI status colors
   const ciColors = {
     success: { bg: "rgba(16, 185, 129, 0.12)", border: "#10b981", text: "#10b981", dot: "#10b981" },
     failure: { bg: "rgba(239, 68, 68, 0.12)", border: "#ef4444", text: "#ef4444", dot: "#ef4444" },
@@ -231,9 +231,13 @@ export default function ExamGate({
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span style={{ fontSize: "0.8rem", color: current.textDim, textTransform: "uppercase" }}>mrcastro.vercel.app</span>
               
-              {/* Release & CI Status Badge */}
+              {/* Release Badge: Double-click to inspect release history */}
               <span 
-                title={ciStatus === "failure" ? "CI tests failing on GitHub" : ciStatus === "running" ? "CI tests in progress" : "All GitHub CI tests passing"}
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  setIsReleaseModalOpen(true);
+                }}
+                title="Double-click with master PIN to view recent deployments"
                 style={{
                   fontSize: "0.68rem",
                   fontWeight: 800,
@@ -243,6 +247,8 @@ export default function ExamGate({
                   display: "inline-flex",
                   alignItems: "center",
                   gap: "5px",
+                  cursor: "pointer",
+                  userSelect: "none",
                   border: `1px solid ${activeCi.border}`,
                   backgroundColor: activeCi.bg,
                   color: activeCi.text,
@@ -280,6 +286,14 @@ export default function ExamGate({
         title={modalState.title}
         message={modalState.message}
         currentTheme={current}
+      />
+
+      <ReleaseHistoryModal
+        isOpen={isReleaseModalOpen}
+        onClose={() => setIsReleaseModalOpen(false)}
+        currentTheme={current}
+        currentSha={commitSha}
+        currentVersion={appVersion}
       />
     </div>
   );
