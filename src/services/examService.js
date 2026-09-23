@@ -128,6 +128,19 @@ export async function saveExamResult(
       return docId;
     }
 
+    
+    const cleanPayload = (obj) => {
+      if (Array.isArray(obj)) {
+        obj.forEach(cleanPayload);
+      } else if (typeof obj === "object" && obj !== null) {
+        Object.keys(obj).forEach(k => {
+          if (obj[k] === undefined) delete obj[k];
+          else cleanPayload(obj[k]);
+        });
+      }
+    };
+    cleanPayload(payload);
+    
     const resultRef = await addDoc(collection(db, "exam_results"), payload);
     return resultRef.id;
   } catch (e) {
