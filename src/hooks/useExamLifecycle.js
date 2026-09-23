@@ -37,8 +37,6 @@ export function useExamLifecycle({
   const handleFinishExam = async () => {
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
-    setExamStarted(false);
-    setExamFinished(true);
     if (!isTeacher) await exitFullscreenSafely();
     if (isBypassMode) return;
 
@@ -57,6 +55,8 @@ export function useExamLifecycle({
       hintsUsed,
     });
     setIsSaving(false);
+    setExamStarted(false);
+    setExamFinished(true);
   };
 
   const handleVerifyAndStart = async (
