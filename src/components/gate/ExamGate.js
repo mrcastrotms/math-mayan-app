@@ -5,6 +5,7 @@ import SectionSelector from "./SectionSelector";
 import StudentRosterInput from "./StudentRosterInput";
 import TeacherPinGate from "./TeacherPinGate";
 import ExamHeaderControls from "./ExamHeaderControls";
+import GateErrorModal from "./GateErrorModal";
 import { useGateValidation } from "./hooks/useGateValidation";
 import { useAppTheme } from "../../hooks/useAppTheme";
 
@@ -39,6 +40,7 @@ export default function ExamGate({
   const [accessCode, setAccessCode] = useState("");
   const [deviceMeta, setDeviceMeta] = useState({ uuid: "", mdns: "" });
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [modalState, setModalState] = useState({ isOpen: false, title: "", message: "" });
 
   const lastTapRef = useRef(0);
   const theme = activeThemeState.theme === "default" ? "standard" : activeThemeState.theme;
@@ -134,7 +136,16 @@ export default function ExamGate({
   const handleStartExam = async (e) => {
     e.preventDefault();
     const result = await validateAndResolve();
-    if (!result) return;
+    if (!result || !result.isValid) {
+      if (result?.error) {
+        setModalState({
+          isOpen: true,
+          title: result.title || "Check Your Name",
+          message: result.error,
+        });
+      }
+      return;
+    }
 
     try {
       localStorage.setItem("exam_student_name", result.finalStudentName);
@@ -205,6 +216,14 @@ export default function ExamGate({
           </button>
         </form>
       </div>
+
+      <GateErrorModal
+        isOpen={modalState.isOpen}
+        onClose={() => setModalState((prev) => ({ ...prev, isOpen: false }))}
+        title={modalState.title}
+        message={modalState.message}
+        currentTheme={current}
+      />
     </div>
   );
 }
