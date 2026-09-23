@@ -78,7 +78,6 @@ export default function ExamGate({
     } catch (_) {}
   }, []);
 
-  // One-way fullscreen toggle (only enters, never exits via UI)
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch((err) => {
@@ -87,7 +86,6 @@ export default function ExamGate({
     }
   };
 
-  // Double-click outside main card triggers fullscreen entry only
   const handleDoubleClick = (e) => {
     const mainCard = document.getElementById("select-section-card");
     if (mainCard && !mainCard.contains(e.target)) {
@@ -159,6 +157,13 @@ export default function ExamGate({
     }
   };
 
+  const rawSha = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || "";
+  const commitSha = rawSha ? rawSha.substring(0, 7) : "local";
+  const rawTime = process.env.NEXT_PUBLIC_BUILD_TIME;
+  const buildTime = rawTime
+    ? new Date(rawTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    : "Live";
+
   return (
     <div 
       style={{ minHeight: "100vh", backgroundColor: current.bg, color: current.text, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px 16px", fontFamily: "monospace" }}
@@ -178,10 +183,16 @@ export default function ExamGate({
         id="select-section-card"
         style={{ width: "100%", maxWidth: "520px", background: current.card, border: `1px solid ${current.border}`, borderRadius: "12px", padding: "32px 24px", boxShadow: "0 8px 24px rgba(0,0,0,0.3)", marginTop: "40px" }}
       >
-        <div style={{ marginBottom: "20px" }}>
-          <span style={{ fontSize: "0.8rem", color: current.textDim, textTransform: "uppercase" }}>mrcastro.vercel.app</span>
-          <h2 style={{ fontSize: "1.35rem", fontWeight: 800, marginTop: "4px" }}>Select your section</h2>
-          <p style={{ fontSize: "0.75rem", color: current.textDim, marginTop: "2px" }}>Double-click anywhere outside this card to enter fullscreen.</p>
+        <div style={{ marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+          <div>
+            <span style={{ fontSize: "0.8rem", color: current.textDim, textTransform: "uppercase" }}>mrcastro.vercel.app</span>
+            <h2 style={{ fontSize: "1.35rem", fontWeight: 800, marginTop: "4px" }}>Select your section</h2>
+            <p style={{ fontSize: "0.75rem", color: current.textDim, marginTop: "2px" }}>Double-click anywhere outside this card to enter fullscreen.</p>
+          </div>
+          <div style={{ textAlign: "right", fontSize: "0.7rem", background: current.bg, border: `1px solid ${current.border}`, padding: "6px 10px", borderRadius: "6px", color: current.textDim, flexShrink: 0 }}>
+            <div style={{ fontWeight: "bold", color: current.text }}>SHA: {commitSha}</div>
+            <div>Built: {buildTime}</div>
+          </div>
         </div>
 
         <form onSubmit={handleStartExam} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>

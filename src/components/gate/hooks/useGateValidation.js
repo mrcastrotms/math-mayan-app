@@ -39,16 +39,6 @@ export function useGateValidation({
     };
   }, [selectedSection]);
 
-  const isMrCastro = (name) => {
-    const normalized = (name || "").trim().toLowerCase();
-    return (
-      normalized === "mr. castro" ||
-      normalized === "mr castro" ||
-      normalized === "césar castro" ||
-      normalized === "cesar castro"
-    );
-  };
-
   const resolvedOfficialName = useMemo(() => {
     const target = studentName || storedName;
     if (!target || sectionRoster.length === 0) return "";
@@ -59,15 +49,13 @@ export function useGateValidation({
   const validateAndResolve = async () => {
     const trimmed = (studentName || storedName || "").trim();
     if (!trimmed) {
-      window.alert("Please enter your name.");
+      window.alert("Please enter a name.");
       return null;
     }
 
-    const isTester = Boolean(
-      showCodeField && accessCode === "00000" && isMrCastro(trimmed),
-    );
+    // Secret test bypass: code 00000 allows ANY name to pass as a dummy run
+    const isTester = Boolean(showCodeField && accessCode === "00000");
 
-    // If you are Mr. Castro with the correct code, bypass roster check completely
     if (isTester) {
       return {
         isValid: true,
@@ -76,9 +64,9 @@ export function useGateValidation({
       };
     }
 
-    // For students: roster must be loaded and match must be 100% valid
+    // Normal student flow: enforce roster match
     if (sectionRoster.length === 0) {
-      window.alert("Roster is still loading. Please wait a second and try again.");
+      window.alert("Roster is still loading. Please wait a moment and try again.");
       return null;
     }
 
