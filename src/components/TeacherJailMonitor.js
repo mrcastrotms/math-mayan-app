@@ -16,6 +16,18 @@ export default function TeacherJailMonitor({
             <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 font-mono">
               Section {activeSection || "All"}
             </span>
+            {liveStudents.length > 0 && (
+              <button 
+                onClick={() => {
+                  if(window.confirm("Force finish exams for ALL " + liveStudents.length + " active students?")) {
+                    liveStudents.forEach(s => onSendCommand?.(s.uid, "FORCE_FINISH"));
+                  }
+                }}
+                className="ml-auto text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded-lg font-bold transition shadow-sm"
+              >
+                Finish All
+              </button>
+            )}
           </h3>
           <p className="text-xs text-slate-400">
             {liveStudents.length} active student
