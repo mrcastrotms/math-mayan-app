@@ -57,25 +57,41 @@ export function useGateValidation({
   }, [studentName, storedName, sectionRoster]);
 
   const validateAndResolve = async () => {
-    const trimmed = (studentName || "").trim();
-    if (!trimmed) return null;
+    const trimmed = (studentName || storedName || "").trim();
+    if (!trimmed) {
+      window.alert("Please enter your name.");
+      return null;
+    }
 
     const isTester = Boolean(
       showCodeField && accessCode === "00000" && isMrCastro(trimmed),
     );
 
-    let finalStudentName = trimmed;
-    if (!isTester && sectionRoster.length > 0) {
-      const match = matchStudentToRoster(trimmed, sectionRoster);
-      if (match?.matched && match.officialName) {
-        finalStudentName = match.officialName;
-      }
+    // If you are Mr. Castro with the correct code, bypass roster check completely
+    if (isTester) {
+      return {
+        isValid: true,
+        finalStudentName: trimmed,
+        isTester: true,
+      };
+    }
+
+    // For students: roster must be loaded and match must be 100% valid
+    if (sectionRoster.length === 0) {
+      window.alert("Roster is still loading. Please wait a second and try again.");
+      return null;
+    }
+
+    const match = matchStudentToRoster(trimmed, sectionRoster);
+    if (!match?.matched || !match.officialName) {
+      window.alert("Name not found in this section's official roster. Please select your correct name.");
+      return null;
     }
 
     return {
       isValid: true,
-      finalStudentName,
-      isTester,
+      finalStudentName: match.officialName,
+      isTester: false,
     };
   };
 
