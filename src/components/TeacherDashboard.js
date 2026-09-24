@@ -1,5 +1,6 @@
 import TeacherWhiteboardMonitor from "./TeacherWhiteboardMonitor";
 import TeacherImageHub from "./TeacherImageHub";
+import TeacherImageHub from "./TeacherImageHub";
 import RosterManagerModal from "./dashboard/RosterManagerModal";
 // src/components/TeacherDashboard.js
 import { useState } from "react";
@@ -39,6 +40,7 @@ export default function TeacherDashboard({
   const [showRosterModal, setShowRosterModal] = useState(false);
   const [isViewingAttendanceHistory, setIsViewingAttendanceHistory] = useState(false);
   const [isViewingWhiteboard, setIsViewingWhiteboard] = useState(false);
+  const [isViewingImageHub, setIsViewingImageHub] = useState(false);
   const [isViewingImageHub, setIsViewingImageHub] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
   const [showAddSectionModal, setShowAddSectionModal] = useState(false);
