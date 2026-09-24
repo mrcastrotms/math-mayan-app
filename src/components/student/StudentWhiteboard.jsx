@@ -13,8 +13,10 @@ export default function StudentWhiteboard({ studentId, sectionId, studentName, o
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    
-    canvas.width = canvas.parentElement.clientWidth || 800;
+
+    // Set internal resolution based on parent container width
+    const parentWidth = canvas.parentElement.clientWidth || 800;
+    canvas.width = parentWidth;
     canvas.height = 450;
 
     redrawGrid(ctx, canvas.width, canvas.height, gridSize);
@@ -37,32 +39,36 @@ export default function StudentWhiteboard({ studentId, sectionId, studentName, o
       ctx.lineTo(width, y);
     }
     ctx.stroke();
-  };
+  }
 
-  
-  // Helper to calculate exact coordinates accounting for CSS scaling & screen size changes
+  // Exact coordinate calculation: scales CSS display rect to internal canvas pixels
   const getCoordinates = (e) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : getCoordinates(e).x;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    
+
+    let clientX = e.clientX;
+    let clientY = e.clientY;
+
+    if (e.touches && e.touches.length > 0) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    }
+
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    
+
     return {
       x: (clientX - rect.left) * scaleX,
-      y: (clientY - rect.top) * scaleY
+      y: (clientY - rect.top) * scaleY,
     };
   };
 
   const startDrawing = (e) => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const rect = canvas.getBoundingClientRect();
-    const x = (getCoordinates(e).x || e.touches?.[0]?.clientX) - rect.left;
-    const y = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
+    const { x, y } = getCoordinates(e);
 
     ctx.beginPath();
     ctx.moveTo(x, y);
@@ -72,10 +78,9 @@ export default function StudentWhiteboard({ studentId, sectionId, studentName, o
   const draw = (e) => {
     if (!isDrawing) return;
     const canvas = canvasRef.current;
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const rect = canvas.getBoundingClientRect();
-    const x = (getCoordinates(e).x || e.touches?.[0]?.clientX) - rect.left;
-    const y = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
+    const { x, y } = getCoordinates(e);
 
     ctx.strokeStyle = tool === 'eraser' ? '#ffffff' : '#1e293b';
     ctx.lineWidth = tool === 'eraser' ? thickness * 4 : thickness;
@@ -100,12 +105,12 @@ export default function StudentWhiteboard({ studentId, sectionId, studentName, o
     const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
 
     try {
-      const docRef = doc(db, 'class_whiteboards', sectionId, 'students', studentId);
+      const docRef = doc(db, 'class_whiteboards', sectionId, 'students', String(studentId));
       await setDoc(docRef, {
-        studentId,
+        studentId: String(studentId),
         studentName: studentName || 'Student',
         dataUrl,
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       }, { merge: true });
     } catch (err) {
       console.error('Error syncing whiteboard:', err);
@@ -114,6 +119,7 @@ export default function StudentWhiteboard({ studentId, sectionId, studentName, o
 
   const clearBoard = () => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
     redrawGrid(ctx, canvas.width, canvas.height, gridSize);
     syncToFirestore();
