@@ -1,3 +1,4 @@
+import StudentWhiteboard from "./student/StudentWhiteboard";
 import React, { useState } from "react";
 import YouTubeHubView from "./YouTubeHubView";
 import MayansPortalView from "./MayansPortalView";
@@ -60,6 +61,20 @@ export default function StudentHome({
       forceLogout();
     }
   };
+
+  if (currentView === "whiteboard") {
+    const deviceUid = typeof window !== "undefined" ? localStorage.getItem("exam_device_uuid") || "anonymous" : "anonymous";
+    return (
+      <div className="max-w-6xl mx-auto p-4 sm:p-6">
+        <StudentWhiteboard 
+          studentId={deviceUid} 
+          sectionId={section} 
+          studentName={studentName} 
+          onBack={() => setCurrentView("menu")} 
+        />
+      </div>
+    );
+  }
 
   if (currentView === "youtube") {
     return <YouTubeHubView onBack={() => setCurrentView("menu")} />;
@@ -249,6 +264,21 @@ export default function StudentHome({
               </div>
               <span className="shrink-0 rounded-full bg-red-200 px-2.5 py-1 text-xs dark:bg-red-800">
                 Video
+              </span>
+            </button>
+
+            <button
+              onClick={() => setCurrentView("whiteboard")}
+              className="flex min-h-[6rem] min-w-0 items-center justify-between gap-4 rounded-lg border border-emerald-200 bg-emerald-50 p-5 text-left text-lg font-medium text-emerald-700 transition-all hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300 dark:hover:bg-emerald-900/50 sm:p-6"
+            >
+              <div className="min-w-0 break-words">
+                <div className="font-bold">Live Math Scratchpad</div>
+                <div className="text-sm opacity-80">
+                  Interactive grid canvas for sketching models and work
+                </div>
+              </div>
+              <span className="shrink-0 rounded-full bg-emerald-200 px-2.5 py-1 text-xs dark:bg-emerald-800">
+                Whiteboard
               </span>
             </button>
           </div>
