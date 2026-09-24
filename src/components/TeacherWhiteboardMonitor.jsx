@@ -15,11 +15,28 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
     if (!section) return;
     const q = query(collection(db, "class_whiteboards", section, "students"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const list = [];
-      snapshot.forEach((doc) => {
-        list.push({ id: doc.id, ...doc.data() });
+      const studentMap = new Map();
+
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        // Unique key by studentId, or fallback to normalized studentName
+        const uniqueKey = data.studentId || docSnap.id || data.studentName?.trim().toLowerCase();
+        if (!uniqueKey) return;
+
+        const currentTimestamp = data.updatedAt?.toMillis?.() || 0;
+        const existing = studentMap.get(uniqueKey);
+
+        if (!existing || currentTimestamp >= (existing.updatedAt?.toMillis?.() || 0)) {
+          studentMap.set(uniqueKey, {
+            id: docSnap.id,
+            uniqueKey,
+            ...data,
+          });
+        }
       });
-      list.sort((a, b) => (b.updatedAt?.toMillis() || 0) - (a.updatedAt?.toMillis() || 0));
+
+      const list = Array.from(studentMap.values());
+      list.sort((a, b) => (b.updatedAt?.toMillis?.() || 0) - (a.updatedAt?.toMillis?.() || 0));
       setStudents(list);
     }, (err) => {
       console.error("Error fetching whiteboard stream:", err);
@@ -35,22 +52,22 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
     return () => clearInterval(interval);
   }, [isCycling, students.length]);
 
-  const togglePin = (studentId) => {
-    if (pinnedIds.includes(studentId)) {
-      setPinnedIds(pinnedIds.filter(id => id !== studentId));
+  const togglePin = (uniqueKey) => {
+    if (pinnedIds.includes(uniqueKey)) {
+      setPinnedIds(pinnedIds.filter((id) => id !== uniqueKey));
     } else {
       if (pinnedIds.length >= 4) {
-        setPinnedIds([pinnedIds[1], pinnedIds[2], pinnedIds[3], studentId]);
+        setPinnedIds([pinnedIds[1], pinnedIds[2], pinnedIds[3], uniqueKey]);
       } else {
-        setPinnedIds([...pinnedIds, studentId]);
+        setPinnedIds([...pinnedIds, uniqueKey]);
       }
     }
   };
 
-  const displayedStudents = isCycling 
+  const displayedStudents = isCycling
     ? students.slice(cycleIndex, cycleIndex + 2).concat(students.length < 2 ? [] : students.slice(0, Math.max(0, 2 - (students.length - cycleIndex))))
-    : pinnedIds.length > 0 
-      ? students.filter(s => pinnedIds.includes(s.id)) 
+    : pinnedIds.length > 0
+      ? students.filter((s) => pinnedIds.includes(s.uniqueKey))
       : students;
 
   return (
@@ -93,15 +110,15 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
       ) : (
         <div className={"grid gap-6 " + (pinnedIds.length > 0 || isCycling ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4")}>
           {displayedStudents.map((student) => {
-            const isPinned = pinnedIds.includes(student.id);
+            const isPinned = pinnedIds.includes(student.uniqueKey);
             return (
-              <div key={student.id} className={"bg-white dark:bg-slate-900 rounded-2xl shadow-sm border transition-all overflow-hidden flex flex-col " + (isPinned ? "border-blue-500 ring-2 ring-blue-500/20 shadow-md" : "border-slate-200 dark:border-slate-800")}>
+              <div key={student.uniqueKey} className={"bg-white dark:bg-slate-900 rounded-2xl shadow-sm border transition-all overflow-hidden flex flex-col " + (isPinned ? "border-blue-500 ring-2 ring-blue-500/20 shadow-md" : "border-slate-200 dark:border-slate-800")}>
                 <div className="px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
                     <span className="font-bold text-sm text-slate-800 dark:text-slate-200 truncate max-w-[160px]">{student.studentName || "Student"}</span>
                   </div>
-                  <button onClick={() => togglePin(student.id)} className={"px-2.5 py-1 text-xs font-semibold rounded-lg transition-all " + (isPinned ? "bg-blue-600 text-white" : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300")}>
+                  <button onClick={() => togglePin(student.uniqueKey)} className={"px-2.5 py-1 text-xs font-semibold rounded-lg transition-all " + (isPinned ? "bg-blue-600 text-white" : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300")}>
                     {isPinned ? "Pinned ✓" : "Pin View"}
                   </button>
                 </div>
