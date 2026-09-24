@@ -39,11 +39,29 @@ export default function StudentWhiteboard({ studentId, sectionId, studentName, o
     ctx.stroke();
   };
 
+  
+  // Helper to calculate exact coordinates accounting for CSS scaling & screen size changes
+  const getCoordinates = (e) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : getCoordinates(e).x;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY
+    };
+  };
+
   const startDrawing = (e) => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
+    const x = (getCoordinates(e).x || e.touches?.[0]?.clientX) - rect.left;
     const y = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
 
     ctx.beginPath();
@@ -56,7 +74,7 @@ export default function StudentWhiteboard({ studentId, sectionId, studentName, o
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
+    const x = (getCoordinates(e).x || e.touches?.[0]?.clientX) - rect.left;
     const y = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
 
     ctx.strokeStyle = tool === 'eraser' ? '#ffffff' : '#1e293b';
