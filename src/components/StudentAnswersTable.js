@@ -58,7 +58,7 @@ export default function StudentAnswersTable({
  >
  <td className="p-4 font-bold text-slate-400">{index + 1}</td>
  <td className="p-4 text-slate-800 font-medium">
- {ans?.question?.text || ans?.question?.prompt || (typeof ans?.question === "string" ? ans?.question : "Unknown Question")}
+ <div dangerouslySetInnerHTML={{ __html: ans?.question?.question || ans?.question?.text || ans?.question?.prompt || (typeof ans?.question === "string" ? ans?.question : "Unknown Question") }} />
  </td>
  <td className="p-4">
  <span
@@ -73,9 +73,7 @@ export default function StudentAnswersTable({
  {ans.isCorrect && " "}
  </span>
  </td>
- <td className="p-4 font-bold text-slate-600">
- {ans?.correctAnswer || ""}
- </td>
+ <td className="p-4 font-bold text-slate-600">{ans?.correctAnswer || ans?.question?.answer || ans?.expected || "MISSING FROM DB"}</td>
  </tr>
  ))
  )}
