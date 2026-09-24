@@ -1,4 +1,5 @@
 import StudentWhiteboard from "./student/StudentWhiteboard";
+import StudentImageGallery from "./student/StudentImageGallery";
 import React, { useState } from "react";
 import YouTubeHubView from "./YouTubeHubView";
 import MayansPortalView from "./MayansPortalView";
@@ -74,6 +75,10 @@ export default function StudentHome({
         />
       </div>
     );
+  }
+
+  if (currentView === "images") {
+    return <StudentImageGallery sectionId={section} onBack={() => setCurrentView(null)} />;
   }
 
   if (currentView === "youtube") {
@@ -279,6 +284,21 @@ export default function StudentHome({
               </div>
               <span className="shrink-0 rounded-full bg-emerald-200 px-2.5 py-1 text-xs dark:bg-emerald-800">
                 Whiteboard
+              </span>
+            </button>
+
+            <button
+              onClick={() => setCurrentView("images")}
+              className="flex min-h-[6rem] min-w-0 items-center justify-between gap-4 rounded-lg border border-purple-200 bg-purple-50 p-5 text-left text-lg font-medium text-purple-700 transition-all hover:bg-purple-100 dark:border-purple-800 dark:bg-purple-950/30 dark:text-purple-300 dark:hover:bg-purple-900/50 sm:p-6"
+            >
+              <div className="min-w-0 break-words">
+                <div className="font-bold">Class Visuals & Reference</div>
+                <div className="text-sm opacity-80">
+                  Anchor charts, diagrams, and problem screenshots
+                </div>
+              </div>
+              <span className="shrink-0 rounded-full bg-purple-200 px-2.5 py-1 text-xs dark:bg-purple-800">
+                Images
               </span>
             </button>
           </div>

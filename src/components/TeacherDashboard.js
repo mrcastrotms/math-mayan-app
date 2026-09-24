@@ -1,4 +1,5 @@
 import TeacherWhiteboardMonitor from "./TeacherWhiteboardMonitor";
+import TeacherImageHub from "./TeacherImageHub";
 import RosterManagerModal from "./dashboard/RosterManagerModal";
 // src/components/TeacherDashboard.js
 import { useState } from "react";
@@ -38,6 +39,7 @@ export default function TeacherDashboard({
   const [showRosterModal, setShowRosterModal] = useState(false);
   const [isViewingAttendanceHistory, setIsViewingAttendanceHistory] = useState(false);
   const [isViewingWhiteboard, setIsViewingWhiteboard] = useState(false);
+  const [isViewingImageHub, setIsViewingImageHub] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
   const [showAddSectionModal, setShowAddSectionModal] = useState(false);
   const [sectionToDelete, setSectionToDelete] = useState(null);
@@ -134,6 +136,19 @@ export default function TeacherDashboard({
             <h3 className="text-lg font-bold text-emerald-400 mb-1">Live Whiteboard</h3>
             <p className="text-sm opacity-75 mb-4">Monitor and inspect active student scratchpads in real time.</p>
           </div>
+
+        <div className="flex flex-col justify-between bg-[var(--app-surface)] border border-[var(--app-border)] rounded-2xl p-6 shadow-xl flex-1 min-w-[280px]">
+          <div>
+            <h3 className="text-lg font-bold text-purple-400 mb-1">Class Visuals Hub</h3>
+            <p className="text-sm opacity-75 mb-4">Paste anchor charts, problem screenshots, or reference diagrams for students.</p>
+          </div>
+          <button
+            onClick={() => setIsViewingImageHub(true)}
+            className="w-full py-2.5 px-4 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition-all shadow-md"
+          >
+            Open Visuals Hub
+          </button>
+        </div>
           <button
             onClick={() => setIsViewingWhiteboard(true)}
             className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all shadow-md"
