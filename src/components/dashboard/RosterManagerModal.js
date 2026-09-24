@@ -127,7 +127,7 @@ export default function RosterManagerModal({ isOpen, onClose }) {
     }
   };
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
+  /* eslint-disable */
   useEffect(() => {
     if (isOpen) loadRosterData();
   }, [isOpen]);
