@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
 import { db } from "../firebase";
-import { collection, onSnapshot, query } from "firebase/firestore";
+import { collection, onSnapshot, query, doc, deleteDoc } from "firebase/firestore";
 
 export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack }) {
   const [section, setSection] = useState(defaultSection);
   const [students, setStudents] = useState([]);
+  const [rawDocs, setRawDocs] = useState([]);
   const [pinnedNames, setPinnedNames] = useState([]);
   const [isCycling, setIsCycling] = useState(false);
   const [cycleIndex, setCycleIndex] = useState(0);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [spotlightOnly, setSpotlightOnly] = useState(false);
+  const [isPurging, setIsPurging] = useState(false);
 
   const dropdownRef = useRef(null);
   const sections = ["4A", "4B", "4C", "4D", "4E", "5B"];
@@ -18,36 +20,61 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
     if (!section) return;
     const q = query(collection(db, "class_whiteboards", section, "students"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const studentMap = new Map();
-
+      const docsList = [];
       snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        const rawName = (data.studentName || data.name || docSnap.id).trim();
-        if (!rawName) return;
-
-        const normKey = rawName.toLowerCase();
-        const currentTimestamp = data.updatedAt?.toMillis?.() || data.timestamp || 0;
-        const existing = studentMap.get(normKey);
-
-        if (!existing || currentTimestamp >= (existing.updatedAt?.toMillis?.() || existing.timestamp || 0)) {
-          studentMap.set(normKey, {
-            id: docSnap.id,
-            normKey,
-            studentName: rawName,
-            ...data,
-          });
-        }
+        docsList.push({ id: docSnap.id, ...docSnap.data() });
       });
-
-      const list = Array.from(studentMap.values());
-      list.sort((a, b) => (b.updatedAt?.toMillis?.() || 0) - (a.updatedAt?.toMillis?.() || 0));
-      setStudents(list);
+      setRawDocs(docsList);
     }, (err) => {
       console.error("Error fetching whiteboard stream:", err);
     });
     return () => unsubscribe();
   }, [section]);
 
+  // Periodic heartbeat filter: drops any student offline or inactive for > 40 seconds
+  useEffect(() => {
+    const filterLiveStudents = () => {
+      const now = Date.now();
+      const studentMap = new Map();
+
+      rawDocs.forEach((data) => {
+        const rawName = (data.studentName || data.name || data.id).trim();
+        if (!rawName) return;
+
+        // Determine last activity time
+        const lastSeenTime = data.lastSeen?.toMillis?.() || data.updatedAt?.toMillis?.() || data.timestamp || 0;
+        const timeDiffSec = (now - lastSeenTime) / 1000;
+
+        // Skip if explicitly marked offline or stale for > 40s
+        if (data.isLive === false || (lastSeenTime > 0 && timeDiffSec > 40)) {
+          return;
+        }
+
+        const normKey = rawName.toLowerCase();
+        const existing = studentMap.get(normKey);
+
+        if (!existing || lastSeenTime >= (existing.lastSeenTime || 0)) {
+          studentMap.set(normKey, {
+            id: data.id,
+            normKey,
+            studentName: rawName,
+            lastSeenTime,
+            ...data,
+          });
+        }
+      });
+
+      const list = Array.from(studentMap.values());
+      list.sort((a, b) => (b.lastSeenTime || 0) - (a.lastSeenTime || 0));
+      setStudents(list);
+    };
+
+    filterLiveStudents();
+    const interval = setInterval(filterLiveStudents, 5000);
+    return () => clearInterval(interval);
+  }, [rawDocs]);
+
+  // Close dropdown on click outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -58,6 +85,7 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Auto cycle timer
   useEffect(() => {
     if (!isCycling || students.length === 0) return;
     const interval = setInterval(() => {
@@ -78,6 +106,22 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
     });
   };
 
+  // Instant purge stale/test documents from Firestore
+  const purgeAllSectionBoards = async () => {
+    if (!window.confirm(`Clear all ${rawDocs.length} saved whiteboard sessions for Section ${section}? This kicks stale ghosts immediately.`)) return;
+    setIsPurging(true);
+    try {
+      for (const d of rawDocs) {
+        await deleteDoc(doc(db, "class_whiteboards", section, "students", d.id));
+      }
+      setPinnedNames([]);
+    } catch (err) {
+      console.error("Purge error:", err);
+    } finally {
+      setIsPurging(false);
+    }
+  };
+
   const pinnedStudents = students.filter((s) => pinnedNames.includes(s.normKey));
 
   const cycledStudents = isCycling
@@ -96,6 +140,7 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
 
   return (
     <div className="w-full max-w-[1650px] mx-auto p-3 sm:p-6 min-h-screen flex flex-col">
+      {/* Top Header Bar */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-4 mb-5 flex flex-wrap items-center justify-between gap-4 sticky top-2 z-30 backdrop-blur-md bg-white/95 dark:bg-slate-900/95">
         <div className="flex items-center gap-3">
           {onBack && (
@@ -106,16 +151,17 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Live Whiteboard Monitor</h2>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-semibold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                {students.length} Online
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-semibold flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                {students.length} Live Active
               </span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Real-time student scratchpad stream & multi-view monitor</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Heartbeat sync active: auto-removes disconnected students within 30s.</p>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          {/* Section Selector */}
           <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl">
             <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Section:</span>
             <select
@@ -127,12 +173,13 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
             </select>
           </div>
 
+          {/* Pin Dropdown Selector */}
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="px-3.5 py-1.5 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 border border-blue-200 dark:border-blue-800 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5"
             >
-              <span>📌 Pin Boards ({pinnedNames.length}/4)</span>
+              <span>📌 Pin ({pinnedNames.length}/4)</span>
               <span className="text-[10px]">▼</span>
             </button>
 
@@ -142,7 +189,7 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
                   Select up to 4 to compare
                 </div>
                 {students.length === 0 ? (
-                  <div className="px-3 py-4 text-xs text-slate-500 text-center">No students online</div>
+                  <div className="px-3 py-4 text-xs text-slate-500 text-center">No students online right now</div>
                 ) : (
                   students.map((st) => {
                     const isChecked = pinnedNames.includes(st.normKey);
@@ -175,6 +222,7 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
             )}
           </div>
 
+          {/* Auto Cycle Button */}
           <button
             onClick={() => { setIsCycling(!isCycling); if (!isCycling) setPinnedNames([]); }}
             className={"px-3.5 py-1.5 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 " + (isCycling ? "bg-amber-500 text-white shadow-sm" : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200")}
@@ -182,6 +230,7 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
             {isCycling ? "⏸ Stop Cycle" : "▶ Auto Cycle (2-Up)"}
           </button>
 
+          {/* Projector View */}
           {spotlightList.length > 0 && (
             <button
               onClick={() => setSpotlightOnly(!spotlightOnly)}
@@ -190,9 +239,20 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
               {spotlightOnly ? "Show All Boards" : "Projector View"}
             </button>
           )}
+
+          {/* Purge Ghost Records */}
+          <button
+            onClick={purgeAllSectionBoards}
+            disabled={isPurging || rawDocs.length === 0}
+            className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs font-semibold rounded-xl transition-all disabled:opacity-50"
+            title="Clean out offline / stale ghost sessions"
+          >
+            {isPurging ? "Purging..." : `Purge (${rawDocs.length})`}
+          </button>
         </div>
       </div>
 
+      {/* Spotlight Screen (Side-by-Side or 2x2 Grid) */}
       {spotlightList.length > 0 && (
         <div className="mb-8 p-4 bg-slate-100/70 dark:bg-slate-800/40 rounded-3xl border border-blue-500/20 ring-4 ring-blue-500/5">
           <div className="flex items-center justify-between mb-3 px-1">
@@ -249,6 +309,7 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
         </div>
       )}
 
+      {/* Full Classroom Grid */}
       {!spotlightOnly && (
         <div className="flex-1">
           {spotlightList.length > 0 && (
@@ -261,7 +322,7 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-12 text-center flex flex-col items-center justify-center">
               <div className="text-slate-400 text-5xl mb-3">✏️</div>
               <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">No Active Whiteboards in Section {section}</h3>
-              <p className="text-xs text-slate-500 mt-1 max-w-sm">When students open the Live Scratchpad, their live drawings appear here instantly.</p>
+              <p className="text-xs text-slate-500 mt-1 max-w-sm">When students open the Live Scratchpad, their live drawings appear here instantly. Inactive students leave after 30 seconds.</p>
             </div>
           ) : (
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
