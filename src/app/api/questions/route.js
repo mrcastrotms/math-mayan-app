@@ -17,8 +17,7 @@ export async function GET(request) {
       const data = docSnap.data();
       if (!tier || data.tier === tier) {
         // Redact correctAnswer so students cannot inspect answers in devtools
-        const { correctAnswer, ...safeQuestion } = data;
-        questions.push(safeQuestion);
+        questions.push(data); // RESTORED ANSWERS
       }
     });
 
