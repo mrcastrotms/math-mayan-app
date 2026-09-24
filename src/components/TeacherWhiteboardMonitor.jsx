@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
+import { db } from "../lib/firebase";
 import { collection, onSnapshot, query } from "firebase/firestore";
 
 export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack }) {
