@@ -1,3 +1,4 @@
+import TeacherWhiteboardMonitor from "./TeacherWhiteboardMonitor";
 import RosterManagerModal from "./dashboard/RosterManagerModal";
 // src/components/TeacherDashboard.js
 import { useState } from "react";
@@ -36,6 +37,7 @@ export default function TeacherDashboard({
   const [isViewingGradebook, setIsViewingGradebook] = useState(false);
   const [showRosterModal, setShowRosterModal] = useState(false);
   const [isViewingAttendanceHistory, setIsViewingAttendanceHistory] = useState(false);
+  const [isViewingWhiteboard, setIsViewingWhiteboard] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
   const [showAddSectionModal, setShowAddSectionModal] = useState(false);
   const [sectionToDelete, setSectionToDelete] = useState(null);
@@ -123,6 +125,18 @@ export default function TeacherDashboard({
           onResetSession={session.resetSession}
         />
         <GradebookSummaryCard onOpenGradebook={handleOpenGradebook} />
+        <div className="flex flex-col justify-between bg-[var(--app-surface)] border border-[var(--app-border)] rounded-2xl p-6 shadow-xl flex-1 min-w-[280px]">
+          <div>
+            <h3 className="text-lg font-bold text-emerald-400 mb-1">Live Whiteboard</h3>
+            <p className="text-sm opacity-75 mb-4">Monitor and inspect active student scratchpads in real time.</p>
+          </div>
+          <button
+            onClick={() => setIsViewingWhiteboard(true)}
+            className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all shadow-md"
+          >
+            Open Live Monitor →
+          </button>
+        </div>
       </div>
 
       <TeacherJailMonitor
