@@ -104,10 +104,13 @@ export default function TeacherDashboard({
   }
 
   if (isViewingWhiteboard) {
-    return <TeacherWhiteboardMonitor defaultSection={activeSection || "4D"}
+    return <TeacherWhiteboardMonitor defaultSection={activeSection || "4D"} onBack={() => setIsViewingWhiteboard(false)} />;
+  }
 
   if (isViewingImageHub) {
     return <TeacherImageHub defaultSection={activeSection || "4D"} onBack={() => setIsViewingImageHub(false)} />;
+  }
+onBack={() => setIsViewingImageHub(false)} />;
   } onBack={() => setIsViewingWhiteboard(false)} />;
   }
 
