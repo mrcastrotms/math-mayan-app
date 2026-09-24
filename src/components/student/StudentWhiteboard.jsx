@@ -1,20 +1,22 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { db } from "../../firebase";
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function StudentWhiteboard({ studentId, sectionId, studentName, onBack }) {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [tool, setTool] = useState('pen'); // 'pen' or 'eraser'
   const [thickness, setThickness] = useState(3);
-  const [gridSize, setGridSize] = useState(25); // pixel size for grid squares
+  const [gridSize, setGridSize] = useState(25);
 
+  const cleanStudentId = String(studentId || studentName?.trim().toLowerCase().replace(/\s+/g, '_') || 'anon');
+
+  // Canvas setup
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
 
-    // Set internal resolution based on parent container width
     const parentWidth = canvas.parentElement.clientWidth || 800;
     canvas.width = parentWidth;
     canvas.height = 450;
@@ -22,11 +24,54 @@ export default function StudentWhiteboard({ studentId, sectionId, studentName, o
     redrawGrid(ctx, canvas.width, canvas.height, gridSize);
   }, [gridSize]);
 
+  // Heartbeat & Online Presence
+  useEffect(() => {
+    if (!sectionId || !cleanStudentId) return;
+    const docRef = doc(db, 'class_whiteboards', sectionId, 'students', cleanStudentId);
+
+    const sendHeartbeat = async (status = true) => {
+      try {
+        await setDoc(docRef, {
+          studentId: cleanStudentId,
+          studentName: studentName || 'Student',
+          isLive: status,
+          lastSeen: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+      } catch (err) {
+        console.error('Heartbeat error:', err);
+      }
+    };
+
+    // Initial ping
+    sendHeartbeat(true);
+
+    // Heartbeat every 10 seconds
+    const interval = setInterval(() => {
+      sendHeartbeat(true);
+    }, 10000);
+
+    // Mark offline on tab close or unmount
+    const handleUnload = () => {
+      try {
+        updateDoc(docRef, { isLive: false, lastSeen: serverTimestamp() });
+      } catch (e) {}
+    };
+
+    window.addEventListener('beforeunload', handleUnload);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('beforeunload', handleUnload);
+      handleUnload();
+    };
+  }, [sectionId, cleanStudentId, studentName]);
+
   function redrawGrid(ctx, width, height, size) {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, width, height);
 
-    ctx.strokeStyle = '#e2e8f0'; // light gray grid lines
+    ctx.strokeStyle = '#e2e8f0';
     ctx.lineWidth = 1;
 
     ctx.beginPath();
@@ -41,7 +86,6 @@ export default function StudentWhiteboard({ studentId, sectionId, studentName, o
     ctx.stroke();
   }
 
-  // Exact coordinate calculation: scales CSS display rect to internal canvas pixels
   const getCoordinates = (e) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
@@ -98,18 +142,20 @@ export default function StudentWhiteboard({ studentId, sectionId, studentName, o
   };
 
   const syncToFirestore = async () => {
-    if (!studentId || !sectionId) return;
+    if (!sectionId || !cleanStudentId) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
 
     try {
-      const docRef = doc(db, 'class_whiteboards', sectionId, 'students', String(studentId));
+      const docRef = doc(db, 'class_whiteboards', sectionId, 'students', cleanStudentId);
       await setDoc(docRef, {
-        studentId: String(studentId),
+        studentId: cleanStudentId,
         studentName: studentName || 'Student',
         dataUrl,
+        isLive: true,
+        lastSeen: serverTimestamp(),
         updatedAt: serverTimestamp(),
       }, { merge: true });
     } catch (err) {
@@ -138,12 +184,14 @@ export default function StudentWhiteboard({ studentId, sectionId, studentName, o
             </button>
           )}
           <div>
-            <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg">Live Math Scratchpad</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg">Live Math Scratchpad</h3>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Live Sync Active" />
+            </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">Sketch area models, number lines, or work out your steps.</p>
           </div>
         </div>
 
-        {/* Toolbar Controls */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
             <button
@@ -194,7 +242,6 @@ export default function StudentWhiteboard({ studentId, sectionId, studentName, o
         </div>
       </div>
 
-      {/* Canvas Element */}
       <div className="w-full overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 cursor-crosshair">
         <canvas
           ref={canvasRef}
