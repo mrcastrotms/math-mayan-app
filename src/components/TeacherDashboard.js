@@ -1,3 +1,4 @@
+import RosterManagerModal from "./dashboard/RosterManagerModal";
 // src/components/TeacherDashboard.js
 import { useState } from "react";
 import { useTeacherSession } from "../hooks/useTeacherSession";
@@ -33,6 +34,7 @@ export default function TeacherDashboard({
   onStudentVersion,
 }) {
   const [isViewingGradebook, setIsViewingGradebook] = useState(false);
+  const [showRosterModal, setShowRosterModal] = useState(false);
   const [isViewingAttendanceHistory, setIsViewingAttendanceHistory] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
   const [showAddSectionModal, setShowAddSectionModal] = useState(false);
@@ -153,6 +155,29 @@ export default function TeacherDashboard({
         {themeMessage && <p role="status" className="mt-3 text-sm text-emerald-300">{themeMessage}</p>}
       </section>
 
+      
+      {/* Student Directory & Roster Card */}
+      <section className="w-full max-w-4xl rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <h2 className="text-lg font-bold">Student Directory & Family Contacts</h2>
+            <span className="text-[10px] bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-mono px-2 py-0.5 rounded-full font-semibold">
+              Firestore Roster
+            </span>
+          </div>
+          <p className="text-sm opacity-75">
+            View enrolled students across sections 4A–5B, search records, and manage parent emails & phone numbers.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowRosterModal(true)}
+          className="rounded-lg bg-orange-600 px-5 py-2.5 text-sm font-bold text-white shadow-md hover:bg-orange-500 transition cursor-pointer whitespace-nowrap"
+        >
+          Open Roster Directory
+        </button>
+      </section>
+
       <ClassManagerCard
         availableSections={availableSections}
         onAddSection={() => setShowAddSectionModal(true)}
@@ -189,6 +214,8 @@ export default function TeacherDashboard({
         sectionToDelete={sectionToDelete}
         setSectionToDelete={setSectionToDelete}
       />
+
+      <RosterManagerModal isOpen={showRosterModal} onClose={() => setShowRosterModal(false)} currentTheme={themeState} />
     </div>
   );
 }
