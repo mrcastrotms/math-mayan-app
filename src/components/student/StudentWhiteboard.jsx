@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { db } from '@/lib/firebase';
+import { db } from "../../lib/firebase";
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function StudentWhiteboard({ studentId, sectionId, studentName, onBack }) {
