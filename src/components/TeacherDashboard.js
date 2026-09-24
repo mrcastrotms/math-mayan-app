@@ -110,9 +110,6 @@ export default function TeacherDashboard({
   if (isViewingImageHub) {
     return <TeacherImageHub defaultSection={activeSection || "4D"} onBack={() => setIsViewingImageHub(false)} />;
   }
-onBack={() => setIsViewingImageHub(false)} />;
-  } onBack={() => setIsViewingWhiteboard(false)} />;
-  }
 
   if (isViewingAttendanceHistory) {
     return <AttendanceValuesHistory availableSections={availableSections} onBack={() => setIsViewingAttendanceHistory(false)} />;
