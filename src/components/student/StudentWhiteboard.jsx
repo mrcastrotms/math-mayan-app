@@ -20,7 +20,7 @@ export default function StudentWhiteboard({ studentId, sectionId, studentName, o
     redrawGrid(ctx, canvas.width, canvas.height, gridSize);
   }, [gridSize]);
 
-  const redrawGrid = (ctx, width, height, size) => {
+  function redrawGrid(ctx, width, height, size) {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, width, height);
 
