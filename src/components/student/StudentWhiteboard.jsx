@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
-export default function StudentWhiteboard({ studentId, sectionId, studentName }) {
+export default function StudentWhiteboard({ studentId, sectionId, studentName, onBack }) {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [tool, setTool] = useState('pen'); // 'pen' or 'eraser'
@@ -15,7 +15,7 @@ export default function StudentWhiteboard({ studentId, sectionId, studentName })
     const ctx = canvas.getContext('2d');
     
     canvas.width = canvas.parentElement.clientWidth || 800;
-    canvas.height = 400;
+    canvas.height = 450;
 
     redrawGrid(ctx, canvas.width, canvas.height, gridSize);
   }, [gridSize]);
@@ -102,31 +102,41 @@ export default function StudentWhiteboard({ studentId, sectionId, studentName })
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mt-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-3 pb-3 border-b border-slate-100">
-        <div>
-          <h3 className="font-bold text-slate-800 text-lg">Live Math Scratchpad</h3>
-          <p className="text-xs text-slate-500">Draw models, number lines, or work out your steps.</p>
+    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-4 sm:p-6 w-full">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center gap-3">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5"
+            >
+              ← Back to Menu
+            </button>
+          )}
+          <div>
+            <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg">Live Math Scratchpad</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Sketch area models, number lines, or work out your steps.</p>
+          </div>
         </div>
 
         {/* Toolbar Controls */}
-        <div className="flex items-center gap-3">
-          <div className="flex bg-slate-100 p-1 rounded-xl">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
             <button
               onClick={() => setTool('pen')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${tool === 'pen' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600'}`}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${tool === 'pen' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-600 dark:text-slate-400'}`}
             >
               Pen
             </button>
             <button
               onClick={() => setTool('eraser')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${tool === 'eraser' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600'}`}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${tool === 'eraser' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-600 dark:text-slate-400'}`}
             >
               Eraser
             </button>
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs text-slate-600">
+          <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
             <span>Size:</span>
             <input
               type="range"
@@ -138,12 +148,12 @@ export default function StudentWhiteboard({ studentId, sectionId, studentName })
             />
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs text-slate-600">
+          <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
             <span>Grid:</span>
             <select
               value={gridSize}
               onChange={(e) => setGridSize(Number(e.target.value))}
-              className="bg-slate-100 border border-slate-200 rounded-lg px-2 py-1 text-xs font-medium"
+              className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-xs font-medium text-slate-700 dark:text-slate-300"
             >
               <option value="15">Fine</option>
               <option value="25">Standard</option>
@@ -153,7 +163,7 @@ export default function StudentWhiteboard({ studentId, sectionId, studentName })
 
           <button
             onClick={clearBoard}
-            className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold rounded-xl transition-all"
+            className="px-3.5 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 text-xs font-semibold rounded-xl transition-all"
           >
             Clear Board
           </button>
@@ -161,7 +171,7 @@ export default function StudentWhiteboard({ studentId, sectionId, studentName })
       </div>
 
       {/* Canvas Element */}
-      <div className="w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-50 cursor-crosshair">
+      <div className="w-full overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 cursor-crosshair">
         <canvas
           ref={canvasRef}
           onMouseDown={startDrawing}
