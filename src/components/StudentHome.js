@@ -1,3 +1,4 @@
+import StudentWhiteboard from "./student/StudentWhiteboard";
 import React, { useState } from "react";
 import YouTubeHubView from "./YouTubeHubView";
 import MayansPortalView from "./MayansPortalView";
@@ -60,6 +61,20 @@ export default function StudentHome({
       forceLogout();
     }
   };
+
+  if (currentView === "whiteboard") {
+    const deviceUid = typeof window !== "undefined" ? localStorage.getItem("exam_device_uuid") || "anonymous" : "anonymous";
+    return (
+      <div className="max-w-6xl mx-auto p-4 sm:p-6">
+        <StudentWhiteboard 
+          studentId={deviceUid} 
+          sectionId={section} 
+          studentName={studentName} 
+          onBack={() => setCurrentView("menu")} 
+        />
+      </div>
+    );
+  }
 
   if (currentView === "youtube") {
     return <YouTubeHubView onBack={() => setCurrentView("menu")} />;
