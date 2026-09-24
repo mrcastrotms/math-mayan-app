@@ -266,6 +266,21 @@ export default function StudentHome({
                 Video
               </span>
             </button>
+
+            <button
+              onClick={() => setCurrentView("whiteboard")}
+              className="flex min-h-[6rem] min-w-0 items-center justify-between gap-4 rounded-lg border border-emerald-200 bg-emerald-50 p-5 text-left text-lg font-medium text-emerald-700 transition-all hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300 dark:hover:bg-emerald-900/50 sm:p-6"
+            >
+              <div className="min-w-0 break-words">
+                <div className="font-bold">Live Math Scratchpad</div>
+                <div className="text-sm opacity-80">
+                  Interactive grid canvas for sketching models and work
+                </div>
+              </div>
+              <span className="shrink-0 rounded-full bg-emerald-200 px-2.5 py-1 text-xs dark:bg-emerald-800">
+                Whiteboard
+              </span>
+            </button>
           </div>
           <nav
             aria-label="Mobile student controls"
