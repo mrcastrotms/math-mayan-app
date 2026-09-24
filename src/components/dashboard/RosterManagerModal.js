@@ -385,7 +385,9 @@ export default function RosterManagerModal({ isOpen, onClose }) {
                 </button>
               </div>
 
-              <form onSubmit={handleSaveContact} className="space-y-4 text-xs">
+              <form onSubmit={handleSaveContact} className="flex flex-col h-full max-h-[80vh] text-xs">
+              <div className="flex-1 overflow-y-auto space-y-4 pr-2 pb-4">
+                
                 <div>
                   <label className="block font-semibold mb-1">Student</label>
                   <div className="font-bold text-sm">{editingStudent.name}</div>
@@ -472,16 +474,24 @@ export default function RosterManagerModal({ isOpen, onClose }) {
                   />
                 </div>
 
-                <div className="pt-2 flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="rounded bg-[var(--app-accent)] px-4 py-2 font-bold text-white hover:opacity-90 disabled:opacity-50"
-                  >
-                    {saving ? "Saving..." : "Save Contact Info"}
-                  </button>
                 </div>
-              </form>
+              <div className="pt-3 border-t border-[var(--app-border)] flex items-center justify-end gap-2 bg-[var(--app-surface)] sticky bottom-0 z-10">
+                <button
+                  type="button"
+                  onClick={() => setEditingStudent(null)}
+                  className="rounded px-3 py-2 text-xs font-semibold opacity-70 hover:opacity-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="rounded bg-[var(--app-accent)] px-4 py-2 font-bold text-white hover:opacity-90 disabled:opacity-50 shadow-md cursor-pointer"
+                >
+                  {saving ? "Saving..." : "Save Contact Info"}
+                </button>
+              </div>
+            </form>
             </div>
           )}
         </div>
