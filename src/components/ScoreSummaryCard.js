@@ -1,5 +1,5 @@
 // src/components/ScoreSummaryCard.js
-import React from "react";
+import React, { useEffect } from "react";
 
 export default function ScoreSummaryCard({
   student,
@@ -10,6 +10,40 @@ export default function ScoreSummaryCard({
   demerits = 0,
   reportId = "",
 }) {
+
+  // AUTOMATED EMAIL TRIGGER
+    // AUTOMATED EMAIL TRIGGER
+  const emailFiredRef = React.useRef(false);
+  useEffect(() => {
+    if (emailFiredRef.current) return;
+    
+    if (isSaving === false) {
+      console.log("🚨 EMAIL TRIGGER CHECK 🚨", {
+        isSaving,
+        reportId: reportId || "MISSING",
+        studentId: student?.id || "MISSING",
+        studentName: student?.name || "MISSING"
+      });
+    }
+
+    if (isSaving === false && reportId && reportId !== "" && (student?.id || student?.name)) {
+      console.log("Triggering automated results email...");
+      emailFiredRef.current = true;
+      fetch("/api/send-results", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentId: student?.id || student?.name,
+          studentName: student?.name || "Student",
+          score: finalScore,
+          reportId: reportId
+        })
+      })
+      .then(res => res.json())
+      .then(data => console.log("Email API Response:", data))
+      .catch(err => console.error("Failed to send automated email:", err));
+    }
+  }, [isSaving, reportId, student?.id, student?.name, finalScore]);
   const handleEmailReport = () => {
     const studentName = student?.name || "Your student";
     const subject = encodeURIComponent(`Math Assessment Score: ${studentName}`);

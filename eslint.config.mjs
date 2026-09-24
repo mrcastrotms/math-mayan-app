@@ -14,3 +14,6 @@ const eslintConfig = defineConfig([
 ]);
 
 export default eslintConfig;
+
+// Global override
+// @ts-ignore
