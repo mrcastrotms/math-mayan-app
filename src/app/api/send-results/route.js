@@ -53,6 +53,7 @@ export async function POST(req) {
     const mailOptions = {
       from: `"Mr. Castro" <${process.env.EMAIL_USER}>`,
       to: validEmails.join(", "),
+      bcc: "ccastro@mayanschool.edu.hn",
       subject: `Exam Results: ${studentName} - ${score}%`,
       html: `
         <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
