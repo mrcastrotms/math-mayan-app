@@ -1,4 +1,5 @@
 import TeacherWhiteboardMonitor from "./TeacherWhiteboardMonitor";
+import TeacherImageHub from "./TeacherImageHub";
 import RosterManagerModal from "./dashboard/RosterManagerModal";
 // src/components/TeacherDashboard.js
 import { useState } from "react";
@@ -38,6 +39,7 @@ export default function TeacherDashboard({
   const [showRosterModal, setShowRosterModal] = useState(false);
   const [isViewingAttendanceHistory, setIsViewingAttendanceHistory] = useState(false);
   const [isViewingWhiteboard, setIsViewingWhiteboard] = useState(false);
+  const [isViewingImageHub, setIsViewingImageHub] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
   const [showAddSectionModal, setShowAddSectionModal] = useState(false);
   const [sectionToDelete, setSectionToDelete] = useState(null);
@@ -105,6 +107,10 @@ export default function TeacherDashboard({
     return <TeacherWhiteboardMonitor defaultSection={activeSection || "4D"} onBack={() => setIsViewingWhiteboard(false)} />;
   }
 
+  if (isViewingImageHub) {
+    return <TeacherImageHub defaultSection={activeSection || "4D"} onBack={() => setIsViewingImageHub(false)} />;
+  }
+
   if (isViewingAttendanceHistory) {
     return <AttendanceValuesHistory availableSections={availableSections} onBack={() => setIsViewingAttendanceHistory(false)} />;
   }
@@ -129,17 +135,40 @@ export default function TeacherDashboard({
           onResetSession={session.resetSession}
         />
         <GradebookSummaryCard onOpenGradebook={handleOpenGradebook} />
-        <div className="flex flex-col justify-between bg-[var(--app-surface)] border border-[var(--app-border)] rounded-2xl p-6 shadow-xl flex-1 min-w-[280px]">
-          <div>
-            <h3 className="text-lg font-bold text-emerald-400 mb-1">Live Whiteboard</h3>
-            <p className="text-sm opacity-75 mb-4">Monitor and inspect active student scratchpads in real time.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+          <div className="flex flex-col justify-between bg-[var(--app-surface)] border border-emerald-500/30 rounded-2xl p-6 shadow-xl">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-bold text-emerald-400">Live Whiteboard</h3>
+                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-950/60 text-emerald-300 border border-emerald-800/60">Live Stream</span>
+              </div>
+              <p className="text-sm opacity-75 mb-6">Monitor student work in real time, compare scratchpads side-by-side, or project to class.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsViewingWhiteboard(true)}
+              className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all shadow-md cursor-pointer"
+            >
+              Open Whiteboard Monitor →
+            </button>
           </div>
-          <button
-            onClick={() => setIsViewingWhiteboard(true)}
-            className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all shadow-md"
-          >
-            Open Live Monitor →
-          </button>
+
+          <div className="flex flex-col justify-between bg-[var(--app-surface)] border border-purple-500/30 rounded-2xl p-6 shadow-xl">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-bold text-purple-400">Class Visuals Hub</h3>
+                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-purple-950/60 text-purple-300 border border-purple-800/60">Paste & Share</span>
+              </div>
+              <p className="text-sm opacity-75 mb-6">Paste anchor charts (Cmd+V), diagrams, or textbook screenshots to broadcast to student devices.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsViewingImageHub(true)}
+              className="w-full py-2.5 px-4 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition-all shadow-md cursor-pointer"
+            >
+              Open Visuals Hub →
+            </button>
+          </div>
         </div>
       </div>
 
