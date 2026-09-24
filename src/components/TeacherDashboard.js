@@ -101,6 +101,10 @@ export default function TeacherDashboard({
     );
   }
 
+  if (isViewingWhiteboard) {
+    return <TeacherWhiteboardMonitor defaultSection={activeSection || "4D"} onBack={() => setIsViewingWhiteboard(false)} />;
+  }
+
   if (isViewingAttendanceHistory) {
     return <AttendanceValuesHistory availableSections={availableSections} onBack={() => setIsViewingAttendanceHistory(false)} />;
   }
