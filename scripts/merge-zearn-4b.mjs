@@ -40,16 +40,20 @@ async function runMigration() {
   console.log(`Found ${existingStudents.length} students in Section 4B roster.`);
 
   let matchCount = 0;
-  const updatedStudents = existingStudents.map((student) => {
-    const studentName = (student.displayName || student.rawName || "").trim();
+  const updatedStudents = [];
+
+  for (const student of existingStudents) {
+    const studentName = (student.displayName || student.rawName || student.name || "").trim();
     const matchKey = Object.keys(ZEARN_4B_CREDENTIALS).find(
       (name) => name.toLowerCase() === studentName.toLowerCase()
     );
 
+    let updatedStudent = { ...student };
+
     if (matchKey) {
       matchCount++;
       const creds = ZEARN_4B_CREDENTIALS[matchKey];
-      return {
+      updatedStudent = {
         ...student,
         zearnClasscodeClasswork: "EZ7D6N",
         zearnClassworkUser: creds.classUser,
@@ -58,14 +62,31 @@ async function runMigration() {
         zearnHomeworkUser: creds.hwUser,
         zearnHomeworkPass: creds.hwPass,
       };
+
+      // Also upsert directly into student_contacts so RosterManagerModal picks it up instantly
+      const studentId = student.id || `4B_${studentName.toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
+      const contactRef = doc(db, "student_contacts", studentId);
+      await setDoc(
+        contactRef,
+        {
+          name: studentName,
+          section: "4B",
+          zearnClasscodeClasswork: "EZ7D6N",
+          zearnClassworkUser: creds.classUser,
+          zearnClassworkPass: creds.classPass,
+          zearnClasscodeHomework: "DH3P2G",
+          zearnHomeworkUser: creds.hwUser,
+          zearnHomeworkPass: creds.hwPass,
+        },
+        { merge: true }
+      );
     }
-    return student;
-  });
+    updatedStudents.push(updatedStudent);
+  }
 
-  console.log(`Successfully matched and merged Zearn credentials for ${matchCount} students.`);
-
+  // Update class_rosters/4B
   await setDoc(docRef, { ...data, students: updatedStudents }, { merge: true });
-  console.log("Firestore document class_rosters/4B updated successfully without data loss.");
+  console.log(`Successfully synced Zearn credentials for ${matchCount} students in class_rosters and student_contacts.`);
   process.exit(0);
 }
 

@@ -4,44 +4,49 @@
 import React, { useState, useEffect } from "react";
 
 export default function ZearnHubView({ onBack }) {
-  const [studentName, setStudentName] = useState("");
-  const [studentSection, setStudentSection] = useState("");
+  const [studentName] = useState(() => {
+    try {
+      return localStorage.getItem("exam_student_name") || "";
+    } catch (e) {
+      return "";
+    }
+  });
+
+  const [studentSection] = useState(() => {
+    try {
+      return localStorage.getItem("exam_student_section") || "4B";
+    } catch (e) {
+      return "4B";
+    }
+  });
+
   const [studentCreds, setStudentCreds] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const name = localStorage.getItem("exam_student_name") || "";
-      const section = localStorage.getItem("exam_student_section") || "4B";
-      setStudentName(name);
-      setStudentSection(section);
-
-      if (section) {
-        fetch(`/api/roster?section=${section}`)
-          .then((res) => res.json())
-          .then((data) => {
-            const students = data.students || [];
-            const found = students.find(
-              (s) =>
-                (s.displayName || s.rawName || "").toLowerCase().trim() ===
-                name.toLowerCase().trim()
-            );
-            if (found) {
-              setStudentCreds(found);
-            }
-            setIsLoading(false);
-          })
-          .catch((err) => {
-            console.error("Failed to load roster credentials:", err);
-            setIsLoading(false);
-          });
-      } else {
-        setIsLoading(false);
-      }
-    } catch (e) {
+    if (studentSection) {
+      fetch(`/api/roster?section=${studentSection}`)
+        .then((res) => res.json())
+        .then((data) => {
+          const students = data.students || [];
+          const found = students.find(
+            (s) =>
+              (s.displayName || s.rawName || "").toLowerCase().trim() ===
+              studentName.toLowerCase().trim()
+          );
+          if (found) {
+            setStudentCreds(found);
+          }
+          setIsLoading(false);
+        })
+        .catch((err) => {
+          console.error("Failed to load roster credentials:", err);
+          setIsLoading(false);
+        });
+    } else {
       setIsLoading(false);
     }
-  }, []);
+  }, [studentSection, studentName]);
 
   const handleLaunchZearn = () => {
     const width = Math.min(1280, window.screen.availWidth * 0.95);
