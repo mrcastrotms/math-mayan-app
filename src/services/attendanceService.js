@@ -7,6 +7,8 @@ import {
   updateDoc,
   deleteDoc,
   serverTimestamp,
+  query,
+  where
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { dateKeyFromDate } from "../utils/attendanceBehavior.mjs";
@@ -60,15 +62,18 @@ export async function qualifyAttendance(id, now = Date.now()) {
 }
 
 export async function loadAttendanceRecords(dateKey = dateKeyFromDate()) {
-  const snapshot = await getDocs(collection(db, "attendance_records"));
-  return snapshot.docs
-    .map((item) => ({ id: item.id, ...item.data() }))
-    .filter((item) => !dateKey || item.dateKey === dateKey);
+  const q = dateKey 
+    ? query(collection(db, "attendance_records"), where("dateKey", "==", dateKey))
+    : collection(db, "attendance_records");
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
 }
 
 export function subscribeToAttendance(onUpdate, onError) {
+  const today = dateKeyFromDate();
+  const q = query(collection(db, "attendance_records"), where("dateKey", "==", today));
   return onSnapshot(
-    collection(db, "attendance_records"),
+    q,
     (snapshot) => onUpdate(snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))),
     onError,
   );
