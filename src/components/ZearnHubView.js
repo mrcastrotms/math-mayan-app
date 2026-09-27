@@ -1,6 +1,4 @@
-// src/components/ZearnHubView.js
 "use client";
-
 import React, { useState, useEffect } from "react";
 
 export default function ZearnHubView({ onBack }) {
@@ -11,22 +9,19 @@ export default function ZearnHubView({ onBack }) {
       return "";
     }
   });
-
   const [studentSection] = useState(() => {
     try {
-      return localStorage.getItem("exam_student_section") || "4B";
+      return localStorage.getItem("exam_student_section") || "";
     } catch (e) {
-      return "4B";
+      return "";
     }
   });
-
   const [studentCreds, setStudentCreds] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
-
-    if (studentSection) {
+    if (studentSection && studentName) {
       fetch(`/api/roster?section=${studentSection}`)
         .then((res) => res.json())
         .then((data) => {
@@ -47,24 +42,16 @@ export default function ZearnHubView({ onBack }) {
           console.error("Failed to load roster credentials:", err);
           setIsLoading(false);
         });
+    } else {
+      setIsLoading(false);
     }
-
     return () => {
       isMounted = false;
     };
   }, [studentSection, studentName]);
 
   const handleLaunchZearn = () => {
-    const width = Math.min(1280, window.screen.availWidth * 0.95);
-    const height = Math.min(850, window.screen.availHeight * 0.92);
-    const left = (window.screen.availWidth - width) / 2;
-    const top = (window.screen.availHeight - height) / 2;
-
-    window.open(
-      "https://www.zearn.org/users/sign_in",
-      "ZearnMathWorkspace",
-      `width=${width},height=${height},top=${top},left=${left},menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes`
-    );
+    window.open("https://www.zearn.org", "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -89,14 +76,17 @@ export default function ZearnHubView({ onBack }) {
       </div>
 
       <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full mt-6">
-        {/* Credentials Card */}
         <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-xl">
           <h2 className="text-lg font-bold mb-2 text-[var(--app-fg)]">Your Personal Zearn Credentials</h2>
           <p className="text-sm opacity-80 mb-6">
             Use these official credentials and class codes to log in to Zearn Math.
           </p>
 
-          {isLoading ? (
+          {!studentSection || !studentName ? (
+            <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-4 text-sm text-amber-600 dark:text-amber-400 font-semibold">
+              Missing student session data. Please click "Back to Menu" and log in again to see your credentials.
+            </div>
+          ) : isLoading ? (
             <p className="text-sm opacity-70">Loading your Zearn credentials...</p>
           ) : studentCreds ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -107,7 +97,7 @@ export default function ZearnHubView({ onBack }) {
                     Classwork Account
                   </span>
                   <span className="text-xs font-mono border border-[var(--app-border)] px-2.5 py-1 rounded-lg">
-                    Code: {studentCreds.zearnClasscodeClasswork || (studentSection === "4B" ? "EZ7D6N" : "MY9Q4Y")}
+                    Code: {studentCreds.zearnClasscodeClasswork || "Not assigned"}
                   </span>
                 </div>
                 <div>
@@ -131,7 +121,7 @@ export default function ZearnHubView({ onBack }) {
                     Homework Account
                   </span>
                   <span className="text-xs font-mono border border-[var(--app-border)] px-2.5 py-1 rounded-lg">
-                    Code: {studentCreds.zearnClasscodeHomework || (studentSection === "4B" ? "DH3P2G" : "XX9U9V")}
+                    Code: {studentCreds.zearnClasscodeHomework || "Not assigned"}
                   </span>
                 </div>
                 <div>
@@ -149,7 +139,7 @@ export default function ZearnHubView({ onBack }) {
               </div>
             </div>
           ) : (
-            <div className="rounded-xl bg-[var(--app-bg)] border border-[var(--app-border)] p-4 text-sm">
+            <div className="rounded-xl bg-rose-500/10 border border-rose-500/30 p-4 text-sm text-rose-600 dark:text-rose-400 font-semibold">
               No matching roster record found for <strong>{studentName || "Student"}</strong> in Section {studentSection}. Please check with your teacher.
             </div>
           )}
