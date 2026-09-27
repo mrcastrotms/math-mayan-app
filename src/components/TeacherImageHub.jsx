@@ -127,6 +127,7 @@ export default function TeacherImageHub({ defaultSection = "4D", onBack }) {
     if (e) e.stopPropagation();
     if (!targetSection) return;
     try {
+      // eslint-disable-next-line react-hooks/purity
       const imageId = "img_" + Date.now() + Math.floor(Math.random()*1000);
       await setDoc(doc(db, "class_images", imageId), {
         title: img.title,
