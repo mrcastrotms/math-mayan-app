@@ -1,156 +1,43 @@
 @import "tailwindcss";
 
-html,
-body {
-  min-height: 100%;
-  max-width: 100%;
-  overflow-x: hidden;
-  overscroll-behavior-x: none;
-}
-
-.exam-session-shell {
-  touch-action: pan-y pinch-zoom;
-}
-
-:root {
-  --app-bg: #f8fafc;
-  --app-fg: #0f172a;
-  --app-surface: #ffffff;
-  --app-border: #e2e8f0;
-  --app-focus: #2563eb;
-}
-
-[data-theme="default"] {
-  color-scheme: light;
-  --app-bg: #f8fafc;
-  --app-fg: #0f172a;
-  --app-surface: #ffffff;
-  --app-border: #cbd5e1;
-  --app-focus: #1d4ed8;
-}
-
 [data-theme="dark"] {
-  --app-bg: #020617;
-  --app-fg: #f8fafc;
-  --app-surface: #0f172a;
-  --app-border: #475569;
-  --app-focus: #60a5fa;
+  --app-bg: #09090b;
+  --app-surface: #18181b;
+  --app-fg: #f4f4f5;
+  --app-border: #27272a;
 }
 
 [data-theme="sepia"] {
   --app-bg: #f4ecd8;
-  --app-fg: #3c2f2f;
-  --app-surface: #fbf5e8;
-  --app-border: #e2d4bd;
-  --app-focus: #b45309;
+  --app-surface: #faedcd;
+  --app-fg: #3d2c1e;
+  --app-border: #d8c4b6;
 }
 
 [data-theme="contrast"] {
   --app-bg: #000000;
-  --app-fg: #ffffff;
   --app-surface: #000000;
+  --app-fg: #ffffff;
   --app-border: #ffffff;
-  --app-focus: #ffff00;
 }
 
-body {
-  background: var(--app-bg);
-  color: var(--app-fg);
+[data-theme="default"] {
+  --app-bg: #ffffff;
+  --app-surface: #f8fafc;
+  --app-fg: #0f172a;
+  --app-border: #e2e8f0;
 }
 
-[data-theme="default"] .bg-white,
-[data-theme="default"] .bg-slate-50,
-[data-theme="default"] .bg-zinc-50,
-[data-theme="default"] .bg-gray-50 {
-  background-color: var(--app-surface) !important;
-  color: var(--app-fg) !important;
+.text-stroke-black {
+  color: #ffffff;
+  -webkit-text-stroke: 0.8px #000000;
+  text-stroke: 0.8px #000000;
+  paint-order: stroke fill;
 }
 
-:focus-visible {
-  outline: 3px solid var(--app-focus);
-  outline-offset: 2px;
-}
-
-/* Keep legacy Tailwind-heavy screens aligned with the active accessibility palette. */
-[data-theme="dark"] .bg-white,
-[data-theme="dark"] .bg-slate-50,
-[data-theme="dark"] .bg-zinc-50 {
-  background-color: var(--app-surface) !important;
-  color: var(--app-fg) !important;
-}
-
-[data-theme="sepia"] .bg-white,
-[data-theme="sepia"] .bg-slate-50,
-[data-theme="sepia"] .bg-zinc-50 {
-  background-color: var(--app-surface) !important;
-  color: var(--app-fg) !important;
-}
-
-[data-theme="contrast"] .bg-white,
-[data-theme="contrast"] .bg-slate-50,
-[data-theme="contrast"] .bg-zinc-50 {
-  background-color: var(--app-surface) !important;
-  color: var(--app-fg) !important;
-  border-color: var(--app-border) !important;
-}
-
-/* ==========================================================================
-   Single-Page Batch Print Engine (Letter Size)
-   ========================================================================== */
-@media print {
-  html,
-  body {
-    margin: 0 !important;
-    padding: 0 !important;
-    height: auto !important;
-    min-height: 100% !important;
-    overflow: visible !important;
-    background: #ffffff !important;
-    color: #0f172a !important;
-  }
-
-  div {
-    overflow: visible !important;
-  }
-
-  body * {
-    visibility: hidden;
-  }
-
-  #batch-print-container,
-  #batch-print-container * {
-    visibility: visible;
-  }
-
-  #batch-print-container {
-    display: block !important;
-    position: static !important;
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  @page {
-    size: letter portrait;
-    margin: 0.4in;
-    margin-top: 0.4in;
-    margin-bottom: 0.4in;
-  }
-
-  .report-page {
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: space-between !important;
-    page-break-after: always !important;
-    break-after: page !important;
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-    height: 10.1in !important;
-    max-height: 10.1in !important;
-    min-height: 10.1in !important;
-    box-sizing: border-box !important;
-    border: none !important;
-    background-color: #ffffff !important;
-    color: #0f172a !important;
-  }
+.text-stroke-white {
+  color: #000000;
+  -webkit-text-stroke: 0.8px #ffffff;
+  text-stroke: 0.8px #ffffff;
+  paint-order: stroke fill;
 }
