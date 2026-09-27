@@ -43,6 +43,19 @@ export default function ZearnHubView({ onBack }) {
     }
   }, []);
 
+  const handleLaunchZearn = () => {
+    const width = Math.min(1280, window.screen.availWidth * 0.95);
+    const height = Math.min(850, window.screen.availHeight * 0.92);
+    const left = (window.screen.availWidth - width) / 2;
+    const top = (window.screen.availHeight - height) / 2;
+
+    window.open(
+      "https://www.zearn.org/users/sign_in",
+      "ZearnMathWorkspace",
+      `width=${width},height=${height},top=${top},left=${left},menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes`
+    );
+  };
+
   return (
     <div className="flex min-h-screen w-full flex-col bg-[var(--app-bg)] p-4 sm:p-8 font-sans text-[var(--app-fg)]">
       {/* Top Bar */}
@@ -131,20 +144,20 @@ export default function ZearnHubView({ onBack }) {
           )}
         </div>
 
-        {/* Launch Zearn Portal Button */}
+        {/* Launch Zearn Portal Card */}
         <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-xl flex flex-col items-center justify-center text-center gap-4">
           <h3 className="text-xl font-bold text-[var(--app-fg)]">Ready to Launch Zearn Math?</h3>
           <p className="text-sm opacity-80 max-w-lg">
-            Click below to open the official Zearn login portal in a new tab, then enter your class code and credentials above.
+            Click below to open the official Zearn workspace, then sign in with your credentials above.
           </p>
-          <a
-            href="https://www.zearn.org"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-8 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 font-bold text-white shadow-lg transition text-base cursor-pointer"
+          <button
+            type="button"
+            onClick={handleLaunchZearn}
+            className="px-8 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 font-bold text-white shadow-lg transition text-base cursor-pointer flex items-center gap-2"
           >
-            Open Official Zearn Portal →
-          </a>
+            <span>Launch Zearn Workspace</span>
+            <span>↗</span>
+          </button>
         </div>
       </div>
     </div>
