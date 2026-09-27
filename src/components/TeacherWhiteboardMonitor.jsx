@@ -6,6 +6,7 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
   const [section, setSection] = useState(defaultSection);
   const [students, setStudents] = useState([]);
   const [rawDocs, setRawDocs] = useState([]);
+  const [roster, setRoster] = useState([]);
   const [pinnedNames, setPinnedNames] = useState([]);
   const [isCycling, setIsCycling] = useState(false);
   const [cycleIndex, setCycleIndex] = useState(0);
@@ -16,6 +17,15 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
   const dropdownRef = useRef(null);
   const sections = ["4A", "4B", "4C", "4D", "4E", "5B"];
 
+  // Fetch Class Roster
+  useEffect(() => {
+    fetch("/api/roster", { headers: { "x-teacher-pin": "0801" } })
+      .then((res) => (res.ok ? res.json() : {}))
+      .then((data) => setRoster(data[section] || []))
+      .catch((err) => console.error("Roster fetch error:", err));
+  }, [section]);
+
+  // Fetch Live Whiteboards
   useEffect(() => {
     if (!section) return;
     const q = query(collection(db, "class_whiteboards", section, "students"));
@@ -31,24 +41,20 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
     return () => unsubscribe();
   }, [section]);
 
-  // Periodic heartbeat filter: drops any student offline or inactive for > 40 seconds
+  // Periodic heartbeat filter & Alphabetical Locking
   useEffect(() => {
     const filterLiveStudents = () => {
       const now = Date.now();
       const studentMap = new Map();
 
+      // Map out all live active sessions
       rawDocs.forEach((data) => {
-        const rawName = (data.studentName || data.name || data.id).trim();
+        const rawName = (data.studentName || data.name || data.id || "").trim();
         if (!rawName) return;
 
-        // Determine last activity time
         const lastSeenTime = data.lastSeen?.toMillis?.() || data.updatedAt?.toMillis?.() || data.timestamp || 0;
         const timeDiffSec = (now - lastSeenTime) / 1000;
-
-        // Skip if explicitly marked offline or stale for > 40s
-        if (data.isLive === false || (lastSeenTime > 0 && timeDiffSec > 40)) {
-          return;
-        }
+        const isOnline = data.isLive !== false && lastSeenTime > 0 && timeDiffSec <= 40;
 
         const normKey = rawName.toLowerCase();
         const existing = studentMap.get(normKey);
@@ -59,20 +65,48 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
             normKey,
             studentName: rawName,
             lastSeenTime,
+            isOnline,
             ...data,
           });
         }
       });
 
-      const list = Array.from(studentMap.values());
-      list.sort((a, b) => (b.lastSeenTime || 0) - (a.lastSeenTime || 0));
+      // Combine Roster with any live stragglers safely!
+      const uniqueNames = new Set();
+      
+      // Safely extract string names from roster objects
+      roster.forEach(r => {
+        const nameStr = typeof r === 'string' ? r : (r.studentName || r.name || r.id || "");
+        if (nameStr.trim()) uniqueNames.add(nameStr.trim());
+      });
+      
+      // Add any live students who might not be in the roster yet
+      rawDocs.forEach(d => {
+        const nameStr = (d.studentName || d.name || d.id || "");
+        if (nameStr.trim()) uniqueNames.add(nameStr.trim());
+      });
+
+      const list = Array.from(uniqueNames).map((name) => {
+        const safeName = String(name);
+        const normKey = safeName.toLowerCase();
+        const liveData = studentMap.get(normKey);
+        
+        if (liveData && liveData.isOnline) {
+          return { normKey, studentName: safeName, ...liveData, isOnline: true };
+        } else {
+          return { normKey, studentName: safeName, isOnline: false, dataUrl: null };
+        }
+      });
+
+      // ALPHABETICAL LOCK: No more jumping!
+      list.sort((a, b) => a.studentName.localeCompare(b.studentName));
       setStudents(list);
     };
 
     filterLiveStudents();
     const interval = setInterval(filterLiveStudents, 5000);
     return () => clearInterval(interval);
-  }, [rawDocs]);
+  }, [rawDocs, roster]);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -85,28 +119,26 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Auto cycle timer
+  const onlineStudents = students.filter(s => s.isOnline);
+  const liveCount = onlineStudents.length;
+
+  // Auto cycle timer (Only cycles through ONLINE students)
   useEffect(() => {
-    if (!isCycling || students.length === 0) return;
+    if (!isCycling || onlineStudents.length === 0) return;
     const interval = setInterval(() => {
-      setCycleIndex((prev) => (prev + 2) % students.length);
+      setCycleIndex((prev) => (prev + 2) % onlineStudents.length);
     }, 5000);
     return () => clearInterval(interval);
-  }, [isCycling, students.length]);
+  }, [isCycling, onlineStudents.length]);
 
   const togglePin = (normKey) => {
     setPinnedNames((prev) => {
-      if (prev.includes(normKey)) {
-        return prev.filter((k) => k !== normKey);
-      }
-      if (prev.length >= 4) {
-        return [...prev.slice(1), normKey];
-      }
+      if (prev.includes(normKey)) return prev.filter((k) => k !== normKey);
+      if (prev.length >= 4) return [...prev.slice(1), normKey];
       return [...prev, normKey];
     });
   };
 
-  // Instant purge stale/test documents from Firestore
   const purgeAllSectionBoards = async () => {
     if (!window.confirm(`Clear all ${rawDocs.length} saved whiteboard sessions for Section ${section}? This kicks stale ghosts immediately.`)) return;
     setIsPurging(true);
@@ -122,11 +154,11 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
     }
   };
 
-  const pinnedStudents = students.filter((s) => pinnedNames.includes(s.normKey));
+  const pinnedStudents = onlineStudents.filter((s) => pinnedNames.includes(s.normKey));
 
-  const cycledStudents = isCycling
-    ? students.slice(cycleIndex, cycleIndex + 2).concat(
-        students.length < 2 ? [] : students.slice(0, Math.max(0, 2 - (students.length - cycleIndex)))
+  const cycledStudents = isCycling && onlineStudents.length > 0
+    ? onlineStudents.slice(cycleIndex, cycleIndex + 2).concat(
+        onlineStudents.length < 2 ? [] : onlineStudents.slice(0, Math.max(0, 2 - (onlineStudents.length - cycleIndex)))
       )
     : [];
 
@@ -140,7 +172,6 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
 
   return (
     <div className="w-full max-w-[1650px] mx-auto p-3 sm:p-6 min-h-screen flex flex-col">
-      {/* Top Header Bar */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-4 mb-5 flex flex-wrap items-center justify-between gap-4 sticky top-2 z-30 backdrop-blur-md bg-white/95 dark:bg-slate-900/95">
         <div className="flex items-center gap-3">
           {onBack && (
@@ -151,9 +182,9 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Live Whiteboard Monitor</h2>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-semibold flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                {students.length} Live Active
+              <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1.5 ${liveCount > 0 ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
+                {liveCount > 0 ? <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> : <span className="w-2 h-2 rounded-full bg-slate-400" />}
+                {liveCount} Live Active
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">Heartbeat sync active: auto-removes disconnected students within 30s.</p>
@@ -161,7 +192,6 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* Section Selector */}
           <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl">
             <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Section:</span>
             <select
@@ -173,7 +203,6 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
             </select>
           </div>
 
-          {/* Pin Dropdown Selector */}
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -188,10 +217,10 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
                 <div className="px-2 py-1 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                   Select up to 4 to compare
                 </div>
-                {students.length === 0 ? (
+                {onlineStudents.length === 0 ? (
                   <div className="px-3 py-4 text-xs text-slate-500 text-center">No students online right now</div>
                 ) : (
-                  students.map((st) => {
+                  onlineStudents.map((st) => {
                     const isChecked = pinnedNames.includes(st.normKey);
                     return (
                       <label
@@ -222,7 +251,6 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
             )}
           </div>
 
-          {/* Auto Cycle Button */}
           <button
             onClick={() => { setIsCycling(!isCycling); if (!isCycling) setPinnedNames([]); }}
             className={"px-3.5 py-1.5 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 " + (isCycling ? "bg-amber-500 text-white shadow-sm" : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200")}
@@ -230,7 +258,6 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
             {isCycling ? "⏸ Stop Cycle" : "▶ Auto Cycle (2-Up)"}
           </button>
 
-          {/* Projector View */}
           {spotlightList.length > 0 && (
             <button
               onClick={() => setSpotlightOnly(!spotlightOnly)}
@@ -240,7 +267,6 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
             </button>
           )}
 
-          {/* Purge Ghost Records */}
           <button
             onClick={purgeAllSectionBoards}
             disabled={isPurging || rawDocs.length === 0}
@@ -252,7 +278,6 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
         </div>
       </div>
 
-      {/* Spotlight Screen (Side-by-Side or 2x2 Grid) */}
       {spotlightList.length > 0 && (
         <div className="mb-8 p-4 bg-slate-100/70 dark:bg-slate-800/40 rounded-3xl border border-blue-500/20 ring-4 ring-blue-500/5">
           <div className="flex items-center justify-between mb-3 px-1">
@@ -264,44 +289,24 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
               {spotlightList.length >= 3 && <span className="text-xs text-slate-500 font-medium">2×2 Comparison Grid</span>}
             </div>
             {!isCycling && (
-              <button
-                onClick={() => setPinnedNames([])}
-                className="text-xs text-rose-600 dark:text-rose-400 hover:underline font-semibold"
-              >
+              <button onClick={() => setPinnedNames([])} className="text-xs text-rose-600 dark:text-rose-400 hover:underline font-semibold">
                 Unpin All
               </button>
             )}
           </div>
-
           <div className={"grid gap-4 " + getSpotlightGridClass()}>
             {spotlightList.map((student) => (
-              <div
-                key={"spotlight-" + student.normKey}
-                className="bg-white dark:bg-slate-900 rounded-2xl shadow-md border-2 border-blue-500 overflow-hidden flex flex-col"
-              >
+              <div key={"spotlight-" + student.normKey} className="bg-white dark:bg-slate-900 rounded-2xl shadow-md border-2 border-blue-500 overflow-hidden flex flex-col">
                 <div className="px-4 py-2 bg-blue-50/80 dark:bg-slate-800 border-b border-blue-100 dark:border-slate-800 flex items-center justify-between">
-                  <span className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">
-                    {student.studentName}
-                  </span>
+                  <span className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">{student.studentName}</span>
                   {!isCycling && (
-                    <button
-                      onClick={() => togglePin(student.normKey)}
-                      className="text-xs text-rose-600 hover:text-rose-700 font-bold px-2 py-0.5 rounded-md hover:bg-rose-50 dark:hover:bg-rose-950/50"
-                    >
+                    <button onClick={() => togglePin(student.normKey)} className="text-xs text-rose-600 hover:text-rose-700 font-bold px-2 py-0.5 rounded-md hover:bg-rose-50 dark:hover:bg-rose-950/50">
                       ✕ Unpin
                     </button>
                   )}
                 </div>
                 <div className={"bg-slate-950 flex-1 flex items-center justify-center p-2.5 " + (spotlightList.length === 1 ? "min-h-[500px]" : spotlightList.length === 2 ? "min-h-[460px] lg:min-h-[560px]" : "min-h-[340px]")}>
-                  {student.dataUrl ? (
-                    <img
-                      src={student.dataUrl}
-                      alt={student.studentName}
-                      className="w-full h-full rounded-xl border border-slate-800 object-contain bg-white shadow-sm"
-                    />
-                  ) : (
-                    <div className="text-slate-500 text-xs">Waiting for student stroke...</div>
-                  )}
+                  <img src={student.dataUrl} alt={student.studentName} className="w-full h-full rounded-xl border border-slate-800 object-contain bg-white shadow-sm" />
                 </div>
               </div>
             ))}
@@ -309,61 +314,55 @@ export default function TeacherWhiteboardMonitor({ defaultSection = "4D", onBack
         </div>
       )}
 
-      {/* Full Classroom Grid */}
       {!spotlightOnly && (
         <div className="flex-1">
-          {spotlightList.length > 0 && (
-            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-1">
-              All Classroom Scratchpads ({students.length})
-            </div>
-          )}
+          <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-1">
+            All Classroom Scratchpads ({students.length} Total, {liveCount} Live)
+          </div>
 
-          {students.length === 0 ? (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-12 text-center flex flex-col items-center justify-center">
-              <div className="text-slate-400 text-5xl mb-3">✏️</div>
-              <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">No Active Whiteboards in Section {section}</h3>
-              <p className="text-xs text-slate-500 mt-1 max-w-sm">When students open the Live Scratchpad, their live drawings appear here instantly. Inactive students leave after 30 seconds.</p>
-            </div>
-          ) : (
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {students.map((student) => {
-                const isPinned = pinnedNames.includes(student.normKey);
-                return (
-                  <div
-                    key={student.normKey}
-                    className={"bg-white dark:bg-slate-900 rounded-2xl shadow-sm border transition-all overflow-hidden flex flex-col " + (isPinned ? "ring-2 ring-blue-500 border-blue-500" : "border-slate-200 dark:border-slate-800 hover:border-slate-300")}
-                  >
-                    <div className="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {students.map((student) => {
+              const isPinned = pinnedNames.includes(student.normKey);
+              return (
+                <div
+                  key={student.normKey}
+                  className={`rounded-2xl shadow-sm border transition-all overflow-hidden flex flex-col ${isPinned ? "ring-2 ring-blue-500 border-blue-500" : "border-slate-200 dark:border-slate-800 hover:border-slate-300"} ${!student.isOnline ? "opacity-60 bg-slate-50 dark:bg-slate-900/50" : "bg-white dark:bg-slate-900"}`}
+                >
+                  <div className={`px-3.5 py-2.5 border-b flex items-center justify-between ${!student.isOnline ? "bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800" : "bg-slate-50 dark:bg-slate-800/60 border-slate-100 dark:border-slate-800"}`}>
+                    <div className="flex items-center gap-2">
+                      {student.isOnline ? (
                         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="font-bold text-xs text-slate-800 dark:text-slate-200 truncate max-w-[150px]">
-                          {student.studentName}
-                        </span>
-                      </div>
+                      ) : (
+                        <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700" />
+                      )}
+                      <span className={`font-bold text-xs truncate max-w-[150px] ${!student.isOnline ? "text-slate-500 dark:text-slate-400" : "text-slate-800 dark:text-slate-200"}`}>
+                        {student.studentName}
+                      </span>
+                    </div>
+                    {student.isOnline && (
                       <button
                         onClick={() => togglePin(student.normKey)}
                         className={"px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-all " + (isPinned ? "bg-blue-600 text-white" : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-blue-50 hover:text-blue-600")}
                       >
                         {isPinned ? "✓ Pinned" : "+ Pin View"}
                       </button>
-                    </div>
-
-                    <div className="bg-slate-950 p-2 flex items-center justify-center min-h-[190px]">
-                      {student.dataUrl ? (
-                        <img
-                          src={student.dataUrl}
-                          alt={student.studentName}
-                          className="w-full h-auto rounded-lg border border-slate-800 object-contain bg-white"
-                        />
-                      ) : (
-                        <div className="text-slate-500 text-xs">Waiting for drawing...</div>
-                      )}
-                    </div>
+                    )}
                   </div>
-                );
-              })}
-            </div>
-          )}
+
+                  <div className={`p-2 flex items-center justify-center min-h-[190px] ${!student.isOnline ? "bg-slate-200/50 dark:bg-slate-900/50" : "bg-slate-950"}`}>
+                    {student.isOnline && student.dataUrl ? (
+                      <img src={student.dataUrl} alt={student.studentName} className="w-full h-auto rounded-lg border border-slate-800 object-contain bg-white" />
+                    ) : (
+                      <div className="text-slate-500 text-xs font-semibold flex flex-col items-center gap-2">
+                        <span className="text-2xl grayscale opacity-50">💤</span>
+                        <span>Offline / Waiting</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

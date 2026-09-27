@@ -8,6 +8,8 @@ import {
   updateDoc,
   deleteDoc,
   serverTimestamp,
+  query,
+  where
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { dateKeyFromDate } from "../utils/attendanceBehavior.mjs";
@@ -43,15 +45,18 @@ export async function recordBehaviorChange({
 }
 
 export async function loadBehaviorRecords(dateKey = dateKeyFromDate()) {
-  const snapshot = await getDocs(collection(db, "behavior_records"));
-  return snapshot.docs
-    .map((item) => ({ id: item.id, ...item.data() }))
-    .filter((item) => !dateKey || item.dateKey === dateKey);
+  const q = dateKey 
+    ? query(collection(db, "behavior_records"), where("dateKey", "==", dateKey))
+    : collection(db, "behavior_records");
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
 }
 
 export function subscribeToBehavior(onUpdate, onError) {
+  const today = dateKeyFromDate();
+  const q = query(collection(db, "behavior_records"), where("dateKey", "==", today));
   return onSnapshot(
-    collection(db, "behavior_records"),
+    q,
     (snapshot) => onUpdate(snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))),
     onError,
   );
