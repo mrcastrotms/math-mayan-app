@@ -9,10 +9,10 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../../firebase";
+import StudentRosterEditForm from "./StudentRosterEditForm";
 
 const VALID_SECTIONS = ["All", "4A", "4B", "4C", "4D", "4E", "5B"];
 
-// Extracted from the provided messy data block
 const SEED_DATA = [
   { student: "Leah Valentina Vásquez Leiva", p1Name: "Olga Maribel Acevedo", p1Email: "" },
   { student: "Max Joseph Sabillon Aguilar", p1Name: "Delmi Yaquelínd Aguilar López", p1Email: "aguilarlopez2024@gmail.com" },
@@ -92,10 +92,19 @@ export default function RosterManagerModal({ isOpen, onClose }) {
             id: s.id || `${sec}_${(s.displayName || s.rawName || "").toLowerCase().replace(/[^a-z0-9]/g, "_")}`,
             name: s.displayName || s.rawName || s.name || "Unknown Student",
             section: s.section || sec,
-            studentEmail: "",
-            parent1: { name: "", email: "", phone: "" },
-            parent2: { name: "", email: "", phone: "" },
-            notes: "", dob: "", udid: "", address: "",
+            studentEmail: s.studentEmail || "",
+            parent1: { ...(s.parent1 || {}) },
+            parent2: { ...(s.parent2 || {}) },
+            notes: s.notes || "",
+            dob: s.dob || "",
+            udid: s.udid || "",
+            address: s.address || "",
+            zearnClasscodeClasswork: s.zearnClasscodeClasswork || (sec === "4B" ? "EZ7D6N" : ""),
+            zearnClassworkUser: s.zearnClassworkUser || "",
+            zearnClassworkPass: s.zearnClassworkPass || "",
+            zearnClasscodeHomework: s.zearnClasscodeHomework || (sec === "4B" ? "DH3P2G" : ""),
+            zearnHomeworkUser: s.zearnHomeworkUser || "",
+            zearnHomeworkPass: s.zearnHomeworkPass || "",
           });
         });
       });
@@ -111,10 +120,19 @@ export default function RosterManagerModal({ isOpen, onClose }) {
         if (!contact) return stu;
         return {
           ...stu,
-          studentEmail: contact.studentEmail || "",
+          studentEmail: contact.studentEmail || stu.studentEmail,
           parent1: { ...(stu.parent1 || {}), ...(contact.parent1 || {}) },
           parent2: { ...(stu.parent2 || {}), ...(contact.parent2 || {}) },
-          notes: contact.notes || "", dob: contact.dob || "", udid: contact.udid || "", address: contact.address || "",
+          notes: contact.notes || stu.notes,
+          dob: contact.dob || stu.dob,
+          udid: contact.udid || stu.udid,
+          address: contact.address || stu.address,
+          zearnClasscodeClasswork: contact.zearnClasscodeClasswork || stu.zearnClasscodeClasswork,
+          zearnClassworkUser: contact.zearnClassworkUser || stu.zearnClassworkUser,
+          zearnClassworkPass: contact.zearnClassworkPass || stu.zearnClassworkPass,
+          zearnClasscodeHomework: contact.zearnClasscodeHomework || stu.zearnClasscodeHomework,
+          zearnHomeworkUser: contact.zearnHomeworkUser || stu.zearnHomeworkUser,
+          zearnHomeworkPass: contact.zearnHomeworkPass || stu.zearnHomeworkPass,
         };
       });
 
@@ -136,13 +154,13 @@ export default function RosterManagerModal({ isOpen, onClose }) {
     if (!window.confirm("Seed the parsed student records into Firestore?")) return;
     setSaving(true);
     let matchedCount = 0;
-    
+
     for (const entry of SEED_DATA) {
-      const match = students.find(s => 
-        s.name.toLowerCase().includes(entry.student.toLowerCase()) || 
+      const match = students.find(s =>
+        s.name.toLowerCase().includes(entry.student.toLowerCase()) ||
         entry.student.toLowerCase().includes(s.name.toLowerCase())
       );
-      
+
       if (match) {
         const payload = {
           parent1: { name: entry.p1Name || "", email: entry.p1Email || "", phone: "" },
@@ -181,7 +199,16 @@ export default function RosterManagerModal({ isOpen, onClose }) {
           email: editingStudent.parent2?.email?.trim() || "",
           phone: editingStudent.parent2?.phone?.trim() || "",
         },
-        dob: editingStudent.dob?.trim() || "", udid: editingStudent.udid?.trim() || "", address: editingStudent.address?.trim() || "", updatedAt: serverTimestamp(),
+        dob: editingStudent.dob?.trim() || "",
+        udid: editingStudent.udid?.trim() || "",
+        address: editingStudent.address?.trim() || "",
+        zearnClasscodeClasswork: editingStudent.zearnClasscodeClasswork?.trim() || "",
+        zearnClassworkUser: editingStudent.zearnClassworkUser?.trim() || "",
+        zearnClassworkPass: editingStudent.zearnClassworkPass?.trim() || "",
+        zearnClasscodeHomework: editingStudent.zearnClasscodeHomework?.trim() || "",
+        zearnHomeworkUser: editingStudent.zearnHomeworkUser?.trim() || "",
+        zearnHomeworkPass: editingStudent.zearnHomeworkPass?.trim() || "",
+        updatedAt: serverTimestamp(),
       };
       await setDoc(doc(db, "student_contacts", editingStudent.id), payload, { merge: true });
       setStudents((prev) => prev.map((s) => (s.id === editingStudent.id ? { ...s, ...payload } : s)));
@@ -218,7 +245,7 @@ export default function RosterManagerModal({ isOpen, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-6">
       <div className="flex h-[90vh] w-full max-w-5xl flex-col rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-fg)] shadow-2xl overflow-hidden">
-        
+
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[var(--app-border)] px-6 py-4">
           <div>
@@ -232,14 +259,14 @@ export default function RosterManagerModal({ isOpen, onClose }) {
               type="button"
               onClick={handleSeedParsedData}
               disabled={saving}
-              className="rounded-lg bg-indigo-600 px-3.5 py-1.5 text-xs font-bold text-white shadow hover:bg-indigo-500 transition"
+              className="rounded-lg bg-indigo-600 px-3.5 py-1.5 text-xs font-bold text-white shadow hover:bg-indigo-500 transition cursor-pointer"
             >
               {saving ? "Seeding..." : "Seed Parsed Data"}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border border-[var(--app-border)] px-3 py-1.5 text-xs font-semibold opacity-80 hover:opacity-100"
+              className="rounded-lg border border-[var(--app-border)] px-3 py-1.5 text-xs font-semibold opacity-80 hover:opacity-100 cursor-pointer"
             >
               Close
             </button>
@@ -254,9 +281,9 @@ export default function RosterManagerModal({ isOpen, onClose }) {
                 key={sec}
                 type="button"
                 onClick={() => setSelectedSection(sec)}
-                className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${
+                className={`rounded-md px-2.5 py-1 text-xs font-semibold transition cursor-pointer ${
                   selectedSection === sec
-                    ? "bg-[var(--app-accent)] text-white"
+                    ? "bg-blue-600 text-white"
                     : "border border-[var(--app-border)] hover:bg-[var(--app-border)]/30"
                 }`}
               >
@@ -267,7 +294,7 @@ export default function RosterManagerModal({ isOpen, onClose }) {
               <select
                 value={emailFilter}
                 onChange={(e) => setEmailFilter(e.target.value)}
-                className="rounded-md border border-[var(--app-border)] bg-transparent px-2 py-1 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[var(--app-accent)] cursor-pointer"
+                className="rounded-md border border-[var(--app-border)] bg-transparent px-2 py-1 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
               >
                 <option value="ALL">All Contacts</option>
                 <option value="HAS_EMAIL">Has Email 🟢</option>
@@ -281,7 +308,7 @@ export default function RosterManagerModal({ isOpen, onClose }) {
             placeholder="Search by student or parent..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full sm:w-64 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[var(--app-accent)]"
+            className="w-full sm:w-64 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
         </div>
 
@@ -300,11 +327,11 @@ export default function RosterManagerModal({ isOpen, onClose }) {
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 {filteredStudents.map((s) => {
                   const hasEmailIndicator = Boolean(s.parent1?.email || s.parent2?.email);
-                  
+
                   return (
                     <div
                       key={s.id}
-                      className="flex flex-col justify-between rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-sm hover:border-[var(--app-accent)] transition"
+                      className="flex flex-col justify-between rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-sm hover:border-blue-500 transition"
                     >
                       <div>
                         <div className="flex items-start justify-between gap-2">
@@ -322,7 +349,7 @@ export default function RosterManagerModal({ isOpen, onClose }) {
                           <button
                             type="button"
                             onClick={() => setEditingStudent(s)}
-                            className="rounded border border-[var(--app-border)] px-2 py-0.5 text-[11px] font-medium hover:bg-[var(--app-accent)] hover:text-white transition"
+                            className="rounded border border-[var(--app-border)] px-2 py-0.5 text-[11px] font-medium hover:bg-blue-600 hover:text-white transition cursor-pointer"
                           >
                             {s.parent1?.name || s.studentEmail ? "Edit Info" : "+ Add Contacts"}
                           </button>
@@ -371,129 +398,14 @@ export default function RosterManagerModal({ isOpen, onClose }) {
             )}
           </div>
 
-          {/* Edit Drawer */}
-          {editingStudent && (
-            <div className="w-full sm:w-96 border-l border-[var(--app-border)] bg-[var(--app-surface)] p-5 overflow-y-auto shadow-lg">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold">Edit Contact Details</h3>
-                <button
-                  type="button"
-                  onClick={() => setEditingStudent(null)}
-                  className="text-xs opacity-60 hover:opacity-100"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <form onSubmit={handleSaveContact} className="flex flex-col h-full max-h-[80vh] text-xs">
-              <div className="flex-1 overflow-y-auto space-y-4 pr-2 pb-4">
-                
-                <div>
-                  <label className="block font-semibold mb-1">Student</label>
-                  <div className="font-bold text-sm">{editingStudent.name}</div>
-                  <span className="text-[10px] text-blue-500 font-mono">Section {editingStudent.section}</span>
-                </div>
-
-                
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block font-semibold mb-1">DOB</label>
-                    <input type="text" value={editingStudent.dob || ""} onChange={(e) => setEditingStudent({ ...editingStudent, dob: e.target.value })} className="w-full rounded border border-[var(--app-border)] bg-transparent p-2 focus:ring-1 focus:ring-[var(--app-accent)]" placeholder="MM/DD/YYYY" />
-                  </div>
-                  <div>
-                    <label className="block font-semibold mb-1">UDID</label>
-                    <input type="text" value={editingStudent.udid || ""} onChange={(e) => setEditingStudent({ ...editingStudent, udid: e.target.value })} className="w-full rounded border border-[var(--app-border)] bg-transparent p-2 focus:ring-1 focus:ring-[var(--app-accent)]" placeholder="ID Number" />
-                  </div>
-                </div>
-                <div>
-                  <label className="block font-semibold mb-1">Home Address</label>
-                  <textarea value={editingStudent.address || ""} onChange={(e) => setEditingStudent({ ...editingStudent, address: e.target.value })} className="w-full rounded border border-[var(--app-border)] bg-transparent p-2 focus:ring-1 focus:ring-[var(--app-accent)] text-xs" rows="2" placeholder="Res. La Arboleda..." />
-                </div>
-                <div>
-                  <label className="block font-semibold mb-1">Student Email</label>
-                  <input
-                    type="email"
-                    value={editingStudent.studentEmail || ""}
-                    onChange={(e) => setEditingStudent({ ...editingStudent, studentEmail: e.target.value })}
-                    className="w-full rounded border border-[var(--app-border)] bg-transparent p-2 focus:ring-1 focus:ring-[var(--app-accent)]"
-                    placeholder="student@school.hn"
-                  />
-                </div>
-
-                <hr className="border-[var(--app-border)]/50 my-2" />
-
-                <div className="space-y-2">
-                  <div className="font-bold text-[11px] text-[var(--app-accent)]">Primary Contact (Parent 1)</div>
-                  <input
-                    type="text"
-                    placeholder="Parent Name"
-                    value={editingStudent.parent1?.name || ""}
-                    onChange={(e) => setEditingStudent({ ...editingStudent, parent1: { ...editingStudent.parent1, name: e.target.value } })}
-                    className="w-full rounded border border-[var(--app-border)] bg-transparent p-2"
-                  />
-                  <input
-                    type="email"
-                    placeholder="Parent Email"
-                    value={editingStudent.parent1?.email || ""}
-                    onChange={(e) => setEditingStudent({ ...editingStudent, parent1: { ...editingStudent.parent1, email: e.target.value } })}
-                    className="w-full rounded border border-[var(--app-border)] bg-transparent p-2"
-                  />
-                  <input
-                    type="tel"
-                    placeholder="Phone / WhatsApp"
-                    value={editingStudent.parent1?.phone || ""}
-                    onChange={(e) => setEditingStudent({ ...editingStudent, parent1: { ...editingStudent.parent1, phone: e.target.value } })}
-                    className="w-full rounded border border-[var(--app-border)] bg-transparent p-2"
-                  />
-                </div>
-
-                <hr className="border-[var(--app-border)]/50 my-2" />
-
-                <div className="space-y-2">
-                  <div className="font-bold text-[11px] text-[var(--app-accent)]">Secondary Contact (Parent 2)</div>
-                  <input
-                    type="text"
-                    placeholder="Parent Name"
-                    value={editingStudent.parent2?.name || ""}
-                    onChange={(e) => setEditingStudent({ ...editingStudent, parent2: { ...editingStudent.parent2, name: e.target.value } })}
-                    className="w-full rounded border border-[var(--app-border)] bg-transparent p-2"
-                  />
-                  <input
-                    type="email"
-                    placeholder="Parent Email"
-                    value={editingStudent.parent2?.email || ""}
-                    onChange={(e) => setEditingStudent({ ...editingStudent, parent2: { ...editingStudent.parent2, email: e.target.value } })}
-                    className="w-full rounded border border-[var(--app-border)] bg-transparent p-2"
-                  />
-                  <input
-                    type="tel"
-                    placeholder="Phone / WhatsApp"
-                    value={editingStudent.parent2?.phone || ""}
-                    onChange={(e) => setEditingStudent({ ...editingStudent, parent2: { ...editingStudent.parent2, phone: e.target.value } })}
-                    className="w-full rounded border border-[var(--app-border)] bg-transparent p-2"
-                  />
-                </div>
-
-                </div>
-              <div className="pt-3 border-t border-[var(--app-border)] flex items-center justify-end gap-2 bg-[var(--app-surface)] sticky bottom-0 z-10">
-                <button
-                  type="button"
-                  onClick={() => setEditingStudent(null)}
-                  className="rounded px-3 py-2 text-xs font-semibold opacity-70 hover:opacity-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="rounded bg-[var(--app-accent)] px-4 py-2 font-bold text-white hover:opacity-90 disabled:opacity-50 shadow-md cursor-pointer"
-                >
-                  {saving ? "Saving..." : "Save Contact Info"}
-                </button>
-              </div>
-            </form>
-            </div>
-          )}
+          {/* Edit Drawer (Compartmentalized) */}
+          <StudentRosterEditForm
+            editingStudent={editingStudent}
+            setEditingStudent={setEditingStudent}
+            handleSaveContact={handleSaveContact}
+            saving={saving}
+            onClose={() => setEditingStudent(null)}
+          />
         </div>
       </div>
     </div>

@@ -30,12 +30,7 @@ export async function GET(request) {
 
       const data = snapshot.data();
       const students = (data.students || []).map((s) => ({
-        id: s.id,
-        rawName: s.rawName,
-        displayName: s.displayName,
-        firstName: s.firstName,
-        lastName: s.lastName,
-        section: s.section,
+        ...s,
       }));
 
       return NextResponse.json({
@@ -59,12 +54,7 @@ export async function GET(request) {
     snapshot.forEach((d) => {
       const data = d.data();
       result[d.id] = (data.students || []).map((s) => ({
-        id: s.id,
-        rawName: s.rawName,
-        displayName: s.displayName,
-        firstName: s.firstName,
-        lastName: s.lastName,
-        section: s.section,
+        ...s,
       }));
     });
 

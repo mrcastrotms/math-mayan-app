@@ -1,7 +1,11 @@
 import TeacherWhiteboardMonitor from "./TeacherWhiteboardMonitor";
 import TeacherImageHub from "./TeacherImageHub";
 import RosterManagerModal from "./dashboard/RosterManagerModal";
-// src/components/TeacherDashboard.js
+import OverviewTab from "./dashboard/OverviewTab";
+import AcademicsTab from "./dashboard/AcademicsTab";
+import TrackingTab from "./dashboard/TrackingTab";
+import ToolsTab from "./dashboard/ToolsTab";
+
 import { useState } from "react";
 import { useTeacherSession } from "../hooks/useTeacherSession";
 import { useGradebookData } from "../hooks/useGradebookData";
@@ -11,20 +15,9 @@ import { syncQuestionsToFirebase } from "../services/questionService";
 
 import StudentReportModal from "./StudentReportModal";
 import TeacherGradebookContainer from "./TeacherGradebookContainer";
-import SessionGeneratorCard from "./SessionGeneratorCard";
-import GradebookSummaryCard from "./GradebookSummaryCard";
-import TeacherJailMonitor from "./TeacherJailMonitor";
-import ClassManagerCard from "./ClassManagerCard";
-import CloudCmsCard from "./CloudCmsCard";
-import QuestionCmsCard from "./QuestionCmsCard";
 import TeacherSectionModals from "./TeacherSectionModals";
-import ThemeToggle from "./ThemeToggle";
 import { useAppTheme } from "../hooks/useAppTheme";
 import { broadcastSectionTheme } from "../services/liveSyncService";
-import WorksheetBuilderCard from "./WorksheetBuilderCard";
-import WorksheetManagerCard from "./WorksheetManagerCard";
-import AttendanceBook from "./AttendanceBook";
-import BehaviorBook from "./BehaviorBook";
 import AttendanceValuesHistory from "./AttendanceValuesHistory";
 
 export default function TeacherDashboard({
@@ -35,6 +28,7 @@ export default function TeacherDashboard({
   setAppText,
   onStudentVersion,
 }) {
+  const [activeTab, setActiveTab] = useState("overview");
   const [isViewingGradebook, setIsViewingGradebook] = useState(false);
   const [showRosterModal, setShowRosterModal] = useState(false);
   const [isViewingAttendanceHistory, setIsViewingAttendanceHistory] = useState(false);
@@ -83,186 +77,142 @@ export default function TeacherDashboard({
     await gradebook.fetchGradebook();
   };
 
-  if (selectedReport) {
-    return (
-      <StudentReportModal
-        report={selectedReport}
-        onBack={() => setSelectedReport(null)}
-      />
-    );
-  }
-
-  if (isViewingGradebook) {
-    return (
-      <TeacherGradebookContainer
-        gradebook={gradebook}
-        availableSections={availableSections}
-        onBack={() => setIsViewingGradebook(false)}
-        onViewReport={(report) => setSelectedReport(report)}
-      />
-    );
-  }
-
-  if (isViewingWhiteboard) {
-    return <TeacherWhiteboardMonitor defaultSection={activeSection || "4D"} onBack={() => setIsViewingWhiteboard(false)} />;
-  }
-
-  if (isViewingImageHub) {
-    return <TeacherImageHub defaultSection={activeSection || "4D"} onBack={() => setIsViewingImageHub(false)} />;
-  }
-
-  if (isViewingAttendanceHistory) {
-    return <AttendanceValuesHistory availableSections={availableSections} onBack={() => setIsViewingAttendanceHistory(false)} />;
-  }
+  const isAnySubViewActive = selectedReport || isViewingGradebook || isViewingWhiteboard || isViewingImageHub || isViewingAttendanceHistory;
 
   return (
-    <div className="flex min-h-screen w-full flex-col items-center justify-start gap-6 overflow-y-auto bg-[var(--app-bg)] p-8 pt-16 font-sans text-[var(--app-fg)] relative z-50 absolute top-0 left-0">
-      <h1 className="text-4xl font-bold mb-8 text-blue-400">
-        Teacher Dashboard
-      </h1>
-
-      <div className="flex w-full max-w-4xl flex-wrap justify-center gap-6">
-        <SessionGeneratorCard
-          generatedCode={session.generatedCode}
-          selectedSessionSection={session.selectedSessionSection}
-          setSelectedSessionSection={session.setSelectedSessionSection}
-          selectedActivityType={session.selectedActivityType}
-          setSelectedActivityType={session.setSelectedActivityType}
-          activityOptions={session.activityOptions}
-          availableSections={availableSections}
-          isGenerating={session.isGenerating}
-          onGenerateCode={session.generateCode}
-          onResetSession={session.resetSession}
+    <>
+      {selectedReport && (
+        <StudentReportModal
+          report={selectedReport}
+          onBack={() => setSelectedReport(null)}
         />
-        <GradebookSummaryCard onOpenGradebook={handleOpenGradebook} />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-          <div className="flex flex-col justify-between bg-[var(--app-surface)] border border-emerald-500/30 rounded-2xl p-6 shadow-xl">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-bold text-emerald-400">Live Whiteboard</h3>
-                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-950/60 text-emerald-300 border border-emerald-800/60">Live Stream</span>
-              </div>
-              <p className="text-sm opacity-75 mb-6">Monitor student work in real time, compare scratchpads side-by-side, or project to class.</p>
-            </div>
+      )}
+
+      {isViewingGradebook && !selectedReport && (
+        <TeacherGradebookContainer
+          gradebook={gradebook}
+          availableSections={availableSections}
+          onBack={() => setIsViewingGradebook(false)}
+          onViewReport={(report) => setSelectedReport(report)}
+        />
+      )}
+
+      {isViewingWhiteboard && (
+        <TeacherWhiteboardMonitor defaultSection={activeSection || "4D"} onBack={() => setIsViewingWhiteboard(false)} />
+      )}
+
+      {isViewingImageHub && (
+        <TeacherImageHub defaultSection={activeSection || "4D"} onBack={() => setIsViewingImageHub(false)} />
+      )}
+
+      {isViewingAttendanceHistory && (
+        <AttendanceValuesHistory availableSections={availableSections} onBack={() => setIsViewingAttendanceHistory(false)} />
+      )}
+
+      <div className={`flex min-h-screen w-full flex-col items-center justify-start gap-6 overflow-y-auto bg-[var(--app-bg)] p-4 sm:p-8 pt-6 font-sans text-[var(--app-fg)] relative z-50 absolute top-0 left-0 ${isAnySubViewActive ? 'hidden' : ''}`}>
+        
+        <div className="w-full max-w-4xl flex flex-col gap-4 sticky top-0 z-40 bg-[var(--app-bg)]/95 backdrop-blur-md pb-4 pt-2 border-b border-[var(--app-border)]">
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl sm:text-4xl font-bold text-blue-400">
+              Teacher Dashboard
+            </h1>
             <button
               type="button"
-              onClick={() => setIsViewingWhiteboard(true)}
-              className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all shadow-md cursor-pointer"
+              onClick={() => {
+                if (onStudentVersion) {
+                  onStudentVersion();
+                } else {
+                  setIsAdminMode(false);
+                }
+              }}
+              className="text-xs sm:text-sm font-bold text-slate-400 hover:text-white underline cursor-pointer"
             >
-              Open Whiteboard Monitor →
+              Student Version →
             </button>
           </div>
 
-          <div className="flex flex-col justify-between bg-[var(--app-surface)] border border-purple-500/30 rounded-2xl p-6 shadow-xl">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-bold text-purple-400">Class Visuals Hub</h3>
-                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-purple-950/60 text-purple-300 border border-purple-800/60">Paste & Share</span>
-              </div>
-              <p className="text-sm opacity-75 mb-6">Paste anchor charts (Cmd+V), diagrams, or textbook screenshots to broadcast to student devices.</p>
-            </div>
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
             <button
-              type="button"
-              onClick={() => setIsViewingImageHub(true)}
-              className="w-full py-2.5 px-4 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition-all shadow-md cursor-pointer"
+              onClick={() => setActiveTab("overview")}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${activeTab === "overview" ? "bg-blue-600 text-white shadow-md" : "bg-[var(--app-surface)] text-slate-400 hover:text-white border border-[var(--app-border)]"}`}
             >
-              Open Visuals Hub →
+              Overview
+            </button>
+            <button
+              onClick={() => setActiveTab("academics")}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${activeTab === "academics" ? "bg-blue-600 text-white shadow-md" : "bg-[var(--app-surface)] text-slate-400 hover:text-white border border-[var(--app-border)]"}`}
+            >
+              Academics and Worksheets
+            </button>
+            <button
+              onClick={() => setActiveTab("tracking")}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${activeTab === "tracking" ? "bg-blue-600 text-white shadow-md" : "bg-[var(--app-surface)] text-slate-400 hover:text-white border border-[var(--app-border)]"}`}
+            >
+              Attendance and Behavior
+            </button>
+            <button
+              onClick={() => setActiveTab("tools")}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${activeTab === "tools" ? "bg-blue-600 text-white shadow-md" : "bg-[var(--app-surface)] text-slate-400 hover:text-white border border-[var(--app-border)]"}`}
+            >
+              System and CMS
             </button>
           </div>
         </div>
+
+        {activeTab === "overview" && (
+          <OverviewTab
+            session={session}
+            availableSections={availableSections}
+            handleOpenGradebook={handleOpenGradebook}
+            setIsViewingWhiteboard={setIsViewingWhiteboard}
+            setIsViewingImageHub={setIsViewingImageHub}
+            activeSection={activeSection}
+            themeState={themeState}
+            handleThemeBroadcast={handleThemeBroadcast}
+            themeMessage={themeMessage}
+          />
+        )}
+
+        {activeTab === "academics" && (
+          <AcademicsTab
+            availableSections={availableSections}
+            handleGenerateAIQuestions={handleGenerateAIQuestions}
+            isGeneratingQuestions={isGeneratingQuestions}
+            syncQuestionsToFirebase={syncQuestionsToFirebase}
+          />
+        )}
+
+        {activeTab === "tracking" && (
+          <TrackingTab
+            liveStudents={liveStudents}
+            activeSection={activeSection}
+            sendCommand={sendCommand}
+            setIsViewingAttendanceHistory={setIsViewingAttendanceHistory}
+          />
+        )}
+
+        {activeTab === "tools" && (
+          <ToolsTab
+            setShowRosterModal={setShowRosterModal}
+            availableSections={availableSections}
+            setShowAddSectionModal={setShowAddSectionModal}
+            setSectionToDelete={setSectionToDelete}
+            appText={appText}
+            setAppText={setAppText}
+          />
+        )}
+
+        <TeacherSectionModals
+          availableSections={availableSections}
+          setAvailableSections={setAvailableSections}
+          showAddSectionModal={showAddSectionModal}
+          setShowAddSectionModal={setShowAddSectionModal}
+          sectionToDelete={sectionToDelete}
+          setSectionToDelete={setSectionToDelete}
+        />
+
+        <RosterManagerModal isOpen={showRosterModal} onClose={() => setShowRosterModal(false)} currentTheme={themeState} />
       </div>
-
-      <TeacherJailMonitor
-        liveStudents={liveStudents}
-        activeSection={activeSection}
-        onSendCommand={sendCommand}
-      />
-
-      <WorksheetBuilderCard availableSections={availableSections} />
-      <WorksheetManagerCard availableSections={availableSections} />
-      <AttendanceBook availableSections={availableSections} onOpenHistory={() => setIsViewingAttendanceHistory(true)} />
-      <BehaviorBook onOpenHistory={() => setIsViewingAttendanceHistory(true)} />
-
-      <section className="w-full max-w-4xl rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-xl" aria-labelledby="theme-controls-title">
-        <h2 id="theme-controls-title" className="text-lg font-bold mb-3">
-          Theme Enforcement
-        </h2>
-        <p className="text-sm opacity-75 mb-4">
-          Broadcast the selected theme to active students in Section {activeSection || "All"}.
-        </p>
-        <div className="flex flex-wrap items-center gap-3">
-          <ThemeToggle theme={themeState.theme} changeTheme={themeState.changeTheme} />
-          <button type="button" onClick={() => handleThemeBroadcast(true)} className="rounded-lg bg-amber-600 px-4 py-2 font-bold text-white hover:bg-amber-500">
-            Lock Theme
-          </button>
-          <button type="button" onClick={() => handleThemeBroadcast(false)} className="rounded-lg bg-slate-600 px-4 py-2 font-bold text-white hover:bg-slate-500">
-            Release Lock
-          </button>
-        </div>
-        {themeMessage && <p role="status" className="mt-3 text-sm text-emerald-300">{themeMessage}</p>}
-      </section>
-
-      
-      {/* Student Directory & Roster Card */}
-      <section className="w-full max-w-4xl rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-lg font-bold">Student Directory & Family Contacts</h2>
-            <span className="text-[10px] bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-mono px-2 py-0.5 rounded-full font-semibold">
-              Firestore Roster
-            </span>
-          </div>
-          <p className="text-sm opacity-75">
-            View enrolled students across sections 4A–5B, search records, and manage parent emails & phone numbers.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowRosterModal(true)}
-          className="rounded-lg bg-orange-600 px-5 py-2.5 text-sm font-bold text-white shadow-md hover:bg-orange-500 transition cursor-pointer whitespace-nowrap"
-        >
-          Open Roster Directory
-        </button>
-      </section>
-
-      <ClassManagerCard
-        availableSections={availableSections}
-        onAddSection={() => setShowAddSectionModal(true)}
-        onDeleteSection={(sec) => setSectionToDelete(sec)}
-      />
-
-      <CloudCmsCard appText={appText} setAppText={setAppText} />
-
-      <QuestionCmsCard
-        onGenerateAI={handleGenerateAIQuestions}
-        isGenerating={isGeneratingQuestions}
-        onSyncCloud={syncQuestionsToFirebase}
-      />
-
-      <button
-        type="button"
-        onClick={() => {
-          if (onStudentVersion) {
-            onStudentVersion();
-          } else {
-            setIsAdminMode(false);
-          }
-        }}
-        className="text-slate-400 hover:text-white underline text-lg font-bold cursor-pointer"
-      >
-        Student Version
-      </button>
-
-      <TeacherSectionModals
-        availableSections={availableSections}
-        setAvailableSections={setAvailableSections}
-        showAddSectionModal={showAddSectionModal}
-        setShowAddSectionModal={setShowAddSectionModal}
-        sectionToDelete={sectionToDelete}
-        setSectionToDelete={setSectionToDelete}
-      />
-
-      <RosterManagerModal isOpen={showRosterModal} onClose={() => setShowRosterModal(false)} currentTheme={themeState} />
-    </div>
+    </>
   );
 }
