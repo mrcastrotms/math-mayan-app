@@ -24,10 +24,13 @@ export default function ZearnHubView({ onBack }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+
     if (studentSection) {
       fetch(`/api/roster?section=${studentSection}`)
         .then((res) => res.json())
         .then((data) => {
+          if (!isMounted) return;
           const students = data.students || [];
           const found = students.find(
             (s) =>
@@ -40,12 +43,15 @@ export default function ZearnHubView({ onBack }) {
           setIsLoading(false);
         })
         .catch((err) => {
+          if (!isMounted) return;
           console.error("Failed to load roster credentials:", err);
           setIsLoading(false);
         });
-    } else {
-      setIsLoading(false);
     }
+
+    return () => {
+      isMounted = false;
+    };
   }, [studentSection, studentName]);
 
   const handleLaunchZearn = () => {
@@ -101,7 +107,7 @@ export default function ZearnHubView({ onBack }) {
                     Classwork Account
                   </span>
                   <span className="text-xs font-mono border border-[var(--app-border)] px-2.5 py-1 rounded-lg">
-                    Code: {studentCreds.zearnClasscodeClasswork || (studentSection === "4B" ? "EZ7D6N" : "N/A")}
+                    Code: {studentCreds.zearnClasscodeClasswork || (studentSection === "4B" ? "EZ7D6N" : "MY9Q4Y")}
                   </span>
                 </div>
                 <div>
@@ -125,7 +131,7 @@ export default function ZearnHubView({ onBack }) {
                     Homework Account
                   </span>
                   <span className="text-xs font-mono border border-[var(--app-border)] px-2.5 py-1 rounded-lg">
-                    Code: {studentCreds.zearnClasscodeHomework || (studentSection === "4B" ? "DH3P2G" : "N/A")}
+                    Code: {studentCreds.zearnClasscodeHomework || (studentSection === "4B" ? "DH3P2G" : "XX9U9V")}
                   </span>
                 </div>
                 <div>
