@@ -187,6 +187,7 @@ export default function ExamGate({
 
     try {
       localStorage.setItem("exam_student_name", result.finalStudentName);
+      localStorage.setItem("exam_student_section", selectedSection);
       if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
         await document.documentElement.requestFullscreen();
       }

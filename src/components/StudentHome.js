@@ -96,7 +96,7 @@ export default function StudentHome({
   }
 
   if (currentView === "zearn") {
-    return <ZearnHubView onBack={() => setCurrentView("menu")} />;
+    return <ZearnHubView onBack={() => setCurrentView("menu")} studentName={studentName} section={section} />;
   }
 
   if (selectedWork) {

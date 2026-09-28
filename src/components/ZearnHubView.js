@@ -1,50 +1,109 @@
 "use client";
 import React, { useState, useEffect } from "react";
 
-export default function ZearnHubView({ onBack }) {
+export default function ZearnHubView({ onBack, studentName: propStudentName, section: propSection }) {
   const [studentName] = useState(() => {
+    if (propStudentName) return propStudentName;
     try {
       return localStorage.getItem("exam_student_name") || "";
     } catch (e) {
       return "";
     }
   });
-  const [studentSection] = useState(() => {
+
+  const [studentSection, setStudentSection] = useState(() => {
+    if (propSection) return propSection;
     try {
       return localStorage.getItem("exam_student_section") || "";
     } catch (e) {
       return "";
     }
   });
+
   const [studentCreds, setStudentCreds] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
-    if (studentSection && studentName) {
-      fetch(`/api/roster?section=${studentSection}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (!isMounted) return;
-          const students = data.students || [];
-          const found = students.find(
-            (s) =>
-              (s.displayName || s.rawName || "").toLowerCase().trim() ===
-              studentName.toLowerCase().trim()
-          );
-          if (found) {
-            setStudentCreds(found);
+
+    async function loadCreds() {
+      const activeName = (studentName || "").trim().toLowerCase();
+      if (!activeName) {
+        if (isMounted) setIsLoading(false);
+        return;
+      }
+
+      try {
+        // 1. Try fetching specific section if known
+        if (studentSection) {
+          const res = await fetch(`/api/roster?section=${encodeURIComponent(studentSection)}`);
+          if (res.ok) {
+            const data = await res.json();
+            const students = data.students || [];
+            const found = students.find((s) => {
+              const sName = (s.displayName || s.rawName || s.name || "").trim().toLowerCase();
+              return sName === activeName || sName.includes(activeName) || activeName.includes(sName);
+            });
+            if (found && isMounted) {
+              setStudentCreds(found);
+              setIsLoading(false);
+              return;
+            }
           }
-          setIsLoading(false);
-        })
-        .catch((err) => {
-          if (!isMounted) return;
-          console.error("Failed to load roster credentials:", err);
-          setIsLoading(false);
-        });
-    } else {
-      setIsLoading(false);
+        }
+
+        // 2. Fallback: Search all sections in /api/roster if section was missing or not found
+        const allRes = await fetch("/api/roster");
+        if (allRes.ok) {
+          const allData = await allRes.json();
+          let matched = null;
+          let detectedSection = "";
+
+          if (Array.isArray(allData)) {
+            matched = allData.find((s) => {
+              const sName = (s.displayName || s.rawName || s.name || "").trim().toLowerCase();
+              return sName === activeName || sName.includes(activeName) || activeName.includes(sName);
+            });
+            if (matched) detectedSection = matched.section || "";
+          } else if (typeof allData === "object" && allData !== null) {
+            for (const [sec, list] of Object.entries(allData)) {
+              if (Array.isArray(list)) {
+                const sFound = list.find((s) => {
+                  const sName = (s.displayName || s.rawName || s.name || "").trim().toLowerCase();
+                  return sName === activeName || sName.includes(activeName) || activeName.includes(sName);
+                });
+                if (sFound) {
+                  matched = sFound;
+                  detectedSection = sec;
+                  break;
+                }
+              }
+            }
+          }
+
+          if (matched && isMounted) {
+            setStudentCreds(matched);
+            if (detectedSection && !studentSection) {
+              setStudentSection(detectedSection);
+              try {
+                localStorage.setItem("exam_student_section", detectedSection);
+              } catch (_) {}
+            }
+            setIsLoading(false);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load roster credentials:", err);
+      }
+
+      if (isMounted) {
+        setIsLoading(false);
+      }
     }
+
+    loadCreds();
+
     return () => {
       isMounted = false;
     };
@@ -82,9 +141,9 @@ export default function ZearnHubView({ onBack }) {
             Use these official credentials and class codes to log in to Zearn Math.
           </p>
 
-          {!studentSection || !studentName ? (
+          {!studentName ? (
             <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-4 text-sm text-amber-600 dark:text-amber-400 font-semibold">
-              Missing student session data. Please click "Back to Menu" and log in again to see your credentials.
+              Missing student session data. Please click &quot;Back to Menu&quot; and log in again to see your credentials.
             </div>
           ) : isLoading ? (
             <p className="text-sm opacity-70">Loading your Zearn credentials...</p>
@@ -140,7 +199,7 @@ export default function ZearnHubView({ onBack }) {
             </div>
           ) : (
             <div className="rounded-xl bg-rose-500/10 border border-rose-500/30 p-4 text-sm text-rose-600 dark:text-rose-400 font-semibold">
-              No matching roster record found for <strong>{studentName || "Student"}</strong> in Section {studentSection}. Please check with your teacher.
+              No matching roster record found for <strong>{studentName}</strong> {studentSection ? `in Section ${studentSection}` : ""}. Please check with your teacher.
             </div>
           )}
         </div>
