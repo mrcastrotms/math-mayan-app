@@ -1,3 +1,4 @@
+import InlineQuestionEditor from "./InlineQuestionEditor";
 import React from "react";
 import SessionGeneratorCard from "../SessionGeneratorCard";
 import GradebookSummaryCard from "../GradebookSummaryCard";
