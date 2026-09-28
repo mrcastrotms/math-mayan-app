@@ -60,8 +60,9 @@ export async function persistExamCompletion({
     navigation.questionsAttempted,
     navigation.studentAnswers,
     loginTime,
-    startTime || new Date().toLocaleTimeString(),
+    startTime || new Date().toISOString(),
     hintsUsed,
+    startTime || new Date().toISOString(),
   );
 }
 

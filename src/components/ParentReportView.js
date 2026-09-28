@@ -78,19 +78,32 @@ export default function ParentReportView({ reportId }) {
             </span>
             <span className="bg-slate-50 text-slate-600 px-4 py-2 rounded-xl font-bold border border-slate-200">
               {report.timestamp?.toDate
-                ? report.timestamp.toDate().toLocaleDateString()
+                ? report.timestamp.toDate().toLocaleString("en-US", { timeZone: "America/Tegucigalpa", dateStyle: "medium", timeStyle: "short" })
                 : "Date N/A"}
             </span>
           </div>
           <div className="text-xl font-bold text-slate-500 mb-2">
             Final Score
           </div>
-          <div
+                    <div
             className={`text-6xl font-black ${
               report.score >= 70 ? "text-green-500" : "text-red-500"
             }`}
           >
             {report.score}%
+          </div>
+
+          {/* ELI5 Scoring Explanation (Parent Web View Only) */}
+          <div className="mt-6 max-w-lg w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-left shadow-sm">
+            <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5">
+              <span>ℹ️</span> How This Score Is Calculated
+            </h4>
+            <ul className="text-xs text-slate-600 space-y-1.5 leading-relaxed">
+              <li>• <strong className="text-slate-800">Effort Baseline (60%):</strong> Every student begins with a 60% foundation for active participation.</li>
+              <li>• <strong className="text-slate-800">Academic Mastery (+40%):</strong> Correct answers earn additional points, scaling up to a 100% maximum.</li>
+              <li>• <strong className="text-slate-800">Conduct Demerits:</strong> Uncorrected classroom demerits deduct 5 points each.</li>
+              <li>• <strong className="text-slate-800">Growth Floor (50%):</strong> Students completing the assessment maintain at least a 50% floor to encourage perseverance.</li>
+            </ul>
           </div>
         </div>
 
