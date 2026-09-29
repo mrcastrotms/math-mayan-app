@@ -1,3 +1,4 @@
+import MultiplicationSprint from './MultiplicationSprint';
 import StudentWhiteboard from "./student/StudentWhiteboard";
 import StudentImageGallery from "./student/StudentImageGallery";
 import React, { useState } from "react";
@@ -177,9 +178,9 @@ export default function StudentHome({
               className="flex min-h-[6rem] min-w-0 items-center justify-between gap-4 rounded-lg border border-emerald-200 bg-emerald-50 p-5 text-left text-lg font-medium text-emerald-700 transition-all hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300 dark:hover:bg-emerald-900/50 sm:p-6"
             >
               <div className="min-w-0 break-words">
-                <div className="font-bold">Classwork Practice</div>
+                <div className="font-bold">Multiplication Sprint</div>
                 <div className="text-sm opacity-80">
-                  Interactive guided problems and scaffolds
+                  60-second rapid-fire math facts
                 </div>
               </div>
               <span className="shrink-0 rounded-full bg-emerald-200 px-2.5 py-1 text-xs dark:bg-emerald-800">
