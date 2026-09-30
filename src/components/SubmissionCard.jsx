@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { db, storage } from '../firebase';
+import * as firebaseAppModule from '../firebase';
 import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+
+const db = firebaseAppModule.db;
+const app = firebaseAppModule.app || firebaseAppModule.default;
 
 export default function SubmissionCard({ studentName = "Student", section = "General" }) {
   const [imagePreview, setImagePreview] = useState(null);
@@ -177,16 +180,18 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
     try {
       let downloadURL = '';
 
-      if (storage) {
-        try {
-          setUploadProgress('Uploading image...');
+      // Try Firebase Storage if initialized or fallback to Base64
+      try {
+        const storageInstance = firebaseAppModule.storage || (app ? getStorage(app) : null);
+        if (storageInstance) {
+          setUploadProgress('Uploading image to cloud...');
           const storagePath = `submissions/${section}/${todayKey}/${studentName}/${Date.now()}_${imageFile.name}`;
-          const storageRef = ref(storage, storagePath);
+          const storageRef = ref(storageInstance, storagePath);
           const snapshot = await uploadBytes(storageRef, imageFile);
           downloadURL = await getDownloadURL(snapshot.ref);
-        } catch (storageErr) {
-          console.warn('Storage fallback to base64:', storageErr);
         }
+      } catch (storageErr) {
+        console.warn('Storage fallback to base64 encoding:', storageErr);
       }
 
       if (!downloadURL) {
