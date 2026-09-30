@@ -159,7 +159,16 @@ export default function StudentHome({
             Grade: {section}
           </p>
 
-          <div className="mb-8 text-left">
+          
+      {/* Daily Screenshot Submission Card */}
+      <div className="mb-6">
+        <SubmissionCard 
+          studentName={studentName || currentUser?.displayName || "Student"} 
+          section={selectedSection || currentSection || "4B"} 
+        />
+      </div>
+
+      <div className="mb-8 text-left">
             <AssignedWorkPanel
               works={works}
               studentId={
