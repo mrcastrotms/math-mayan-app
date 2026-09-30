@@ -1,4 +1,5 @@
 "use client";
+import MultiplicationSprint from './MultiplicationSprint';
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import StartScreen from "./StartScreen";
@@ -110,6 +111,25 @@ export default function ExamAppRouter({
       >
         {adminPanel}
       </FinishedScreen>
+    );
+  }
+
+  if (view === "classwork") {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="max-w-md mx-auto mb-4">
+          <button 
+            onClick={() => navigateTo("student-home")}
+            className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-bold hover:bg-gray-300 transition"
+          >
+            ← Back to Dashboard
+          </button>
+        </div>
+        <MultiplicationSprint 
+          student={state?.student} 
+          section={state?.selectedSection || state?.student?.section || "4B"} 
+        />
+      </div>
     );
   }
 

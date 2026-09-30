@@ -91,6 +91,8 @@ export async function saveExamResult(
   studentAnswers,
   loginTime,
   startTime,
+  hintsUsed,
+  startedAt,
 ) {
   if (!student) return;
   try {
@@ -120,6 +122,8 @@ export async function saveExamResult(
       answers: studentAnswers,
       loginTime: loginTime || null,
       startTime: startTime || null,
+      startedAt: startedAt || startTime || null,
+      submittedAt: serverTimestamp(),
       timestamp: serverTimestamp(),
     };
 

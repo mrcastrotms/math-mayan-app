@@ -1,12 +1,30 @@
 // src/components/StudentReportMetaGrid.js
 import React from "react";
 
+
+export const formatHondurasTime = (ts) => {
+  if (!ts) return "Not recorded (legacy)";
+  try {
+    const d = ts?.toDate ? ts.toDate() : new Date(ts);
+    if (isNaN(d.getTime())) return typeof ts === "string" ? ts : "Not recorded (legacy)";
+    return d.toLocaleString("en-US", {
+      timeZone: "America/Tegucigalpa",
+      month: "numeric",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+  } catch {
+    return "Not recorded (legacy)";
+  }
+};
+
 export default function StudentReportMetaGrid({ report }) {
-  const formattedDate = report.timestamp?.toDate
-    ? report.timestamp.toDate().toLocaleString()
-    : report.timestamp
-      ? new Date(report.timestamp).toLocaleString()
-      : "N/A";
+  const timeStarted = formatHondurasTime(report.startedAt || report.startTime);
+  const timeSubmitted = formatHondurasTime(report.submittedAt || report.timestamp);
 
   const officialName = report.officialName || report.studentName || "—";
   const writtenName = report.rawTypedName || report.studentName || "—";
@@ -63,9 +81,15 @@ export default function StudentReportMetaGrid({ report }) {
       </div>
       <div>
         <span className="font-bold text-slate-500 block text-xs uppercase tracking-wider mb-1">
-          Date & Time
+          Time Started (Honduras)
         </span>
-        <span className="text-slate-700 font-medium">{formattedDate}</span>
+        <span className="text-slate-700 font-medium text-sm">{timeStarted}</span>
+      </div>
+      <div>
+        <span className="font-bold text-slate-500 block text-xs uppercase tracking-wider mb-1">
+          Time Submitted (Honduras)
+        </span>
+        <span className="text-slate-700 font-medium text-sm">{timeSubmitted}</span>
       </div>
     </div>
   );

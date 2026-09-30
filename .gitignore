@@ -48,3 +48,8 @@ node_modules/
 /playwright/.cache/
 /playwright/.auth/
 service-account.json
+
+# Private migration scripts
+scripts/merge-zearn-*.mjs
+scripts/*zearn*
+

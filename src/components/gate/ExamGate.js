@@ -187,6 +187,7 @@ export default function ExamGate({
 
     try {
       localStorage.setItem("exam_student_name", result.finalStudentName);
+      localStorage.setItem("exam_student_section", selectedSection);
       if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
         await document.documentElement.requestFullscreen();
       }
@@ -213,6 +214,7 @@ export default function ExamGate({
     ? new Date(rawTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     : "Live";
   const appVersion = process.env.NEXT_PUBLIC_APP_VERSION || "v3.4";
+  const buildDate = process.env.NEXT_PUBLIC_BUILD_TIME ? new Date(process.env.NEXT_PUBLIC_BUILD_TIME).toLocaleDateString("en-US", {month:"2-digit", day:"2-digit", year:"numeric"}) : new Date().toLocaleDateString("en-US");
 
   const ciColors = {
     success: { bg: "rgba(16, 185, 129, 0.12)", border: "#10b981", text: "#10b981", dot: "#10b981" },
@@ -278,6 +280,7 @@ export default function ExamGate({
           <div style={{ textAlign: "right", fontSize: "0.7rem", background: current.bg, border: `1px solid ${current.border}`, padding: "6px 10px", borderRadius: "6px", color: current.textDim, flexShrink: 0 }}>
             <div style={{ fontWeight: "bold", color: current.text }}>SHA: {commitSha}</div>
             <div>Built: {buildTime}</div>
+            <div>Date: {buildDate}</div>
           </div>
         </div>
 

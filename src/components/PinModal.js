@@ -62,6 +62,12 @@ export default function PinModal({
             <input
               ref={inputRef}
               type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck="false"
+              style={{ WebkitTextSecurity: "disc" }}
               value={pin}
               onChange={(e) => setPin(e.target.value)}
               className="w-full p-4 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 text-center text-2xl font-mono tracking-widest text-slate-900"
