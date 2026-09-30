@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import * as firebaseAppModule from '../firebase';
+import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-
-const db = firebaseAppModule.db;
-const app = firebaseAppModule.app || firebaseAppModule.default;
 
 export default function SubmissionCard({ studentName = "Student", section = "General" }) {
   const [imagePreview, setImagePreview] = useState(null);
@@ -38,7 +35,6 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
 
   const todayKey = getTodayDateString();
 
-  // Fetch student's submissions (both today and full history)
   const fetchStudentSubmissions = async () => {
     try {
       if (!db) return;
@@ -50,7 +46,6 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
       const snapshot = await getDocs(q);
       const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-      // Sort descending by ISO date/time
       docs.sort((a, b) => new Date(b.createdAtISO || 0) - new Date(a.createdAtISO || 0));
 
       setAllSubmissions(docs);
@@ -180,18 +175,17 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
     try {
       let downloadURL = '';
 
-      // Try Firebase Storage if initialized or fallback to Base64
       try {
-        const storageInstance = firebaseAppModule.storage || (app ? getStorage(app) : null);
-        if (storageInstance) {
-          setUploadProgress('Uploading image to cloud...');
+        if (db && db.app) {
+          setUploadProgress('Uploading image to Firebase Storage...');
+          const storageInstance = getStorage(db.app);
           const storagePath = `submissions/${section}/${todayKey}/${studentName}/${Date.now()}_${imageFile.name}`;
           const storageRef = ref(storageInstance, storagePath);
           const snapshot = await uploadBytes(storageRef, imageFile);
           downloadURL = await getDownloadURL(snapshot.ref);
         }
       } catch (storageErr) {
-        console.warn('Storage fallback to base64 encoding:', storageErr);
+        console.warn('Storage upload fallback to base64 encoding:', storageErr);
       }
 
       if (!downloadURL) {
@@ -278,7 +272,6 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
         </div>
       </div>
 
-      {/* STUDENT HISTORY DRAWER */}
       {showHistory ? (
         <div className="space-y-3 mb-4 p-4 bg-gray-50 dark:bg-gray-900/60 rounded-lg border dark:border-gray-700 max-h-80 overflow-y-auto">
           <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-2">Your Past Submissions</h4>
@@ -307,7 +300,6 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
           )}
         </div>
       ) : isCutoffReached ? (
-        /* CASE 1: Cutoff Reached (Submitted Today) */
         <div className="space-y-4 text-center py-2">
           <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
             <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
@@ -343,7 +335,6 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
           </button>
         </div>
       ) : (
-        /* CASE 2: Upload Zone */
         <>
           {unlockedByTeacher && (
             <div className="mb-3 p-2.5 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 rounded-lg text-xs text-blue-800 dark:text-blue-300 flex justify-between items-center">
@@ -457,7 +448,6 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
         </>
       )}
 
-      {/* STUDENT FULLSCREEN IMAGE LIGHTBOX */}
       {activeModalImage && (
         <div
           className="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center z-50 p-4"
@@ -494,7 +484,6 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
         </div>
       )}
 
-      {/* TEACHER OVERRIDE PIN MODAL */}
       {showPinModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl max-w-xs w-full p-5 shadow-2xl border dark:border-gray-700">
