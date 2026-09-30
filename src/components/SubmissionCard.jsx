@@ -11,10 +11,17 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
   const [uploadProgress, setUploadProgress] = useState('');
   const [touchStatus, setTouchStatus] = useState('');
   const [todaySubmissions, setTodaySubmissions] = useState([]);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState('');
+  const [unlockedByTeacher, setUnlockedByTeacher] = useState(false);
+
   const pasteAreaRef = useRef(null);
   const touchTimerRef = useRef(null);
 
-  // Helper for YYYY-MM-DD string key
+  // Master override code for teacher approval
+  const TEACHER_BYPASS_PIN = "1234"; 
+
   const getTodayDateString = () => {
     const today = new Date();
     return today.toISOString().split('T')[0];
@@ -22,7 +29,7 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
 
   const todayKey = getTodayDateString();
 
-  // Fetch student's submissions for today
+  // Fetch student's existing submission for today
   const fetchTodaySubmissions = async () => {
     try {
       if (!db) return;
@@ -61,6 +68,8 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
   };
 
   useEffect(() => {
+    if (todaySubmissions.length > 0 && !unlockedByTeacher) return;
+
     const handlePaste = (e) => {
       const items = e.clipboardData?.items;
       if (items && processPasteItems(items)) {
@@ -70,7 +79,7 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
 
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
-  }, []);
+  }, [todaySubmissions, unlockedByTeacher]);
 
   const handleClipboardRead = async () => {
     try {
@@ -160,13 +169,13 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
 
       if (storage) {
         try {
-          setUploadProgress('Uploading image to cloud...');
+          setUploadProgress('Uploading image...');
           const storagePath = `submissions/${section}/${todayKey}/${studentName}/${Date.now()}_${imageFile.name}`;
           const storageRef = ref(storage, storagePath);
           const snapshot = await uploadBytes(storageRef, imageFile);
           downloadURL = await getDownloadURL(snapshot.ref);
         } catch (storageErr) {
-          console.warn('Storage fallback to inline Base64:', storageErr);
+          console.warn('Storage fallback to base64:', storageErr);
         }
       }
 
@@ -185,11 +194,13 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
         fileType: imageFile.type,
         submittedAt: serverTimestamp(),
         createdAtISO: new Date().toISOString(),
+        unlockedOverride: unlockedByTeacher,
         status: 'submitted',
       });
 
       alert(`✅ Screenshot submitted for ${todayKey}!`);
       handleReset();
+      setUnlockedByTeacher(false);
       fetchTodaySubmissions();
     } catch (err) {
       console.error('Error submitting screenshot:', err);
@@ -200,6 +211,18 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
     }
   };
 
+  const handleVerifyPin = (e) => {
+    e.preventDefault();
+    if (pinInput === TEACHER_BYPASS_PIN) {
+      setUnlockedByTeacher(true);
+      setShowPinModal(false);
+      setPinInput('');
+      setPinError('');
+    } else {
+      setPinError('Incorrect Teacher Code. Ask your teacher!');
+    }
+  };
+
   const handleReset = () => {
     setImagePreview(null);
     setImageFile(null);
@@ -207,8 +230,11 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
     setUploadProgress('');
   };
 
+  const isCutoffReached = todaySubmissions.length > 0 && !unlockedByTeacher;
+  const latestSubmission = todaySubmissions[todaySubmissions.length - 1];
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700 transition-all">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700 transition-all relative">
       <div className="flex justify-between items-center mb-4">
         <div>
           <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -218,104 +244,204 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
             Date: <span className="font-semibold text-gray-700 dark:text-gray-300">{todayKey}</span>
           </p>
         </div>
-        <span className="text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 px-2.5 py-1 rounded-full font-semibold">
-          {todaySubmissions.length} Submitted Today
+        <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
+          isCutoffReached 
+            ? 'bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200' 
+            : 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200'
+        }`}>
+          {isCutoffReached ? '🔒 Completed Today' : 'Ready for Submission'}
         </span>
       </div>
 
-      {!imagePreview ? (
-        <div className="space-y-4">
-          <div
-            ref={pasteAreaRef}
-            contentEditable
-            suppressContentEditableWarning
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-            className="border-2 border-dashed border-blue-400 dark:border-blue-500 rounded-lg p-5 text-center bg-blue-50/50 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-gray-900 transition-colors cursor-pointer outline-none focus:ring-2 focus:ring-blue-500 select-none"
-            style={{ caretColor: 'transparent' }}
-          >
-            <div className="pointer-events-none">
-              <p className="text-base font-semibold text-gray-800 dark:text-gray-200">
-                Method 1: PrintScreen + Paste
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                1. Press <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">PrtScn</kbd> on keyboard.
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                2. Press <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">Ctrl + V</kbd>, <strong>Right-Click</strong>, or <strong>Long-Press (Touch)</strong> here to Paste.
-              </p>
-              {touchStatus && (
-                <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-2 animate-pulse">
-                  {touchStatus}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between gap-2 text-xs text-gray-400">
-            <hr className="w-full border-gray-200 dark:border-gray-700" />
-            <span>OR</span>
-            <hr className="w-full border-gray-200 dark:border-gray-700" />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={handleClipboardRead}
-              className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2"
-            >
-              <span>📋</span> Paste From Clipboard
-            </button>
-
-            <button
-              type="button"
-              onClick={handleScreenCapture}
-              disabled={isCapturing}
-              className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              <span>📸</span> {isCapturing ? 'Capturing...' : 'Method 2: Capture Screen'}
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div className="relative border dark:border-gray-700 rounded-lg overflow-hidden bg-black/5 flex justify-center items-center max-h-72 p-2">
-            <img
-              src={imagePreview}
-              alt="Screenshot Preview"
-              className="max-h-64 w-auto object-contain rounded"
-            />
-          </div>
-
-          {isUploading && (
-            <p className="text-xs text-center text-blue-600 dark:text-blue-400 font-medium animate-pulse">
-              {uploadProgress}
+      {/* CASE 1: Cutoff Reached (1 Submission Exists & Not Unlocked) */}
+      {isCutoffReached ? (
+        <div className="space-y-4 text-center py-2">
+          <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+            <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+              ✅ You have already submitted your screenshot for today!
             </p>
+            <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+              Only 1 submission per day is allowed. To re-submit, ask your teacher to unlock it.
+            </p>
+          </div>
+
+          {latestSubmission?.imageUrl && (
+            <div className="border dark:border-gray-700 rounded-lg overflow-hidden bg-black/5 p-2">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium">Today's Submission Preview:</p>
+              <img
+                src={latestSubmission.imageUrl}
+                alt="Submitted Work"
+                className="max-h-52 mx-auto object-contain rounded"
+              />
+            </div>
           )}
 
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={handleReset}
-              disabled={isUploading}
-              className="w-1/3 py-2 px-4 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium text-sm rounded-lg transition-colors disabled:opacity-50"
-            >
-              Retake
-            </button>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={isUploading}
-              className="w-2/3 py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-medium text-sm rounded-lg shadow-sm transition-colors disabled:opacity-50 flex justify-center items-center gap-2"
-            >
-              {isUploading ? (
-                <>
-                  <span className="animate-spin text-xs">🌀</span> Submitting...
-                </>
-              ) : (
-                'Submit Today\'s Screenshot'
+          <button
+            type="button"
+            onClick={() => setShowPinModal(true)}
+            className="w-full py-2 px-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium text-xs rounded-lg transition-colors border border-gray-300 dark:border-gray-600 flex items-center justify-center gap-1.5"
+          >
+            🔑 Need to re-submit? Enter Teacher Code
+          </button>
+        </div>
+      ) : (
+        /* CASE 2: Upload Zone (Not Submitted yet or Unlocked by Teacher) */
+        <>
+          {unlockedByTeacher && (
+            <div className="mb-3 p-2.5 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 rounded-lg text-xs text-blue-800 dark:text-blue-300 flex justify-between items-center">
+              <span>🔓 Resubmission unlocked by Teacher Override.</span>
+              <button 
+                type="button" 
+                onClick={() => setUnlockedByTeacher(false)}
+                className="underline font-semibold"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+
+          {!imagePreview ? (
+            <div className="space-y-4">
+              <div
+                ref={pasteAreaRef}
+                contentEditable
+                suppressContentEditableWarning
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+                className="border-2 border-dashed border-blue-400 dark:border-blue-500 rounded-lg p-5 text-center bg-blue-50/50 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-gray-900 transition-colors cursor-pointer outline-none focus:ring-2 focus:ring-blue-500 select-none"
+                style={{ caretColor: 'transparent' }}
+              >
+                <div className="pointer-events-none">
+                  <p className="text-base font-semibold text-gray-800 dark:text-gray-200">
+                    Method 1: PrintScreen + Paste
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    1. Press <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">PrtScn</kbd> on keyboard.
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    2. Press <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">Ctrl + V</kbd>, <strong>Right-Click</strong>, or <strong>Long-Press (Touch)</strong> here to Paste.
+                  </p>
+                  {touchStatus && (
+                    <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-2 animate-pulse">
+                      {touchStatus}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-2 text-xs text-gray-400">
+                <hr className="w-full border-gray-200 dark:border-gray-700" />
+                <span>OR</span>
+                <hr className="w-full border-gray-200 dark:border-gray-700" />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={handleClipboardRead}
+                  className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2"
+                >
+                  <span>📋</span> Paste From Clipboard
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleScreenCapture}
+                  disabled={isCapturing}
+                  className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <span>📸</span> {isCapturing ? 'Capturing...' : 'Method 2: Capture Screen'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="relative border dark:border-gray-700 rounded-lg overflow-hidden bg-black/5 flex justify-center items-center max-h-72 p-2">
+                <img
+                  src={imagePreview}
+                  alt="Screenshot Preview"
+                  className="max-h-64 w-auto object-contain rounded"
+                />
+              </div>
+
+              {isUploading && (
+                <p className="text-xs text-center text-blue-600 dark:text-blue-400 font-medium animate-pulse">
+                  {uploadProgress}
+                </p>
               )}
-            </button>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  disabled={isUploading}
+                  className="w-1/3 py-2 px-4 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium text-sm rounded-lg transition-colors disabled:opacity-50"
+                >
+                  Retake
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isUploading}
+                  className="w-2/3 py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-medium text-sm rounded-lg shadow-sm transition-colors disabled:opacity-50 flex justify-center items-center gap-2"
+                >
+                  {isUploading ? (
+                    <>
+                      <span className="animate-spin text-xs">🌀</span> Submitting...
+                    </>
+                  ) : (
+                    'Submit Screenshot'
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* TEACHER OVERRIDE PIN MODAL */}
+      {showPinModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-xs w-full p-5 shadow-2xl border dark:border-gray-700">
+            <h4 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <span>🔐</span> Teacher Unlock Code
+            </h4>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Ask your teacher to enter the code to allow a new screenshot submission today.
+            </p>
+
+            <form onSubmit={handleVerifyPin} className="mt-4 space-y-3">
+              <input
+                type="password"
+                value={pinInput}
+                onChange={(e) => setPinInput(e.target.value)}
+                placeholder="Enter PIN (e.g. 1234)"
+                autoFocus
+                className="w-full text-center tracking-widest text-lg font-mono py-2 px-3 border dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+              />
+
+              {pinError && (
+                <p className="text-xs text-red-500 text-center font-medium">
+                  {pinError}
+                </p>
+              )}
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowPinModal(false); setPinInput(''); setPinError(''); }}
+                  className="w-1/2 py-2 text-xs bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="w-1/2 py-2 text-xs bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+                >
+                  Verify Code
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
