@@ -20,7 +20,7 @@ export default function OverviewTab({
     <div className="w-full max-w-4xl flex flex-col gap-6 animate-in fade-in duration-200">
       {/* Student Submissions Hub */}
       <div className="mb-6">
-        <TeacherSubmissionsViewer />
+        <TeacherSubmissionsViewer selectedSection={typeof selectedSection !== "undefined" ? selectedSection : "All"} />
       </div>
     
       <div className="flex w-full flex-wrap justify-center gap-6">
