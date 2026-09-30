@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { db, storage } from '../firebase'; // Adjusts to existing firebase export
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db, storage } from '../firebase';
+import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export default function SubmissionCard({ studentName = "Student", section = "General" }) {
@@ -10,16 +10,46 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
   const [touchStatus, setTouchStatus] = useState('');
+  const [todaySubmissions, setTodaySubmissions] = useState([]);
   const pasteAreaRef = useRef(null);
   const touchTimerRef = useRef(null);
 
-  // Extract image from paste items
+  // Helper for YYYY-MM-DD string key
+  const getTodayDateString = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  };
+
+  const todayKey = getTodayDateString();
+
+  // Fetch student's submissions for today
+  const fetchTodaySubmissions = async () => {
+    try {
+      if (!db) return;
+      const q = query(
+        collection(db, 'student_submissions'),
+        where('studentName', '==', studentName),
+        where('section', '==', section),
+        where('submissionDate', '==', todayKey)
+      );
+      const snapshot = await getDocs(q);
+      const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setTodaySubmissions(docs);
+    } catch (err) {
+      console.warn('Error fetching today submissions:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchTodaySubmissions();
+  }, [studentName, section]);
+
   const processPasteItems = (items) => {
     for (let i = 0; i < items.length; i++) {
       if (items[i].type.indexOf('image') !== -1) {
         const blob = items[i].getAsFile();
         if (blob) {
-          const file = new File([blob], `screenshot_${Date.now()}.png`, { type: blob.type });
+          const file = new File([blob], `screenshot_${todayKey}_${Date.now()}.png`, { type: blob.type });
           setImageFile(file);
           setImagePreview(URL.createObjectURL(blob));
           setTouchStatus('');
@@ -30,7 +60,6 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
     return false;
   };
 
-  // Global paste event listener
   useEffect(() => {
     const handlePaste = (e) => {
       const items = e.clipboardData?.items;
@@ -43,7 +72,6 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
     return () => window.removeEventListener('paste', handlePaste);
   }, []);
 
-  // Async Clipboard API handler
   const handleClipboardRead = async () => {
     try {
       const clipboardItems = await navigator.clipboard.read();
@@ -51,7 +79,7 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
         const imageType = item.types.find((type) => type.startsWith('image/'));
         if (imageType) {
           const blob = await item.getType(imageType);
-          const file = new File([blob], `screenshot_${Date.now()}.png`, { type: imageType });
+          const file = new File([blob], `screenshot_${todayKey}_${Date.now()}.png`, { type: imageType });
           setImageFile(file);
           setImagePreview(URL.createObjectURL(blob));
           setTouchStatus('');
@@ -64,7 +92,6 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
     }
   };
 
-  // Touch Long-Press Handlers
   const handleTouchStart = () => {
     setTouchStatus('Hold to trigger paste...');
     touchTimerRef.current = setTimeout(() => {
@@ -74,13 +101,10 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
   };
 
   const handleTouchEnd = () => {
-    if (touchTimerRef.current) {
-      clearTimeout(touchTimerRef.current);
-    }
+    if (touchTimerRef.current) clearTimeout(touchTimerRef.current);
     setTimeout(() => setTouchStatus(''), 1500);
   };
 
-  // Method 2: Screen Capture API
   const handleScreenCapture = async () => {
     try {
       setIsCapturing(true);
@@ -104,7 +128,7 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
 
       canvas.toBlob((blob) => {
         if (blob) {
-          const file = new File([blob], `screen_capture_${Date.now()}.png`, { type: 'image/png' });
+          const file = new File([blob], `screen_capture_${todayKey}_${Date.now()}.png`, { type: 'image/png' });
           setImageFile(file);
           setImagePreview(URL.createObjectURL(blob));
         }
@@ -116,7 +140,6 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
     }
   };
 
-  // Convert File to Base64 (Fallback if Storage bucket is restricted)
   const fileToBase64 = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -126,7 +149,6 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
     });
   };
 
-  // Upload to Firebase Storage + Store Metadata in Firestore
   const handleSubmit = async () => {
     if (!imageFile) return;
 
@@ -136,30 +158,28 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
     try {
       let downloadURL = '';
 
-      // Try uploading to Firebase Storage first
       if (storage) {
         try {
-          setUploadProgress('Uploading image file...');
-          const storagePath = `submissions/${section}/${Date.now()}_${imageFile.name}`;
+          setUploadProgress('Uploading image to cloud...');
+          const storagePath = `submissions/${section}/${todayKey}/${studentName}/${Date.now()}_${imageFile.name}`;
           const storageRef = ref(storage, storagePath);
           const snapshot = await uploadBytes(storageRef, imageFile);
           downloadURL = await getDownloadURL(snapshot.ref);
         } catch (storageErr) {
-          console.warn('Firebase Storage upload failed, falling back to compressed Base64 inline store:', storageErr);
+          console.warn('Storage fallback to inline Base64:', storageErr);
         }
       }
 
-      // Fallback: If Storage failed or isn't set up, convert to Base64
       if (!downloadURL) {
         setUploadProgress('Encoding image payload...');
         downloadURL = await fileToBase64(imageFile);
       }
 
-      // Record entry in Firestore
       setUploadProgress('Saving submission entry...');
       await addDoc(collection(db, 'student_submissions'), {
         studentName,
         section,
+        submissionDate: todayKey,
         imageUrl: downloadURL,
         fileName: imageFile.name,
         fileType: imageFile.type,
@@ -168,11 +188,12 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
         status: 'submitted',
       });
 
-      alert(`✅ Screenshot submitted successfully for ${studentName} (${section})!`);
+      alert(`✅ Screenshot submitted for ${todayKey}!`);
       handleReset();
+      fetchTodaySubmissions();
     } catch (err) {
       console.error('Error submitting screenshot:', err);
-      alert(`Submission error: ${err.message || 'Failed to connect to database'}`);
+      alert(`Submission error: ${err.message || 'Failed to submit'}`);
     } finally {
       setIsUploading(false);
       setUploadProgress('');
@@ -189,11 +210,16 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700 transition-all">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-          <span>📋</span> Screenshot Submissions
-        </h3>
+        <div>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <span>📋</span> Daily Work Submissions
+          </h3>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            Date: <span className="font-semibold text-gray-700 dark:text-gray-300">{todayKey}</span>
+          </p>
+        </div>
         <span className="text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 px-2.5 py-1 rounded-full font-semibold">
-          Ready for Submission
+          {todaySubmissions.length} Submitted Today
         </span>
       </div>
 
@@ -287,7 +313,7 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
                   <span className="animate-spin text-xs">🌀</span> Submitting...
                 </>
               ) : (
-                'Submit Screenshot'
+                'Submit Today\'s Screenshot'
               )}
             </button>
           </div>
