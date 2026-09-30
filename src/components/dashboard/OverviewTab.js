@@ -1,3 +1,4 @@
+import TeacherSubmissionsViewer from "../TeacherSubmissionsViewer";
 import InlineQuestionEditor from "./InlineQuestionEditor";
 import React from "react";
 import SessionGeneratorCard from "../SessionGeneratorCard";
@@ -17,6 +18,11 @@ export default function OverviewTab({
 }) {
   return (
     <div className="w-full max-w-4xl flex flex-col gap-6 animate-in fade-in duration-200">
+      {/* Student Submissions Hub */}
+      <div className="mb-6">
+        <TeacherSubmissionsViewer />
+      </div>
+    
       <div className="flex w-full flex-wrap justify-center gap-6">
         <SessionGeneratorCard
           generatedCode={session.generatedCode}
