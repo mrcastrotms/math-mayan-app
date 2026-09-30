@@ -183,7 +183,7 @@ export default function StudentHome({
             
           {/* Submissions & Screenshot Card */}
           <div className="col-span-1 md:col-span-2 lg:col-span-3">
-            <SubmissionCard />
+            <SubmissionCard studentName={studentName} section={section} />
           </div>
 
           <button

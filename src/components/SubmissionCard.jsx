@@ -1,9 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { db, storage } from '../firebase'; // Adjusts to existing firebase export
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-export default function SubmissionCard({ onCancel }) {
+export default function SubmissionCard({ studentName = "Student", section = "General" }) {
   const [imagePreview, setImagePreview] = useState(null);
   const [imageFile, setImageFile] = useState(null);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState('');
   const [touchStatus, setTouchStatus] = useState('');
   const pasteAreaRef = useRef(null);
   const touchTimerRef = useRef(null);
@@ -25,7 +30,7 @@ export default function SubmissionCard({ onCancel }) {
     return false;
   };
 
-  // Global paste event listener (Keyboard & Context Menu Paste)
+  // Global paste event listener
   useEffect(() => {
     const handlePaste = (e) => {
       const items = e.clipboardData?.items;
@@ -65,7 +70,7 @@ export default function SubmissionCard({ onCancel }) {
     touchTimerRef.current = setTimeout(() => {
       setTouchStatus('Attempting clipboard paste...');
       handleClipboardRead();
-    }, 600); // 600ms long press threshold
+    }, 600);
   };
 
   const handleTouchEnd = () => {
@@ -111,31 +116,89 @@ export default function SubmissionCard({ onCancel }) {
     }
   };
 
+  // Convert File to Base64 (Fallback if Storage bucket is restricted)
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  // Upload to Firebase Storage + Store Metadata in Firestore
+  const handleSubmit = async () => {
+    if (!imageFile) return;
+
+    setIsUploading(true);
+    setUploadProgress('Preparing upload...');
+
+    try {
+      let downloadURL = '';
+
+      // Try uploading to Firebase Storage first
+      if (storage) {
+        try {
+          setUploadProgress('Uploading image file...');
+          const storagePath = `submissions/${section}/${Date.now()}_${imageFile.name}`;
+          const storageRef = ref(storage, storagePath);
+          const snapshot = await uploadBytes(storageRef, imageFile);
+          downloadURL = await getDownloadURL(snapshot.ref);
+        } catch (storageErr) {
+          console.warn('Firebase Storage upload failed, falling back to compressed Base64 inline store:', storageErr);
+        }
+      }
+
+      // Fallback: If Storage failed or isn't set up, convert to Base64
+      if (!downloadURL) {
+        setUploadProgress('Encoding image payload...');
+        downloadURL = await fileToBase64(imageFile);
+      }
+
+      // Record entry in Firestore
+      setUploadProgress('Saving submission entry...');
+      await addDoc(collection(db, 'student_submissions'), {
+        studentName,
+        section,
+        imageUrl: downloadURL,
+        fileName: imageFile.name,
+        fileType: imageFile.type,
+        submittedAt: serverTimestamp(),
+        createdAtISO: new Date().toISOString(),
+        status: 'submitted',
+      });
+
+      alert(`✅ Screenshot submitted successfully for ${studentName} (${section})!`);
+      handleReset();
+    } catch (err) {
+      console.error('Error submitting screenshot:', err);
+      alert(`Submission error: ${err.message || 'Failed to connect to database'}`);
+    } finally {
+      setIsUploading(false);
+      setUploadProgress('');
+    }
+  };
+
   const handleReset = () => {
     setImagePreview(null);
     setImageFile(null);
     setTouchStatus('');
-  };
-
-  const handleSubmit = () => {
-    if (!imageFile) return;
-    alert(`Screenshot "${imageFile.name}" submitted!`);
+    setUploadProgress('');
   };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700 transition-all">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-          <span>📋</span> Submissions & Screenshot
+          <span>📋</span> Screenshot Submissions
         </h3>
-        <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full font-medium">
-          Testing Mode
+        <span className="text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 px-2.5 py-1 rounded-full font-semibold">
+          Ready for Submission
         </span>
       </div>
 
       {!imagePreview ? (
         <div className="space-y-4">
-          {/* Dropzone supporting Ctrl+V, Context Menu, and Touch Long-Press */}
           <div
             ref={pasteAreaRef}
             contentEditable
@@ -198,20 +261,34 @@ export default function SubmissionCard({ onCancel }) {
             />
           </div>
 
+          {isUploading && (
+            <p className="text-xs text-center text-blue-600 dark:text-blue-400 font-medium animate-pulse">
+              {uploadProgress}
+            </p>
+          )}
+
           <div className="flex gap-3">
             <button
               type="button"
               onClick={handleReset}
-              className="w-1/3 py-2 px-4 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium text-sm rounded-lg transition-colors"
+              disabled={isUploading}
+              className="w-1/3 py-2 px-4 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium text-sm rounded-lg transition-colors disabled:opacity-50"
             >
               Retake
             </button>
             <button
               type="button"
               onClick={handleSubmit}
-              className="w-2/3 py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-medium text-sm rounded-lg shadow-sm transition-colors"
+              disabled={isUploading}
+              className="w-2/3 py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-medium text-sm rounded-lg shadow-sm transition-colors disabled:opacity-50 flex justify-center items-center gap-2"
             >
-              Submit Screenshot
+              {isUploading ? (
+                <>
+                  <span className="animate-spin text-xs">🌀</span> Submitting...
+                </>
+              ) : (
+                'Submit Screenshot'
+              )}
             </button>
           </div>
         </div>
