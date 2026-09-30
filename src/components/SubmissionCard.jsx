@@ -10,7 +10,14 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
   const [touchStatus, setTouchStatus] = useState('');
+  
+  // Submission history states
   const [todaySubmissions, setTodaySubmissions] = useState([]);
+  const [allSubmissions, setAllSubmissions] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [activeModalImage, setActiveModalImage] = useState(null);
+
+  // Pin override states
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
@@ -19,8 +26,7 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
   const pasteAreaRef = useRef(null);
   const touchTimerRef = useRef(null);
 
-  // Master override code for teacher approval
-  const TEACHER_BYPASS_PIN = "1234"; 
+  const TEACHER_BYPASS_PIN = "1234";
 
   const getTodayDateString = () => {
     const today = new Date();
@@ -29,26 +35,30 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
 
   const todayKey = getTodayDateString();
 
-  // Fetch student's existing submission for today
-  const fetchTodaySubmissions = async () => {
+  // Fetch student's submissions (both today and full history)
+  const fetchStudentSubmissions = async () => {
     try {
       if (!db) return;
       const q = query(
         collection(db, 'student_submissions'),
         where('studentName', '==', studentName),
-        where('section', '==', section),
-        where('submissionDate', '==', todayKey)
+        where('section', '==', section)
       );
       const snapshot = await getDocs(q);
       const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setTodaySubmissions(docs);
+
+      // Sort descending by ISO date/time
+      docs.sort((a, b) => new Date(b.createdAtISO || 0) - new Date(a.createdAtISO || 0));
+
+      setAllSubmissions(docs);
+      setTodaySubmissions(docs.filter(d => d.submissionDate === todayKey));
     } catch (err) {
-      console.warn('Error fetching today submissions:', err);
+      console.warn('Error fetching student submissions:', err);
     }
   };
 
   useEffect(() => {
-    fetchTodaySubmissions();
+    fetchStudentSubmissions();
   }, [studentName, section]);
 
   const processPasteItems = (items) => {
@@ -201,7 +211,7 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
       alert(`✅ Screenshot submitted for ${todayKey}!`);
       handleReset();
       setUnlockedByTeacher(false);
-      fetchTodaySubmissions();
+      fetchStudentSubmissions();
     } catch (err) {
       console.error('Error submitting screenshot:', err);
       alert(`Submission error: ${err.message || 'Failed to submit'}`);
@@ -231,7 +241,7 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
   };
 
   const isCutoffReached = todaySubmissions.length > 0 && !unlockedByTeacher;
-  const latestSubmission = todaySubmissions[todaySubmissions.length - 1];
+  const latestSubmission = todaySubmissions[0];
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700 transition-all relative">
@@ -244,33 +254,76 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
             Date: <span className="font-semibold text-gray-700 dark:text-gray-300">{todayKey}</span>
           </p>
         </div>
-        <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
-          isCutoffReached 
-            ? 'bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200' 
-            : 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200'
-        }`}>
-          {isCutoffReached ? '🔒 Completed Today' : 'Ready for Submission'}
-        </span>
+        <div className="flex items-center gap-2">
+          {allSubmissions.length > 0 && (
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className="text-xs bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 px-2.5 py-1 rounded-full font-medium transition-colors"
+            >
+              {showHistory ? '✕ Close History' : `📜 My History (${allSubmissions.length})`}
+            </button>
+          )}
+          <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
+            isCutoffReached 
+              ? 'bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200' 
+              : 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200'
+          }`}>
+            {isCutoffReached ? '🔒 Completed Today' : 'Ready for Submission'}
+          </span>
+        </div>
       </div>
 
-      {/* CASE 1: Cutoff Reached (1 Submission Exists & Not Unlocked) */}
-      {isCutoffReached ? (
+      {/* STUDENT HISTORY DRAWER */}
+      {showHistory ? (
+        <div className="space-y-3 mb-4 p-4 bg-gray-50 dark:bg-gray-900/60 rounded-lg border dark:border-gray-700 max-h-80 overflow-y-auto">
+          <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-2">Your Past Submissions</h4>
+          {allSubmissions.length === 0 ? (
+            <p className="text-xs text-gray-400">No previous submissions found.</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {allSubmissions.map((sub) => (
+                <div
+                  key={sub.id}
+                  onClick={() => setActiveModalImage(sub)}
+                  className="border dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-800 p-2 cursor-pointer hover:shadow-md transition-shadow text-center"
+                >
+                  <img
+                    src={sub.imageUrl}
+                    alt={sub.submissionDate}
+                    className="h-24 w-full object-contain rounded bg-black/5"
+                  />
+                  <p className="text-[11px] font-bold text-gray-800 dark:text-gray-200 mt-1">{sub.submissionDate}</p>
+                  <p className="text-[10px] text-gray-400">
+                    {sub.createdAtISO ? new Date(sub.createdAtISO).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : isCutoffReached ? (
+        /* CASE 1: Cutoff Reached (Submitted Today) */
         <div className="space-y-4 text-center py-2">
           <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
             <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
-              ✅ You have already submitted your screenshot for today!
+              ✅ You have submitted your screenshot for today!
             </p>
             <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
-              Only 1 submission per day is allowed. To re-submit, ask your teacher to unlock it.
+              Click on your screenshot below to inspect full size.
             </p>
           </div>
 
           {latestSubmission?.imageUrl && (
-            <div className="border dark:border-gray-700 rounded-lg overflow-hidden bg-black/5 p-2">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium">Today's Submission Preview:</p>
+            <div
+              onClick={() => setActiveModalImage(latestSubmission)}
+              className="border dark:border-gray-700 rounded-lg overflow-hidden bg-black/5 p-2 cursor-pointer hover:opacity-90 transition-opacity"
+            >
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium">
+                Submitted Today at {latestSubmission.createdAtISO ? new Date(latestSubmission.createdAtISO).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''} (Click to view full screen)
+              </p>
               <img
                 src={latestSubmission.imageUrl}
-                alt="Submitted Work"
+                alt="Today's Submission"
                 className="max-h-52 mx-auto object-contain rounded"
               />
             </div>
@@ -285,7 +338,7 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
           </button>
         </div>
       ) : (
-        /* CASE 2: Upload Zone (Not Submitted yet or Unlocked by Teacher) */
+        /* CASE 2: Upload Zone */
         <>
           {unlockedByTeacher && (
             <div className="mb-3 p-2.5 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 rounded-lg text-xs text-blue-800 dark:text-blue-300 flex justify-between items-center">
@@ -397,6 +450,43 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
             </div>
           )}
         </>
+      )}
+
+      {/* STUDENT FULLSCREEN IMAGE LIGHTBOX */}
+      {activeModalImage && (
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center z-50 p-4"
+          onClick={() => setActiveModalImage(null)}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-xl max-w-3xl w-full p-5 shadow-2xl border dark:border-gray-700 max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-3">
+              <div>
+                <h4 className="text-base font-bold text-gray-900 dark:text-white">
+                  Submission for {activeModalImage.submissionDate}
+                </h4>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Submitted at {activeModalImage.createdAtISO ? new Date(activeModalImage.createdAtISO).toLocaleTimeString() : ''}
+                </p>
+              </div>
+              <button
+                onClick={() => setActiveModalImage(null)}
+                className="text-gray-500 hover:text-gray-700 dark:hover:text-white text-xl font-bold"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto flex justify-center items-center bg-black/10 rounded-lg p-2">
+              <img
+                src={activeModalImage.imageUrl}
+                alt="Full Submission Preview"
+                className="max-h-[70vh] w-auto object-contain rounded"
+              />
+            </div>
+          </div>
+        </div>
       )}
 
       {/* TEACHER OVERRIDE PIN MODAL */}
