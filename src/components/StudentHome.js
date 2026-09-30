@@ -1,3 +1,4 @@
+import SubmissionCard from "./SubmissionCard";
 import DivisionSprint from "./DivisionSprint";
 import MultiplicationSprint from './MultiplicationSprint';
 import StudentWhiteboard from "./student/StudentWhiteboard";
@@ -179,7 +180,13 @@ export default function StudentHome({
           </div>
 
           <div className="grid min-w-0 grid-cols-1 gap-4">
-            <button
+            
+          {/* Submissions & Screenshot Card */}
+          <div className="col-span-1 md:col-span-2 lg:col-span-3">
+            <SubmissionCard />
+          </div>
+
+          <button
               onClick={() => onSelectMode("classwork")}
               className="flex min-h-[6rem] min-w-0 items-center justify-between gap-4 rounded-lg border border-emerald-200 bg-emerald-50 p-5 text-left text-lg font-medium text-emerald-700 transition-all hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300 dark:hover:bg-emerald-900/50 sm:p-6"
             >

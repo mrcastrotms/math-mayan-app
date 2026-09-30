@@ -4,7 +4,9 @@ export default function SubmissionCard({ onCancel }) {
   const [imagePreview, setImagePreview] = useState(null);
   const [imageFile, setImageFile] = useState(null);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [touchStatus, setTouchStatus] = useState('');
   const pasteAreaRef = useRef(null);
+  const touchTimerRef = useRef(null);
 
   // Extract image from paste items
   const processPasteItems = (items) => {
@@ -15,6 +17,7 @@ export default function SubmissionCard({ onCancel }) {
           const file = new File([blob], `screenshot_${Date.now()}.png`, { type: blob.type });
           setImageFile(file);
           setImagePreview(URL.createObjectURL(blob));
+          setTouchStatus('');
           return true;
         }
       }
@@ -22,7 +25,7 @@ export default function SubmissionCard({ onCancel }) {
     return false;
   };
 
-  // Handle global and targeted paste events (Ctrl+V or Right-Click -> Paste)
+  // Global paste event listener (Keyboard & Context Menu Paste)
   useEffect(() => {
     const handlePaste = (e) => {
       const items = e.clipboardData?.items;
@@ -35,7 +38,7 @@ export default function SubmissionCard({ onCancel }) {
     return () => window.removeEventListener('paste', handlePaste);
   }, []);
 
-  // Button-triggered paste via Async Clipboard API
+  // Async Clipboard API handler
   const handleClipboardRead = async () => {
     try {
       const clipboardItems = await navigator.clipboard.read();
@@ -46,16 +49,33 @@ export default function SubmissionCard({ onCancel }) {
           const file = new File([blob], `screenshot_${Date.now()}.png`, { type: imageType });
           setImageFile(file);
           setImagePreview(URL.createObjectURL(blob));
+          setTouchStatus('');
           return;
         }
       }
-      alert('No image found on clipboard. Press PrtScn first!');
+      alert('No image found on clipboard. Take a screenshot first!');
     } catch (err) {
-      alert('To paste, tap inside the dashed box or press Ctrl+V / Cmd+V.');
+      alert('To paste, long-press inside the box or press Ctrl+V / Cmd+V.');
     }
   };
 
-  // Method 2: Screen Capture API (getDisplayMedia)
+  // Touch Long-Press Handlers
+  const handleTouchStart = () => {
+    setTouchStatus('Hold to trigger paste...');
+    touchTimerRef.current = setTimeout(() => {
+      setTouchStatus('Attempting clipboard paste...');
+      handleClipboardRead();
+    }, 600); // 600ms long press threshold
+  };
+
+  const handleTouchEnd = () => {
+    if (touchTimerRef.current) {
+      clearTimeout(touchTimerRef.current);
+    }
+    setTimeout(() => setTouchStatus(''), 1500);
+  };
+
+  // Method 2: Screen Capture API
   const handleScreenCapture = async () => {
     try {
       setIsCapturing(true);
@@ -65,8 +85,6 @@ export default function SubmissionCard({ onCancel }) {
       });
 
       const track = stream.getVideoTracks()[0];
-      
-      // Use Video element fallback if ImageCapture isn't present
       const video = document.createElement('video');
       video.srcObject = stream;
       await video.play();
@@ -77,7 +95,7 @@ export default function SubmissionCard({ onCancel }) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      track.stop(); // Stop sharing screen immediately after capture
+      track.stop();
 
       canvas.toBlob((blob) => {
         if (blob) {
@@ -96,19 +114,19 @@ export default function SubmissionCard({ onCancel }) {
   const handleReset = () => {
     setImagePreview(null);
     setImageFile(null);
+    setTouchStatus('');
   };
 
   const handleSubmit = () => {
     if (!imageFile) return;
-    alert(`Screenshot "${imageFile.name}" ready for submission!`);
-    // Pass imageFile to your backend / state handler here
+    alert(`Screenshot "${imageFile.name}" submitted!`);
   };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700 transition-all">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-          <span>📋</span> Screenshot Submissions
+          <span>📋</span> Submissions & Screenshot
         </h3>
         <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full font-medium">
           Testing Mode
@@ -117,12 +135,14 @@ export default function SubmissionCard({ onCancel }) {
 
       {!imagePreview ? (
         <div className="space-y-4">
-          {/* Paste Zone supporting right-click / two-finger press and keyboard shortcuts */}
+          {/* Dropzone supporting Ctrl+V, Context Menu, and Touch Long-Press */}
           <div
             ref={pasteAreaRef}
             contentEditable
             suppressContentEditableWarning
-            className="border-2 border-dashed border-blue-400 dark:border-blue-500 rounded-lg p-6 text-center bg-blue-50/50 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-gray-900 transition-colors cursor-pointer outline-none focus:ring-2 focus:ring-blue-500"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            className="border-2 border-dashed border-blue-400 dark:border-blue-500 rounded-lg p-5 text-center bg-blue-50/50 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-gray-900 transition-colors cursor-pointer outline-none focus:ring-2 focus:ring-blue-500 select-none"
             style={{ caretColor: 'transparent' }}
           >
             <div className="pointer-events-none">
@@ -130,11 +150,16 @@ export default function SubmissionCard({ onCancel }) {
                 Method 1: PrintScreen + Paste
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                1. Press <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">PrtScn</kbd> on your keyboard.
+                1. Press <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">PrtScn</kbd> on keyboard.
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                2. Press <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">Ctrl + V</kbd> or <strong>Right-Click / Two-Finger Tap</strong> here and select <em>Paste</em>.
+                2. Press <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">Ctrl + V</kbd>, <strong>Right-Click</strong>, or <strong>Long-Press (Touch)</strong> here to Paste.
               </p>
+              {touchStatus && (
+                <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-2 animate-pulse">
+                  {touchStatus}
+                </p>
+              )}
             </div>
           </div>
 
@@ -144,7 +169,6 @@ export default function SubmissionCard({ onCancel }) {
             <hr className="w-full border-gray-200 dark:border-gray-700" />
           </div>
 
-          {/* Action Buttons */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button
               type="button"
@@ -165,7 +189,6 @@ export default function SubmissionCard({ onCancel }) {
           </div>
         </div>
       ) : (
-        /* Image Preview & Confirmation */
         <div className="space-y-4">
           <div className="relative border dark:border-gray-700 rounded-lg overflow-hidden bg-black/5 flex justify-center items-center max-h-72 p-2">
             <img
