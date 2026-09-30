@@ -1,3 +1,4 @@
+import DivisionSprint from "./DivisionSprint";
 import MultiplicationSprint from './MultiplicationSprint';
 import StudentWhiteboard from "./student/StudentWhiteboard";
 import StudentImageGallery from "./student/StudentImageGallery";
@@ -64,9 +65,14 @@ export default function StudentHome({
     }
   };
 
+  if (currentView === "divisionSprint") {
+    return <DivisionSprint onBack={() => setCurrentView("menu")} />;
+  }
+
   if (currentView === "whiteboard") {
     const deviceUid = typeof window !== "undefined" ? localStorage.getItem("exam_device_uuid") || "anonymous" : "anonymous";
     return (
+
       <div className="max-w-6xl mx-auto p-4 sm:p-6">
         <StudentWhiteboard 
           studentId={deviceUid} 
@@ -184,6 +190,21 @@ export default function StudentHome({
                 </div>
               </div>
               <span className="shrink-0 rounded-full bg-emerald-200 px-2.5 py-1 text-xs dark:bg-emerald-800">
+                Interactive
+              </span>
+            </button>
+
+            <button
+              onClick={() => setCurrentView("divisionSprint")}
+              className="flex min-h-[6rem] min-w-0 items-center justify-between gap-4 rounded-lg border border-teal-200 bg-teal-50 p-5 text-left text-lg font-medium text-teal-700 transition-all hover:bg-teal-100 dark:border-teal-800 dark:bg-teal-950/30 dark:text-teal-300 dark:hover:bg-teal-900/50 sm:p-6"
+            >
+              <div className="min-w-0 break-words">
+                <div className="font-bold">Division Sprint</div>
+                <div className="text-sm opacity-80">
+                  100-second adaptive division practice & streaks
+                </div>
+              </div>
+              <span className="shrink-0 rounded-full bg-teal-200 px-2.5 py-1 text-xs dark:bg-teal-800">
                 Interactive
               </span>
             </button>
