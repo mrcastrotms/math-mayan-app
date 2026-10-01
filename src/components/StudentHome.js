@@ -164,7 +164,7 @@ export default function StudentHome({
       <div className="mb-6">
         <SubmissionCard 
           studentName={studentName || currentUser?.displayName || "Student"} 
-          section={(typeof selectedSection !== "undefined" section={(typeof selectedSection !== "undefined" ? selectedSection : (typeof currentSection !== "undefined" ? currentSection : (student?.section || "4B")))}section={(typeof selectedSection !== "undefined" ? selectedSection : (typeof currentSection !== "undefined" ? currentSection : (student?.section || "4B")))} selectedSection) || (typeof currentSection !== "undefined" section={(typeof selectedSection !== "undefined" ? selectedSection : (typeof currentSection !== "undefined" ? currentSection : (student?.section || "4B")))}section={(typeof selectedSection !== "undefined" ? selectedSection : (typeof currentSection !== "undefined" ? currentSection : (student?.section || "4B")))} currentSection) || (typeof student !== "undefined" section={(typeof selectedSection !== "undefined" ? selectedSection : (typeof currentSection !== "undefined" ? currentSection : (student?.section || "4B")))}section={(typeof selectedSection !== "undefined" ? selectedSection : (typeof currentSection !== "undefined" ? currentSection : (student?.section || "4B")))} student?.section) || (typeof user !== "undefined" section={(typeof selectedSection !== "undefined" ? selectedSection : (typeof currentSection !== "undefined" ? currentSection : (student?.section || "4B")))}section={(typeof selectedSection !== "undefined" ? selectedSection : (typeof currentSection !== "undefined" ? currentSection : (student?.section || "4B")))} user?.section) || "4B"} 
+          section={section || "4B"}
         />
       </div>
 
