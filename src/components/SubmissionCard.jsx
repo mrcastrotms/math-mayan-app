@@ -56,7 +56,13 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
   };
 
   useEffect(() => {
-    fetchStudentSubmissions();
+    let active = true;
+    (async () => {
+      await fetchStudentSubmissions();
+    })();
+    return () => {
+      active = false;
+    };
   }, [studentName, section]);
 
   const processPasteItems = (items) => {
@@ -210,7 +216,7 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
         section: section || "General",
         submissionDate: todayKey,
         imageUrl: downloadURL,
-        fileName: imageFile.name || `screenshot_${Date.now()}.jpg`,
+        fileName: imageFile.name || "screenshot_upload.jpg",
         fileType: "image/jpeg",
         submittedAt: serverTimestamp(),
         createdAtISO: new Date().toISOString(),

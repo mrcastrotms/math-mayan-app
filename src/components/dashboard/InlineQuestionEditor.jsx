@@ -28,7 +28,13 @@ export default function InlineQuestionEditor() {
   };
 
   useEffect(() => {
-    fetchQuestions();
+    let active = true;
+    (async () => {
+      await fetchQuestions();
+    })();
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleFieldChange = (docId, field, value) => {

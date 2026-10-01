@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { db } from '../firebase'; 
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 
 const generateFacts = () => {
@@ -12,8 +12,13 @@ const generateFacts = () => {
   return facts;
 };
 
+const getTodayStr = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
 export default function MultiplicationSprint({ student, section = "4B" }) {
-  const [facts, setFacts] = useState([]);
+  const [facts, setFacts] = useState(() => generateFacts());
   const [currentIndex, setCurrentIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(60);
   const [isActive, setIsActive] = useState(false);
@@ -21,35 +26,34 @@ export default function MultiplicationSprint({ student, section = "4B" }) {
   const [inputValue, setInputValue] = useState("");
   const [startedAt, setStartedAt] = useState(null);
   const [stats, setStats] = useState({ totalAnswers: 0, totalCorrect: 0, firstTryCorrect: 0 });
-  
-  const [hasCompletedToday, setHasCompletedToday] = useState(null); 
-  const [pastSprintData, setPastSprintData] = useState(null); 
+
+  const [hasCompletedToday, setHasCompletedToday] = useState(null);
+  const [pastSprintData, setPastSprintData] = useState(null);
   const inputRef = useRef(null);
 
-  const getTodayStr = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  };
-
   useEffect(() => {
+    let isMounted = true;
+
     const checkDailyLimit = async () => {
       const studentName = student?.name;
       if (!studentName) {
-        setHasCompletedToday(false);
+        if (isMounted) setHasCompletedToday(false);
         return;
       }
-      
+
       const q = query(
         collection(db, 'exam_results'),
         where('studentName', '==', studentName),
         where('activityType', '==', 'classwork'),
         where('dateString', '==', getTodayStr())
       );
-      
+
       try {
         const snapshot = await getDocs(q);
         const sprintDoc = snapshot.docs.find(d => d.data().assignmentTitle?.includes('Multiplication Sprint'));
-        
+
+        if (!isMounted) return;
+
         if (sprintDoc) {
           setPastSprintData(sprintDoc.data());
           setHasCompletedToday(true);
@@ -58,24 +62,101 @@ export default function MultiplicationSprint({ student, section = "4B" }) {
         }
       } catch (error) {
         console.error("Error checking daily limit:", error);
-        setHasCompletedToday(false); 
+        if (isMounted) setHasCompletedToday(false);
       }
     };
-    
+
     checkDailyLimit();
-    setFacts(generateFacts());
+
+    return () => {
+      isMounted = false;
+    };
   }, [student, section]);
 
-  useEffect(() => {
-    let timer;
-    if (isActive && timeLeft > 0) {
-      timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
-    } else if (timeLeft === 0 && isActive && !isSubmitting) {
-      setIsActive(false);
-      submitToGradebook();
+  const submitToGradebook = useCallback(async () => {
+    setIsSubmitting(true);
+
+    const uniqueSolved = facts.filter(f => f.solved).length;
+    const firstTryCorrect = facts.filter(f => f.solved && f.attempts === 1).length;
+    const totalAttempted = facts.reduce((acc, f) => acc + f.attempts, 0);
+    const fullSweep = firstTryCorrect === 5;
+    const duration = 60 - timeLeft;
+
+    const mappedAnswers = facts.map((f, i) => ({
+      questionId: `fact_${i}`,
+      prompt: `${f.a} × ${f.b}`,
+      studentAnswer: f.solved ? String(f.answer) : (f.attempts > 0 ? "Tried, unsolved" : "Blank"),
+      correctAnswer: String(f.answer),
+      isCorrect: f.solved,
+      points: f.solved ? 1 : 0
+    }));
+
+    const sprintRecord = {
+      uid: student?.uid || student?.id || 'unknown',
+      studentId: student?.id || student?.uid || 'unknown',
+      name: student?.name || 'Unknown Student',
+      studentName: student?.name || 'Unknown Student',
+      section: section,
+      sectionId: section,
+
+      activityType: 'classwork',
+      activity: 'classwork',
+
+      assignmentTitle: `Multiplication Sprint (${totalAttempted} attempts in ${duration}s)`,
+
+      correctAnswers: uniqueSolved,
+      totalQuestions: 5,
+      score: uniqueSolved,
+      answers: mappedAnswers,
+
+      createdAt: serverTimestamp(),
+      timestamp: Date.now(),
+      startedAt: startedAt,
+      endedAt: new Date().toISOString(),
+      dateString: getTodayStr(),
+      date: getTodayStr(),
+
+      durationSeconds: duration,
+      fullSweep: fullSweep,
+      firstTryCorrect: firstTryCorrect,
+      totalAttempted: totalAttempted,
+      totalCorrect: stats.totalCorrect,
+      factsData: facts
+    };
+
+    try {
+      await addDoc(collection(db, 'exam_results'), sprintRecord);
+      setPastSprintData(sprintRecord);
+      setHasCompletedToday(true);
+    } catch (error) {
+      console.error("Error writing document: ", error);
+    } finally {
+      setIsSubmitting(false);
     }
+  }, [facts, timeLeft, student, section, startedAt, stats.totalCorrect]);
+
+  const submitRef = useRef(submitToGradebook);
+  useEffect(() => {
+    submitRef.current = submitToGradebook;
+  }, [submitToGradebook]);
+
+  useEffect(() => {
+    if (!isActive) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setIsActive(false);
+          submitRef.current();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
     return () => clearInterval(timer);
-  }, [isActive, timeLeft, isSubmitting]);
+  }, [isActive]);
 
   useEffect(() => {
     if (isActive && inputRef.current) inputRef.current.focus();
@@ -95,13 +176,13 @@ export default function MultiplicationSprint({ student, section = "4B" }) {
 
     if (val.length === expectedLength) {
       const isCorrect = parseInt(val, 10) === currentFact.answer;
-      
+
       setStats(prev => ({
         ...prev,
         totalAnswers: prev.totalAnswers + 1,
         totalCorrect: isCorrect ? prev.totalCorrect + 1 : prev.totalCorrect,
-        firstTryCorrect: (isCorrect && currentFact.attempts === 0) 
-            ? prev.firstTryCorrect + 1 
+        firstTryCorrect: (isCorrect && currentFact.attempts === 0)
+            ? prev.firstTryCorrect + 1
             : prev.firstTryCorrect
       }));
 
@@ -110,72 +191,11 @@ export default function MultiplicationSprint({ student, section = "4B" }) {
       if (isCorrect) {
         updatedFacts[currentIndex].solved = true;
       }
-      
+
       setFacts(updatedFacts);
       setInputValue("");
-      
+
       setCurrentIndex((prev) => (prev + 1) % 5);
-    }
-  };
-
-  const submitToGradebook = async () => {
-    setIsSubmitting(true);
-    
-    const uniqueSolved = facts.filter(f => f.solved).length;
-    const firstTryCorrect = facts.filter(f => f.solved && f.attempts === 1).length;
-    const totalAttempted = facts.reduce((acc, f) => acc + f.attempts, 0);
-    const fullSweep = firstTryCorrect === 5; 
-    const duration = 60 - timeLeft;
-    
-    const mappedAnswers = facts.map((f, i) => ({
-      questionId: `fact_${i}`,
-      prompt: `${f.a} × ${f.b}`,
-      studentAnswer: f.solved ? String(f.answer) : (f.attempts > 0 ? "Tried, unsolved" : "Blank"),
-      correctAnswer: String(f.answer),
-      isCorrect: f.solved,
-      points: f.solved ? 1 : 0
-    }));
-
-    const sprintRecord = {
-      uid: student?.uid || student?.id || 'unknown',
-      studentId: student?.id || student?.uid || 'unknown',
-      name: student?.name || 'Unknown Student',
-      studentName: student?.name || 'Unknown Student',
-      section: section,
-      sectionId: section, 
-      
-      // THE FIX: The exact keys your gradebook mapper requires
-      activityType: 'classwork',
-      activity: 'classwork', 
-      
-      assignmentTitle: `Multiplication Sprint (${totalAttempted} attempts in ${duration}s)`,
-      
-      correctAnswers: uniqueSolved, 
-      totalQuestions: 5,
-      score: uniqueSolved,
-      answers: mappedAnswers, 
-      
-      createdAt: serverTimestamp(),
-      timestamp: Date.now(), 
-      startedAt: startedAt,
-      endedAt: new Date().toISOString(),
-      dateString: getTodayStr(), 
-      date: getTodayStr(), // Fallback for dateFilter
-      
-      durationSeconds: duration, 
-      fullSweep: fullSweep,
-      firstTryCorrect: firstTryCorrect,
-      totalAttempted: totalAttempted,
-      totalCorrect: stats.totalCorrect,
-      factsData: facts
-    };
-
-    try {
-      await addDoc(collection(db, 'exam_results'), sprintRecord);
-      setPastSprintData(sprintRecord); 
-      setHasCompletedToday(true); 
-    } catch (error) {
-      console.error("Error writing document: ", error);
     }
   };
 
@@ -192,10 +212,10 @@ export default function MultiplicationSprint({ student, section = "4B" }) {
       <div className="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-xl shadow-md max-w-md mx-auto mt-4 text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-2">Sprint Complete 🏁</h2>
         <p className="text-gray-600 mb-6">You have completed your Multiplication Sprint for today.</p>
-        
+
         <div className="bg-white border border-gray-200 rounded-lg p-6 w-full shadow-sm text-left">
-          <h3 className="text-lg font-bold text-blue-800 border-b pb-2 mb-4">Today's Report</h3>
-          
+          <h3 className="text-lg font-bold text-blue-800 border-b pb-2 mb-4">Today&apos;s Report</h3>
+
           <div className="flex justify-between items-center mb-2">
             <span className="font-semibold text-gray-600">Total Answers Submitted:</span>
             <span className="font-bold text-xl text-gray-900">{pastSprintData.totalAttempted}</span>
@@ -205,7 +225,7 @@ export default function MultiplicationSprint({ student, section = "4B" }) {
             <span className="font-semibold text-gray-600">Total Correct:</span>
             <span className="font-bold text-xl text-emerald-600">{pastSprintData.totalCorrect}</span>
           </div>
-          
+
           <div className="flex justify-between items-center mb-4">
             <span className="font-semibold text-gray-600">Perfect First-Tries:</span>
             <span className="font-bold text-xl text-blue-600">{pastSprintData.firstTryCorrect} / 5</span>
@@ -217,7 +237,7 @@ export default function MultiplicationSprint({ student, section = "4B" }) {
             </div>
           )}
         </div>
-        
+
         <p className="text-sm text-gray-500 font-bold mt-6">Check back tomorrow for your next sprint.</p>
       </div>
     );
@@ -228,9 +248,9 @@ export default function MultiplicationSprint({ student, section = "4B" }) {
   return (
     <div className="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-xl shadow-md max-w-md mx-auto mt-4">
       <h2 className="text-2xl font-bold text-gray-800 mb-4">Multiplication Sprint</h2>
-      
+
       {!isActive && timeLeft === 60 ? (
-        <button 
+        <button
           onClick={startSprint}
           className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition"
         >

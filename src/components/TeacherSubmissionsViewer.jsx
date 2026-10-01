@@ -59,7 +59,13 @@ export default function TeacherSubmissionsViewer({ selectedSection: propSection 
   };
 
   useEffect(() => {
-    fetchSubmissions();
+    let active = true;
+    (async () => {
+      await fetchSubmissions();
+    })();
+    return () => {
+      active = false;
+    };
   }, [selectedSection, selectedDate]);
 
   // Delete a single submission
