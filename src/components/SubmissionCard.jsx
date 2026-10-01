@@ -166,45 +166,56 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
     });
   };
 
-  const handleSubmit = async () => {
+  
+  const compressImage = (file, maxWidth = 1200, quality = 0.65) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        img.src = e.target.result;
+      };
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL("image/jpeg", quality);
+        resolve(dataUrl);
+      };
+      img.onerror = (err) => reject(err);
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
+  };
+
+    const handleSubmit = async () => {
     if (!imageFile) return;
 
     setIsUploading(true);
-    setUploadProgress('Preparing upload...');
+    setUploadProgress("Compressing screenshot...");
 
     try {
-      let downloadURL = '';
+      const downloadURL = await compressImage(imageFile, 1200, 0.65);
 
-      try {
-        if (db && db.app) {
-          setUploadProgress('Uploading image to Firebase Storage...');
-          const storageInstance = getStorage(db.app);
-          const storagePath = `submissions/${section}/${todayKey}/${studentName}/${Date.now()}_${imageFile.name}`;
-          const storageRef = ref(storageInstance, storagePath);
-          const snapshot = await uploadBytes(storageRef, imageFile);
-          downloadURL = await getDownloadURL(snapshot.ref);
-        }
-      } catch (storageErr) {
-        console.warn('Storage upload fallback to base64 encoding:', storageErr);
-      }
-
-      if (!downloadURL) {
-        setUploadProgress('Encoding image payload...');
-        downloadURL = await fileToBase64(imageFile);
-      }
-
-      setUploadProgress('Saving submission entry...');
-      await addDoc(collection(db, 'student_submissions'), {
-        studentName,
-        section,
+      setUploadProgress("Saving submission...");
+      await addDoc(collection(db, "student_submissions"), {
+        studentName: studentName || "Student",
+        section: section || "General",
         submissionDate: todayKey,
         imageUrl: downloadURL,
-        fileName: imageFile.name,
-        fileType: imageFile.type,
+        fileName: imageFile.name || `screenshot_${Date.now()}.jpg`,
+        fileType: "image/jpeg",
         submittedAt: serverTimestamp(),
         createdAtISO: new Date().toISOString(),
         unlockedOverride: unlockedByTeacher,
-        status: 'submitted',
+        status: "submitted",
       });
 
       alert(`✅ Screenshot submitted for ${todayKey}!`);
@@ -212,11 +223,11 @@ export default function SubmissionCard({ studentName = "Student", section = "Gen
       setUnlockedByTeacher(false);
       fetchStudentSubmissions();
     } catch (err) {
-      console.error('Error submitting screenshot:', err);
-      alert(`Submission error: ${err.message || 'Failed to submit'}`);
+      console.error("Error submitting screenshot:", err);
+      alert(`Submission error: ${err.message || "Failed to submit"}`);
     } finally {
       setIsUploading(false);
-      setUploadProgress('');
+      setUploadProgress("");
     }
   };
 
