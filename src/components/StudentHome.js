@@ -190,10 +190,7 @@ export default function StudentHome({
 
           <div className="grid min-w-0 grid-cols-1 gap-4">
             
-          {/* Submissions & Screenshot Card */}
-          <div className="col-span-1 md:col-span-2 lg:col-span-3">
-            <SubmissionCard studentName={studentName} section={section} />
-          </div>
+
 
           <button
               onClick={() => onSelectMode("classwork")}
