@@ -164,7 +164,7 @@ export default function StudentHome({
       <div className="mb-6">
         <SubmissionCard 
           studentName={studentName || currentUser?.displayName || "Student"} 
-          section={selectedSection || currentSection || "4B"} 
+          section={(typeof selectedSection !== "undefined" ? selectedSection : (typeof currentSection !== "undefined" ? currentSection : (student?.section || "4B")))} 
         />
       </div>
 
